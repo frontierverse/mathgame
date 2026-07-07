@@ -26,6 +26,209 @@ type ExpressionDisplayToken = {
   kind: "digit" | "operator" | "separator";
 };
 
+type CurriculumUnit = {
+  id: string;
+  title: string;
+  subunits: string[];
+};
+
+type CurriculumSemester = {
+  id: "semester1" | "semester2";
+  label: string;
+  units: CurriculumUnit[];
+};
+
+type CurriculumGrade = {
+  id: "middle1" | "middle2" | "middle3";
+  label: string;
+  subtitle: string;
+  semesters: CurriculumSemester[];
+};
+
+const curriculum: CurriculumGrade[] = [
+  {
+    id: "middle1",
+    label: "중1",
+    subtitle: "수와 식의 기본 감각을 만드는 단계",
+    semesters: [
+      {
+        id: "semester1",
+        label: "1학기",
+        units: [
+          {
+            id: "m1-s1-u1",
+            title: "소인수분해",
+            subunits: ["소수와 합성수", "소인수분해", "최대공약수와 최소공배수"],
+          },
+          {
+            id: "m1-s1-u2",
+            title: "정수와 유리수",
+            subunits: [
+              "정수와 유리수",
+              "정수와 유리수의 덧셈과 뺄셈",
+              "정수와 유리수의 곱셈과 나눗셈",
+            ],
+          },
+          {
+            id: "m1-s1-u3",
+            title: "문자와 식",
+            subunits: ["문자의 사용과 식의 값", "일차식의 계산", "일차방정식", "일차방정식의 활용"],
+          },
+          {
+            id: "m1-s1-u4",
+            title: "좌표평면과 그래프",
+            subunits: ["순서쌍과 좌표", "그래프의 이해", "정비례", "반비례"],
+          },
+        ],
+      },
+      {
+        id: "semester2",
+        label: "2학기",
+        units: [
+          {
+            id: "m1-s2-u1",
+            title: "기본 도형",
+            subunits: ["점, 선, 면", "각", "위치 관계", "평행선의 성질"],
+          },
+          {
+            id: "m1-s2-u2",
+            title: "평면도형",
+            subunits: ["다각형", "원과 부채꼴"],
+          },
+          {
+            id: "m1-s2-u3",
+            title: "입체도형",
+            subunits: ["다면체", "회전체", "기둥과 뿔의 겉넓이와 부피", "구의 겉넓이와 부피"],
+          },
+          {
+            id: "m1-s2-u4",
+            title: "통계",
+            subunits: ["자료의 정리", "도수분포표", "히스토그램과 도수분포다각형", "상대도수"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "middle2",
+    label: "중2",
+    subtitle: "식과 함수, 도형 성질을 확장하는 단계",
+    semesters: [
+      {
+        id: "semester1",
+        label: "1학기",
+        units: [
+          {
+            id: "m2-s1-u1",
+            title: "유리수와 순환소수",
+            subunits: ["유리수와 소수", "순환소수의 표현", "순환소수를 분수로 나타내기"],
+          },
+          {
+            id: "m2-s1-u2",
+            title: "식의 계산",
+            subunits: ["지수법칙", "단항식의 계산", "다항식의 덧셈과 뺄셈", "다항식의 곱셈과 나눗셈"],
+          },
+          {
+            id: "m2-s1-u3",
+            title: "일차부등식과 연립일차방정식",
+            subunits: ["부등식과 그 성질", "일차부등식", "연립일차방정식", "연립일차방정식의 활용"],
+          },
+          {
+            id: "m2-s1-u4",
+            title: "일차함수",
+            subunits: ["일차함수와 그래프", "일차함수의 식 구하기", "일차함수와 일차방정식의 관계"],
+          },
+        ],
+      },
+      {
+        id: "semester2",
+        label: "2학기",
+        units: [
+          {
+            id: "m2-s2-u1",
+            title: "삼각형의 성질",
+            subunits: ["이등변삼각형", "직각삼각형의 합동", "삼각형의 외심과 내심"],
+          },
+          {
+            id: "m2-s2-u2",
+            title: "사각형의 성질",
+            subunits: ["평행사변형", "여러 가지 사각형", "사각형 사이의 관계"],
+          },
+          {
+            id: "m2-s2-u3",
+            title: "도형의 닮음",
+            subunits: ["닮은 도형", "삼각형의 닮음 조건", "평행선과 선분의 길이의 비", "닮음의 활용"],
+          },
+          {
+            id: "m2-s2-u4",
+            title: "피타고라스 정리",
+            subunits: ["피타고라스 정리", "피타고라스 정리의 활용"],
+          },
+          {
+            id: "m2-s2-u5",
+            title: "확률",
+            subunits: ["경우의 수", "확률의 뜻과 성질", "확률의 계산"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "middle3",
+    label: "중3",
+    subtitle: "실수, 이차식, 삼각비와 통계를 다루는 단계",
+    semesters: [
+      {
+        id: "semester1",
+        label: "1학기",
+        units: [
+          {
+            id: "m3-s1-u1",
+            title: "제곱근과 실수",
+            subunits: ["제곱근", "무리수와 실수", "근호를 포함한 식의 계산"],
+          },
+          {
+            id: "m3-s1-u2",
+            title: "다항식의 곱셈과 인수분해",
+            subunits: ["다항식의 곱셈", "곱셈 공식", "인수분해", "인수분해 공식의 활용"],
+          },
+          {
+            id: "m3-s1-u3",
+            title: "이차방정식",
+            subunits: ["이차방정식과 그 해", "인수분해를 이용한 풀이", "완전제곱식을 이용한 풀이", "근의 공식", "이차방정식의 활용"],
+          },
+          {
+            id: "m3-s1-u4",
+            title: "이차함수",
+            subunits: ["이차함수와 그래프", "이차함수 y=ax²의 그래프", "y=a(x-p)²+q의 그래프", "이차함수의 활용"],
+          },
+        ],
+      },
+      {
+        id: "semester2",
+        label: "2학기",
+        units: [
+          {
+            id: "m3-s2-u1",
+            title: "삼각비",
+            subunits: ["삼각비의 뜻", "삼각비의 값", "삼각비의 활용"],
+          },
+          {
+            id: "m3-s2-u2",
+            title: "원의 성질",
+            subunits: ["원과 직선", "원주각", "원주각의 활용"],
+          },
+          {
+            id: "m3-s2-u3",
+            title: "통계",
+            subunits: ["대푯값", "산포도", "산점도와 상관관계"],
+          },
+        ],
+      },
+    ],
+  },
+];
+
 const numberKeys: MathKey[] = [
   { value: "7", color: "bg-[#4f8df7]", shadow: "shadow-[0_6px_0_#2f5fb7]", text: "text-white" },
   { value: "8", color: "bg-[#ff5c5d]", shadow: "shadow-[0_6px_0_#b7353a]", text: "text-white" },
@@ -396,11 +599,68 @@ function getExpressionPreview(expression: string) {
 
 export default function Home() {
   const [expression, setExpression] = useState("");
+  const [selectedGradeId, setSelectedGradeId] = useState<CurriculumGrade["id"] | null>(null);
+  const [selectedSemesterId, setSelectedSemesterId] = useState<CurriculumSemester["id"] | null>(
+    null,
+  );
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+  const [selectedSubunit, setSelectedSubunit] = useState<string | null>(null);
   const repeatDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const repeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const preview = useMemo(() => getExpressionPreview(expression), [expression]);
   const expressionTokens = useMemo(() => getExpressionDisplayTokens(expression), [expression]);
+  const selectedGrade = curriculum.find((grade) => grade.id === selectedGradeId) ?? null;
+  const selectedSemester =
+    selectedGrade?.semesters.find((semester) => semester.id === selectedSemesterId) ?? null;
+  const selectedUnit = selectedSemester?.units.find((unit) => unit.id === selectedUnitId) ?? null;
+  const curriculumStepTitle = selectedUnit
+    ? "소단원 선택"
+    : selectedSemester
+      ? "대단원 선택"
+      : selectedGrade
+        ? "학기 선택"
+        : "학년 선택";
+  const curriculumPath = [selectedGrade?.label, selectedSemester?.label, selectedUnit?.title, selectedSubunit]
+    .filter(Boolean)
+    .join(" / ");
+
+  function selectGrade(gradeId: CurriculumGrade["id"]) {
+    setSelectedGradeId(gradeId);
+    setSelectedSemesterId(null);
+    setSelectedUnitId(null);
+    setSelectedSubunit(null);
+  }
+
+  function selectSemester(semesterId: CurriculumSemester["id"]) {
+    setSelectedSemesterId(semesterId);
+    setSelectedUnitId(null);
+    setSelectedSubunit(null);
+  }
+
+  function selectUnit(unitId: string) {
+    setSelectedUnitId(unitId);
+    setSelectedSubunit(null);
+  }
+
+  function goBackCurriculumStep() {
+    if (selectedUnitId) {
+      setSelectedUnitId(null);
+      setSelectedSubunit(null);
+      return;
+    }
+
+    if (selectedSemesterId) {
+      setSelectedSemesterId(null);
+      setSelectedSubunit(null);
+      return;
+    }
+
+    if (selectedGradeId) {
+      setSelectedGradeId(null);
+      setSelectedSubunit(null);
+    }
+  }
 
   function addToken(token: string) {
     setExpression((current) => `${current}${token}`);
@@ -553,24 +813,167 @@ export default function Home() {
                   }}
                 />
                 <div>
-                  <p className="text-lg font-extrabold text-[#6f4ab4]">개념 스테이지</p>
+                  <p className="text-lg font-extrabold text-[#6f4ab4]">목차 탐험</p>
                   <h2 className="text-3xl font-black leading-tight text-[#3c2a5c] sm:text-4xl">
-                    소수와 합성수의 문
+                    {curriculumStepTitle}
                   </h2>
                 </div>
               </div>
-              <div className="flex h-12 items-center justify-center rounded-full bg-white px-5 text-sm font-black text-[#4f8df7] shadow-[0_5px_0_#d8cff0]">
-                목표값 24
+              <div className="flex min-h-12 items-center justify-center rounded-full bg-white px-5 text-sm font-black text-[#4f8df7] shadow-[0_5px_0_#d8cff0]">
+                {curriculumPath || "중학교 수학"}
               </div>
             </div>
 
             <p className="mt-5 max-w-3xl text-base font-bold leading-7 text-[#4f4664] sm:text-lg">
-              숫자 친구들을 조합해서 목표값을 만들어 보세요. 식을 입력하면 아래 흰색
-              입력창에서 바로 계산 결과를 확인할 수 있어요.
+              학년, 학기, 대단원, 소단원을 차례대로 선택해 오늘 탐험할 수학 개념을
+              정해보세요. 오른쪽 버튼 입력은 언제든 사용할 수 있어요.
             </p>
 
             <div className="relative mt-6 flex-1 overflow-hidden rounded-[28px] border-4 border-white/80 bg-[#f7f4ff]">
-              <div className="absolute inset-x-8 top-10 z-10 h-5 rounded-full bg-[#dcd4f3]" />
+              <div className="absolute inset-x-5 bottom-32 top-8 z-20 overflow-y-auto pr-1">
+                <div className="mx-auto max-w-4xl">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-extrabold text-[#7c5cd6]">{curriculumStepTitle}</p>
+                      <h3 className="text-2xl font-black text-[#3d285f]">
+                        {curriculumPath || "학년을 먼저 골라주세요"}
+                      </h3>
+                    </div>
+                    {selectedGrade && (
+                      <button
+                        type="button"
+                        onClick={goBackCurriculumStep}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-black text-[#7c5cd6] shadow-[0_5px_0_#d8cff0] transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0"
+                        aria-label="이전 단계"
+                        title="이전 단계"
+                      >
+                        ←
+                      </button>
+                    )}
+                  </div>
+
+                  {!selectedGrade && (
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      {curriculum.map((grade, index) => (
+                        <button
+                          key={grade.id}
+                          type="button"
+                          onClick={() => selectGrade(grade.id)}
+                          className="min-h-36 rounded-[8px] bg-white p-5 text-left shadow-[0_6px_0_#ded9ec] transition hover:-translate-y-0.5 hover:bg-[#fff7ea] active:translate-y-0"
+                        >
+                          <div
+                            className={`mb-4 flex h-14 w-14 items-center justify-center text-xl font-black text-white ${
+                              ["bg-[#ff5963]", "bg-[#39b567]", "bg-[#4f8df7]"][index]
+                            }`}
+                            style={{
+                              borderRadius: expressionTileRadii[index % expressionTileRadii.length],
+                              transform: `rotate(${expressionTileRotations[index]})`,
+                            }}
+                          >
+                            {grade.label}
+                          </div>
+                          <div className="text-2xl font-black text-[#3d285f]">{grade.label}</div>
+                          <p className="mt-2 text-sm font-bold leading-6 text-[#6a5a82]">
+                            {grade.subtitle}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {selectedGrade && !selectedSemester && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {selectedGrade.semesters.map((semester, index) => (
+                        <button
+                          key={semester.id}
+                          type="button"
+                          onClick={() => selectSemester(semester.id)}
+                          className="min-h-32 rounded-[8px] bg-white p-5 text-left shadow-[0_6px_0_#ded9ec] transition hover:-translate-y-0.5 hover:bg-[#fff7ea] active:translate-y-0"
+                        >
+                          <div className="mb-3 text-sm font-extrabold text-[#7c5cd6]">
+                            {selectedGrade.label}
+                          </div>
+                          <div className="text-3xl font-black text-[#3d285f]">{semester.label}</div>
+                          <p className="mt-3 text-sm font-bold text-[#6a5a82]">
+                            대단원 {semester.units.length}개
+                          </p>
+                          <div className="mt-4 h-2 rounded-full bg-[#e9e0ff]">
+                            <div
+                              className={`h-2 rounded-full ${
+                                index === 0 ? "w-2/3 bg-[#ff5963]" : "w-full bg-[#4f8df7]"
+                              }`}
+                            />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {selectedSemester && !selectedUnit && (
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {selectedSemester.units.map((unit, index) => (
+                        <button
+                          key={unit.id}
+                          type="button"
+                          onClick={() => selectUnit(unit.id)}
+                          className="rounded-[8px] bg-white p-4 text-left shadow-[0_6px_0_#ded9ec] transition hover:-translate-y-0.5 hover:bg-[#fff7ea] active:translate-y-0"
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#9f70eb] text-sm font-black text-white">
+                              {index + 1}
+                            </span>
+                            <span>
+                              <span className="block text-xl font-black leading-tight text-[#3d285f]">
+                                {unit.title}
+                              </span>
+                              <span className="mt-2 block text-sm font-bold leading-6 text-[#6a5a82]">
+                                {unit.subunits.slice(0, 3).join(" · ")}
+                                {unit.subunits.length > 3 ? " · ..." : ""}
+                              </span>
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {selectedUnit && (
+                    <div className="rounded-[8px] bg-white p-5 shadow-[0_6px_0_#ded9ec]">
+                      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                          <p className="text-sm font-extrabold text-[#7c5cd6]">대단원</p>
+                          <h3 className="text-3xl font-black text-[#3d285f]">{selectedUnit.title}</h3>
+                        </div>
+                        <p className="text-sm font-bold text-[#6a5a82]">
+                          소단원 {selectedUnit.subunits.length}개
+                        </p>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {selectedUnit.subunits.map((subunit, index) => (
+                          <button
+                            key={subunit}
+                            type="button"
+                            onClick={() => setSelectedSubunit(subunit)}
+                            className={`rounded-[8px] p-4 text-left shadow-[0_5px_0_#ded9ec] transition hover:-translate-y-0.5 active:translate-y-0 ${
+                              selectedSubunit === subunit ? "bg-[#fffbdf]" : "bg-[#f7f4ff]"
+                            }`}
+                          >
+                            <span className="mb-2 block text-xs font-black text-[#7c5cd6]">
+                              {index + 1}번째 소단원
+                            </span>
+                            <span className="block text-lg font-black text-[#3d285f]">{subunit}</span>
+                          </button>
+                        ))}
+                      </div>
+                      {selectedSubunit && (
+                        <div className="mt-4 rounded-[8px] bg-[#efe8ff] p-4 text-sm font-bold leading-6 text-[#6a5a82]">
+                          선택됨: {selectedSubunit}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="absolute inset-x-0 bottom-6 z-30 flex flex-col items-center px-5 text-center">
                 <div className="flex min-h-[78px] w-full max-w-xl items-center justify-center rounded-[40px] bg-white px-6 py-4 shadow-[0_6px_0_#d8cff0]">
                   {expressionTokens.length > 0 ? (
