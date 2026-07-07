@@ -3,17 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent } from "react";
 
-type Tile = {
-  value: string;
-  className: string;
-};
-
 type Creature = {
   value: number;
   label: string;
   color: string;
   dots: number;
   position: string;
+  backgroundPosition: string;
   radius: string;
   tilt: string;
 };
@@ -23,6 +19,11 @@ type MathKey = {
   color: string;
   shadow: string;
   text: string;
+};
+
+type ExpressionDisplayToken = {
+  value: string;
+  kind: "digit" | "operator" | "separator";
 };
 
 const numberKeys: MathKey[] = [
@@ -47,17 +48,30 @@ const operatorKeys: MathKey[] = [
   { value: ")", color: "bg-[#22bfd4]", shadow: "shadow-[0_6px_0_#147d8d]", text: "text-white" },
 ];
 
+const expressionTileStyles = [...numberKeys, ...operatorKeys].reduce<Record<string, MathKey>>(
+  (styles, key) => {
+    styles[key.value] = key;
+    return styles;
+  },
+  {},
+);
+
+const operatorValues = new Set(operatorKeys.map((key) => key.value));
+
+const expressionTileRadii = [
+  "58% 42% 52% 48% / 45% 58% 42% 55%",
+  "46% 54% 44% 56% / 57% 43% 58% 42%",
+  "54% 46% 60% 40% / 48% 58% 42% 52%",
+  "42% 58% 50% 50% / 52% 46% 54% 48%",
+  "56% 44% 46% 54% / 42% 54% 46% 58%",
+  "48% 52% 57% 43% / 55% 45% 53% 47%",
+];
+
+const expressionTileRotations = ["-5deg", "3deg", "-2deg", "4deg", "-3deg", "2deg"];
+
 const buttonRepeatDelay = 360;
 const inputRepeatInterval = 120;
 const deleteRepeatInterval = 85;
-
-const floatingTiles: Tile[] = [
-  { value: "8", className: "left-[8%] top-[16%] rotate-[-10deg] bg-[#ff7a7a]" },
-  { value: "3", className: "left-[23%] top-[9%] rotate-[7deg] bg-[#f4c441]" },
-  { value: "12", className: "right-[26%] top-[12%] rotate-[-5deg] bg-[#44b86a]" },
-  { value: "5", className: "right-[9%] top-[26%] rotate-[9deg] bg-[#4f8df7]" },
-  { value: "2", className: "left-[14%] bottom-[30%] rotate-[8deg] bg-[#d95fd8]" },
-];
 
 const creatures: Creature[] = [
   {
@@ -66,6 +80,7 @@ const creatures: Creature[] = [
     color: "bg-[#ff5c5d]",
     dots: 2,
     position: "left-[11%] top-[18%]",
+    backgroundPosition: "left-[3%] top-[18%]",
     radius: "58% 42% 52% 48% / 44% 58% 42% 56%",
     tilt: "-3deg",
   },
@@ -75,6 +90,7 @@ const creatures: Creature[] = [
     color: "bg-[#d8ad00]",
     dots: 3,
     position: "left-[37%] top-[10%]",
+    backgroundPosition: "left-[31%] top-[3%]",
     radius: "46% 54% 44% 56% / 56% 42% 58% 44%",
     tilt: "2deg",
   },
@@ -84,6 +100,7 @@ const creatures: Creature[] = [
     color: "bg-[#39b567]",
     dots: 5,
     position: "right-[18%] top-[19%]",
+    backgroundPosition: "right-[4%] top-[12%]",
     radius: "54% 46% 60% 40% / 48% 58% 42% 52%",
     tilt: "-2deg",
   },
@@ -93,6 +110,7 @@ const creatures: Creature[] = [
     color: "bg-[#4f8df7]",
     dots: 9,
     position: "left-[26%] bottom-[16%]",
+    backgroundPosition: "left-[5%] bottom-[8%]",
     radius: "42% 58% 50% 50% / 52% 46% 54% 48%",
     tilt: "3deg",
   },
@@ -102,6 +120,7 @@ const creatures: Creature[] = [
     color: "bg-[#d65fd2]",
     dots: 11,
     position: "right-[14%] bottom-[12%]",
+    backgroundPosition: "right-[22%] bottom-[5%]",
     radius: "56% 44% 46% 54% / 42% 54% 46% 58%",
     tilt: "-1deg",
   },
@@ -323,8 +342,38 @@ function formatNumberText(value: string) {
   return decimal === undefined ? formattedInteger : `${formattedInteger}.${decimal}`;
 }
 
-function formatExpressionText(expression: string) {
-  return expression.replace(/\d+(?:\.\d+)?/g, formatNumberText);
+function getExpressionDisplayTokens(expression: string): ExpressionDisplayToken[] {
+  const tokens: ExpressionDisplayToken[] = [];
+  let index = 0;
+
+  while (index < expression.length) {
+    const current = expression[index];
+
+    if (/\d/.test(current)) {
+      const start = index;
+
+      while (/\d/.test(expression[index] ?? "")) {
+        index += 1;
+      }
+
+      for (const value of formatNumberText(expression.slice(start, index))) {
+        tokens.push({
+          value,
+          kind: value === "," ? "separator" : "digit",
+        });
+      }
+
+      continue;
+    }
+
+    tokens.push({
+      value: current,
+      kind: operatorValues.has(current) ? "operator" : "separator",
+    });
+    index += 1;
+  }
+
+  return tokens;
 }
 
 function getExpressionPreview(expression: string) {
@@ -351,7 +400,7 @@ export default function Home() {
   const repeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const preview = useMemo(() => getExpressionPreview(expression), [expression]);
-  const formattedExpression = useMemo(() => formatExpressionText(expression), [expression]);
+  const expressionTokens = useMemo(() => getExpressionDisplayTokens(expression), [expression]);
 
   function addToken(token: string) {
     setExpression((current) => `${current}${token}`);
@@ -465,14 +514,34 @@ export default function Home() {
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#fff7ea] text-[#342250]">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <span className="absolute left-[5%] top-[6%] h-5 w-5 rounded-full bg-[#ff9ea0]" />
         <span className="absolute right-[7%] top-[12%] h-4 w-4 rounded-full bg-[#80b8ff]" />
         <span className="absolute left-[2%] top-[22%] h-3 w-3 rounded-full bg-[#e873df]" />
         <span className="absolute right-[17%] bottom-[10%] h-4 w-4 rounded-full bg-[#54c978]" />
+        {creatures.map((creature) => (
+          <div
+            key={`background-${creature.value}`}
+            className={`absolute opacity-20 ${creature.backgroundPosition}`}
+          >
+            <div
+              className={`relative flex h-28 w-28 items-center justify-center shadow-[inset_0_-10px_0_rgba(61,40,95,0.1)] sm:h-36 sm:w-36 ${creature.color}`}
+              style={{
+                borderRadius: creature.radius,
+                transform: `rotate(${creature.tilt})`,
+              }}
+            >
+              <span className="absolute left-7 top-6 h-5 w-8 rounded-full bg-white/30 blur-[1px]" />
+              <span className="absolute left-9 top-10 h-3 w-3 rounded-full bg-[#3d285f]" />
+              <span className="absolute right-9 top-10 h-3 w-3 rounded-full bg-[#3d285f]" />
+              <span className="absolute top-[62px] h-4 w-8 rounded-b-full border-b-4 border-[#3d285f]" />
+              <span className="pt-12 text-4xl font-black text-white/75">{creature.value}</span>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-5 py-5 sm:px-8 lg:px-10">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-5 py-5 sm:px-8 lg:px-10">
         <section className="grid flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="relative flex min-h-[620px] flex-col overflow-hidden rounded-[32px] bg-[#e9e0ff] p-5 shadow-[0_12px_0_#d8cff0] sm:p-7 lg:min-h-[650px]">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -501,57 +570,57 @@ export default function Home() {
             </p>
 
             <div className="relative mt-6 flex-1 overflow-hidden rounded-[28px] border-4 border-white/80 bg-[#f7f4ff]">
-              <div className="absolute inset-x-8 top-10 h-5 rounded-full bg-[#dcd4f3]" />
-              {floatingTiles.map((tile) => (
-                <div
-                  key={`${tile.value}-${tile.className}`}
-                  className={`absolute flex h-14 w-14 items-center justify-center rounded-[18px] text-2xl font-black text-white shadow-[0_6px_0_rgba(52,34,80,0.14)] ${tile.className}`}
-                >
-                  {tile.value}
-                </div>
-              ))}
+              <div className="absolute inset-x-8 top-10 z-10 h-5 rounded-full bg-[#dcd4f3]" />
+              <div className="absolute inset-x-0 bottom-6 z-30 flex flex-col items-center px-5 text-center">
+                <div className="flex min-h-[78px] w-full max-w-xl items-center justify-center rounded-[40px] bg-white px-6 py-4 shadow-[0_6px_0_#d8cff0]">
+                  {expressionTokens.length > 0 ? (
+                    <div className="flex max-w-full flex-wrap items-center justify-center gap-2">
+                      {expressionTokens.map((token, index) => {
+                        const tile = expressionTileStyles[token.value] ?? expressionTileStyles["0"];
+                        const radius = expressionTileRadii[index % expressionTileRadii.length];
+                        const rotation = expressionTileRotations[index % expressionTileRotations.length];
 
-              {creatures.map((creature) => (
-                <div
-                  key={creature.value}
-                  className={`absolute flex w-32 flex-col items-center gap-2 rounded-[8px] bg-white p-3 shadow-[0_6px_0_#ded9ec] sm:w-36 ${creature.position}`}
-                >
-                  <div
-                    className={`relative flex h-[84px] w-[82px] items-center justify-center shadow-[inset_0_-8px_0_rgba(61,40,95,0.1)] ${creature.color}`}
-                    style={{
-                      borderRadius: creature.radius,
-                      transform: `rotate(${creature.tilt})`,
-                    }}
-                  >
-                    <span className="absolute left-4 top-3 h-4 w-5 rounded-full bg-white/25 blur-[1px]" />
-                    <span className="absolute left-5 top-5 h-2.5 w-2.5 rounded-full bg-[#3d285f]" />
-                    <span className="absolute right-5 top-5 h-2.5 w-2.5 rounded-full bg-[#3d285f]" />
-                    <span className="absolute top-10 h-3 w-6 rounded-b-full border-b-4 border-[#3d285f]" />
-                    <span className="pt-7 text-2xl font-black text-white">{creature.value}</span>
-                  </div>
-                  <div className="flex h-3 w-full justify-center gap-1">
-                    {Array.from({ length: Math.min(creature.dots, 11) }).map((_, index) => (
-                      <span
-                        key={`${creature.value}-${index}`}
-                        className={`h-2.5 w-2.5 rounded-full ${creature.color}`}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex h-8 items-center justify-center rounded-full bg-[#f7f4ee] px-3 text-xs font-black text-[#6f4ab4]">
-                    {creature.label}
-                  </div>
-                </div>
-              ))}
+                        if (token.kind === "separator") {
+                          return (
+                            <span
+                              key={`${token.value}-${index}`}
+                              className="flex h-12 min-w-3 items-end justify-center pb-1 text-2xl font-black leading-none text-[#9f9278]"
+                            >
+                              {token.value}
+                            </span>
+                          );
+                        }
 
-              <div className="absolute inset-x-0 bottom-6 flex flex-col items-center px-5 text-center">
-                <div className="flex min-h-[64px] w-full max-w-xl items-center justify-center rounded-full bg-white px-8 py-3 shadow-[0_6px_0_#d8cff0]">
-                  <div
-                    className={`break-words text-2xl font-black leading-tight sm:text-3xl ${
-                      formattedExpression ? "text-[#3d285f]" : "text-[#9f9278]"
-                    }`}
-                  >
-                    {formattedExpression || "식을 입력해보세요"}
-                  </div>
+                        if (token.kind === "operator") {
+                          return (
+                            <span
+                              key={`${token.value}-${index}`}
+                              className="flex h-12 min-w-8 items-center justify-center px-1 text-3xl font-black leading-none text-[#4a3470]"
+                            >
+                              {token.value}
+                            </span>
+                          );
+                        }
+
+                        return (
+                          <span
+                            key={`${token.value}-${index}`}
+                            className={`flex h-12 min-w-12 items-center justify-center px-3 text-2xl font-black shadow-[0_5px_0_rgba(61,40,95,0.16)] ${tile.color} ${tile.text}`}
+                            style={{
+                              borderRadius: radius,
+                              transform: `rotate(${rotation})`,
+                            }}
+                          >
+                            {token.value}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-2xl font-black leading-tight text-[#9f9278] sm:text-3xl">
+                      식을 입력해보세요
+                    </div>
+                  )}
                 </div>
                 <div className="mt-3 text-sm font-bold text-[#7b7285]">{preview}</div>
               </div>
