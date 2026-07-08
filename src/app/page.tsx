@@ -45,6 +45,36 @@ type CurriculumGrade = {
   semesters: CurriculumSemester[];
 };
 
+type PrimeCompositeExample = {
+  value: number;
+  kind: "소수" | "합성수" | "둘 다 아님";
+  reason: string;
+  color: string;
+};
+
+type StandaloneSection = "arithmetic";
+
+type ArithmeticRelation =
+  | {
+      kind: "empty";
+    }
+  | {
+      kind: "unsupported";
+      sourceExpression: string;
+      message: string;
+    }
+  | {
+      kind: "addition" | "multiplication";
+      sourceExpression: string;
+      addend: bigint;
+      groups: bigint;
+      total: bigint;
+      additionExpression: string;
+      multiplicationExpression: string;
+      visibleTerms: string[];
+      hiddenTermCount: bigint;
+    };
+
 const curriculum: CurriculumGrade[] = [
   {
     id: "middle1",
@@ -329,6 +359,15 @@ const creatures: Creature[] = [
   },
 ];
 
+const primeCompositeExamples: PrimeCompositeExample[] = [
+  { value: 1, kind: "둘 다 아님", reason: "약수가 1개", color: "bg-[#9f70eb]" },
+  { value: 2, kind: "소수", reason: "1, 2", color: "bg-[#ff5963]" },
+  { value: 4, kind: "합성수", reason: "1, 2, 4", color: "bg-[#39b567]" },
+  { value: 7, kind: "소수", reason: "1, 7", color: "bg-[#4f8df7]" },
+  { value: 9, kind: "합성수", reason: "1, 3, 9", color: "bg-[#ffb23f]" },
+  { value: 11, kind: "소수", reason: "1, 11", color: "bg-[#d65fd2]" },
+];
+
 function normalizeExpression(expression: string) {
   return expression.replaceAll("×", "*").replaceAll("÷", "/");
 }
@@ -597,8 +636,311 @@ function getExpressionPreview(expression: string) {
   }
 }
 
+function getKeyboardExpressionToken(key: string, code: string) {
+  if (/^\d$/.test(key)) {
+    return key;
+  }
+
+  const keyNumpadDigit = key.match(/^Numpad(\d)$/);
+  const codeNumpadDigit = code.match(/^Numpad(\d)$/);
+
+  if (keyNumpadDigit) {
+    return keyNumpadDigit[1];
+  }
+
+  if (codeNumpadDigit) {
+    return codeNumpadDigit[1];
+  }
+
+  if (key === "+" || key === "-" || key === "(" || key === ")") {
+    return key;
+  }
+
+  const operatorByKeyOrCode: Record<string, string> = {
+    Add: "+",
+    Divide: "÷",
+    Multiply: "×",
+    NumpadAdd: "+",
+    NumpadDivide: "÷",
+    NumpadMultiply: "×",
+    NumpadSubtract: "-",
+    Subtract: "-",
+  };
+
+  const operatorToken = operatorByKeyOrCode[key] ?? operatorByKeyOrCode[code];
+
+  if (operatorToken) {
+    return operatorToken;
+  }
+
+  if (key === "*" || key === "x" || key === "X" || key === "×") {
+    return "×";
+  }
+
+  if (key === "/" || key === "÷") {
+    return "÷";
+  }
+
+  return null;
+}
+
+function isEditableTarget(target: EventTarget | null) {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  );
+}
+
+function PrimeCompositeSection() {
+  return (
+    <section className="rounded-[8px] bg-white p-5 shadow-[0_6px_0_#ded9ec]">
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-[8px] bg-[#f7f4ff] p-4">
+          <p className="text-sm font-extrabold text-[#7c5cd6]">소수</p>
+          <p className="mt-2 text-lg font-black leading-7 text-[#3d285f]">
+            약수가 1과 자기 자신뿐인 수
+          </p>
+          <p className="mt-3 text-sm font-bold text-[#6a5a82]">2, 3, 5, 7, 11</p>
+        </div>
+        <div className="rounded-[8px] bg-[#fff7ea] p-4">
+          <p className="text-sm font-extrabold text-[#d57920]">합성수</p>
+          <p className="mt-2 text-lg font-black leading-7 text-[#3d285f]">
+            약수가 3개 이상인 수
+          </p>
+          <p className="mt-3 text-sm font-bold text-[#6a5a82]">4, 6, 8, 9, 10</p>
+        </div>
+        <div className="rounded-[8px] bg-[#efe8ff] p-4">
+          <p className="text-sm font-extrabold text-[#7c5cd6]">1</p>
+          <p className="mt-2 text-lg font-black leading-7 text-[#3d285f]">
+            소수도 합성수도 아니에요
+          </p>
+          <p className="mt-3 text-sm font-bold text-[#6a5a82]">약수가 1 하나뿐이에요</p>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-[8px] bg-[#f7f4ff] p-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {primeCompositeExamples.map((example, index) => (
+            <div key={example.value} className="rounded-[8px] bg-white p-4 shadow-[0_4px_0_#ded9ec]">
+              <div className="flex items-center gap-3">
+                <span
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center text-xl font-black text-white ${example.color}`}
+                  style={{
+                    borderRadius: expressionTileRadii[index % expressionTileRadii.length],
+                    transform: `rotate(${expressionTileRotations[index % expressionTileRotations.length]})`,
+                  }}
+                >
+                  {example.value}
+                </span>
+                <span>
+                  <span className="block text-lg font-black text-[#3d285f]">{example.kind}</span>
+                  <span className="block text-sm font-bold text-[#6a5a82]">{example.reason}</span>
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function formatBigIntText(value: bigint) {
+  return formatNumberText(value.toString());
+}
+
+function getVisibleRepeatedTerms(addend: bigint, groups: bigint) {
+  const visibleTermCount = Number(groups > 12n ? 12n : groups);
+
+  return Array.from({ length: visibleTermCount }, () => formatBigIntText(addend));
+}
+
+function getRepeatedAdditionExpression(addend: bigint, groups: bigint) {
+  const visibleTerms = getVisibleRepeatedTerms(addend, groups);
+
+  if (groups > 12n) {
+    return `${visibleTerms.join(" + ")} + ... + ${formatBigIntText(addend)}`;
+  }
+
+  return visibleTerms.join(" + ");
+}
+
+function getUnitExpression(value: bigint) {
+  if (value <= 0n) {
+    return "0";
+  }
+
+  if (value <= 16n) {
+    return `${Array.from({ length: Number(value) }, () => "1").join(" + ")} = ${formatBigIntText(value)}`;
+  }
+
+  const visibleOnes = Array.from({ length: 8 }, () => "1").join(" + ");
+
+  return `${visibleOnes} + ... + ${visibleOnes} = ${formatBigIntText(value)}`;
+}
+
+function getVisibleUnitSticks(value: bigint) {
+  if (value <= 0n) {
+    return [];
+  }
+
+  const visibleStickCount = Number(value > 20n ? 20n : value);
+
+  return Array.from({ length: visibleStickCount }, (_, index) => index);
+}
+
+function createArithmeticRelation(
+  sourceExpression: string,
+  kind: "addition" | "multiplication",
+  addend: bigint,
+  groups: bigint,
+  multiplicationExpression = `${formatBigIntText(addend)} × ${formatBigIntText(groups)}`,
+): ArithmeticRelation {
+  const total = addend * groups;
+
+  return {
+    kind,
+    sourceExpression,
+    addend,
+    groups,
+    total,
+    additionExpression: getRepeatedAdditionExpression(addend, groups),
+    multiplicationExpression,
+    visibleTerms: getVisibleRepeatedTerms(addend, groups),
+    hiddenTermCount: groups > 12n ? groups - 12n : 0n,
+  };
+}
+
+function parsePositiveInteger(value: string) {
+  if (!/^\d+$/.test(value)) {
+    return null;
+  }
+
+  return BigInt(value);
+}
+
+function getArithmeticRelation(expression: string): ArithmeticRelation {
+  const compactExpression = normalizeExpression(expression).replace(/\s/g, "");
+
+  if (!compactExpression) {
+    return {
+      kind: "empty",
+    };
+  }
+
+  const additionTerms = compactExpression.split("+");
+
+  if (additionTerms.length > 1 && additionTerms.every((term) => /^\d+$/.test(term))) {
+    const values = additionTerms.map((term) => BigInt(term));
+    const addend = values[0];
+    const isRepeatedAddition = values.every((value) => value === addend);
+
+    if (isRepeatedAddition) {
+      return createArithmeticRelation(expression, "addition", addend, BigInt(values.length));
+    }
+
+    return {
+      kind: "unsupported",
+      sourceExpression: expression,
+      message: "같은 수가 반복되는 더하기 식만 곱하기로 묶을 수 있어요.",
+    };
+  }
+
+  const multiplicationMatch = compactExpression.match(/^(\d+)\*(\d+)$/);
+
+  if (multiplicationMatch) {
+    const leftValue = parsePositiveInteger(multiplicationMatch[1]);
+    const rightValue = parsePositiveInteger(multiplicationMatch[2]);
+
+    if (leftValue !== null && rightValue !== null && leftValue > 0n && rightValue > 0n) {
+      const addend = leftValue >= rightValue ? leftValue : rightValue;
+      const groups = leftValue >= rightValue ? rightValue : leftValue;
+
+      return createArithmeticRelation(
+        expression,
+        "multiplication",
+        addend,
+        groups,
+        `${formatBigIntText(leftValue)} × ${formatBigIntText(rightValue)}`,
+      );
+    }
+  }
+
+  return {
+    kind: "unsupported",
+    sourceExpression: expression,
+    message: "더하기와 곱하기의 관계는 반복 덧셈 또는 두 수의 곱셈으로 볼 수 있어요.",
+  };
+}
+
+function ArithmeticOperationsSection({ relation }: { relation: ArithmeticRelation }) {
+  if (relation.kind === "empty") {
+    return (
+      <section className="rounded-[8px] bg-white p-8 shadow-[0_6px_0_#ded9ec]">
+        <div className="flex min-h-64 items-center justify-center rounded-[8px] bg-[#f7f4ff] px-6 text-center text-4xl font-black leading-tight text-[#9f9278]">
+          식 입력 후 사용하기
+        </div>
+      </section>
+    );
+  }
+
+  if (relation.kind === "unsupported") {
+    return (
+      <section className="rounded-[8px] bg-white p-8 shadow-[0_6px_0_#ded9ec]">
+        <div className="flex min-h-64 flex-col items-center justify-center gap-5 rounded-[8px] bg-[#f7f4ff] px-6 text-center">
+          <p className="break-words text-4xl font-black leading-tight text-[#3d285f]">
+            {relation.sourceExpression}
+          </p>
+          <p className="text-2xl font-black leading-tight text-[#9f9278]">{relation.message}</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-[8px] bg-white p-8 shadow-[0_6px_0_#ded9ec]">
+      <div className="flex min-h-64 flex-col items-center justify-center gap-6 rounded-[8px] bg-[#f7f4ff] px-6 py-8 text-center">
+        <div className="flex min-h-12 max-w-3xl flex-wrap items-end justify-center gap-x-2 gap-y-3">
+          {getVisibleUnitSticks(relation.total).map((stick, index, sticks) => (
+            <span key={stick} className="flex items-end gap-2">
+              <span className="relative h-9 w-3">
+                <span className="absolute bottom-0 left-1/2 h-9 w-1 -translate-x-1/2 rotate-[-10deg] rounded-full bg-[#8b5a2b]" />
+                <span className="absolute left-1/2 top-2 h-3 w-1 rotate-[38deg] rounded-full bg-[#a06a35]" />
+              </span>
+              {relation.total > 20n && index === Math.floor(sticks.length / 2) - 1 && (
+                <span className="px-2 pb-1 text-3xl font-black leading-none text-[#7c5cd6]">...</span>
+              )}
+            </span>
+          ))}
+        </div>
+        {relation.addend !== 1n && (
+          <p className="break-words text-3xl font-black leading-tight text-[#6f4ab4]">
+            {getUnitExpression(relation.total)}
+          </p>
+        )}
+        <div className="h-px w-full max-w-2xl bg-white" />
+        <p className="break-words text-5xl font-black leading-tight text-[#3d285f]">
+          {relation.additionExpression}
+        </p>
+        <p className="break-words text-5xl font-black leading-tight text-[#3d285f]">
+          {relation.multiplicationExpression}
+        </p>
+        <p className="break-words text-5xl font-black leading-tight text-[#d57920]">
+          = {formatBigIntText(relation.total)}
+        </p>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const [expression, setExpression] = useState("");
+  const [appliedArithmeticExpression, setAppliedArithmeticExpression] = useState("");
+  const [selectedStandaloneSection, setSelectedStandaloneSection] = useState<StandaloneSection | null>(
+    null,
+  );
   const [selectedGradeId, setSelectedGradeId] = useState<CurriculumGrade["id"] | null>(null);
   const [selectedSemesterId, setSelectedSemesterId] = useState<CurriculumSemester["id"] | null>(
     null,
@@ -610,23 +952,44 @@ export default function Home() {
 
   const preview = useMemo(() => getExpressionPreview(expression), [expression]);
   const expressionTokens = useMemo(() => getExpressionDisplayTokens(expression), [expression]);
+  const arithmeticRelation = useMemo(
+    () => getArithmeticRelation(appliedArithmeticExpression),
+    [appliedArithmeticExpression],
+  );
   const selectedGrade = curriculum.find((grade) => grade.id === selectedGradeId) ?? null;
   const selectedSemester =
     selectedGrade?.semesters.find((semester) => semester.id === selectedSemesterId) ?? null;
   const selectedUnit = selectedSemester?.units.find((unit) => unit.id === selectedUnitId) ?? null;
-  const curriculumStepTitle = selectedUnit
-    ? "소단원 선택"
-    : selectedSemester
-      ? "대단원 선택"
-      : selectedGrade
-        ? "학기 선택"
-        : "학년 선택";
-  const curriculumPath = [selectedGrade?.label, selectedSemester?.label, selectedUnit?.title, selectedSubunit]
-    .filter(Boolean)
-    .join(" / ");
+  const curriculumStepTitle = selectedStandaloneSection
+    ? "사칙연산"
+    : selectedSubunit
+      ? selectedSubunit
+      : selectedUnit
+        ? "소단원 선택"
+        : selectedSemester
+          ? "대단원 선택"
+          : selectedGrade
+            ? "학기 선택"
+            : "학년 선택";
+  const curriculumPath = selectedStandaloneSection
+    ? "사칙연산"
+    : [selectedGrade?.label, selectedSemester?.label, selectedUnit?.title, selectedSubunit]
+        .filter(Boolean)
+        .join(" / ");
+  const canGoBackCurriculumStep = selectedStandaloneSection !== null || selectedGrade !== null;
+  const canApplyExpressionToSection = selectedStandaloneSection === "arithmetic" && expression.length > 0;
 
   function selectGrade(gradeId: CurriculumGrade["id"]) {
+    setSelectedStandaloneSection(null);
     setSelectedGradeId(gradeId);
+    setSelectedSemesterId(null);
+    setSelectedUnitId(null);
+    setSelectedSubunit(null);
+  }
+
+  function selectStandaloneSection(section: StandaloneSection) {
+    setSelectedStandaloneSection(section);
+    setSelectedGradeId(null);
     setSelectedSemesterId(null);
     setSelectedUnitId(null);
     setSelectedSubunit(null);
@@ -644,6 +1007,16 @@ export default function Home() {
   }
 
   function goBackCurriculumStep() {
+    if (selectedStandaloneSection) {
+      setSelectedStandaloneSection(null);
+      return;
+    }
+
+    if (selectedSubunit) {
+      setSelectedSubunit(null);
+      return;
+    }
+
     if (selectedUnitId) {
       setSelectedUnitId(null);
       setSelectedSubunit(null);
@@ -729,7 +1102,34 @@ export default function Home() {
     setExpression("");
   }
 
+  function applyExpressionToCurrentSection() {
+    if (selectedStandaloneSection !== "arithmetic" || !expression) {
+      return;
+    }
+
+    setAppliedArithmeticExpression(expression);
+  }
+
   useEffect(() => {
+    function handleGlobalKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.altKey || event.ctrlKey || event.metaKey || isEditableTarget(event.target)) {
+        return;
+      }
+
+      const token = getKeyboardExpressionToken(event.key, event.code);
+
+      if (token) {
+        event.preventDefault();
+        setExpression((current) => `${current}${token}`);
+        return;
+      }
+
+      if (event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+        setExpression((current) => current.slice(0, -1));
+      }
+    }
+
     function stopActiveRepeat() {
       if (repeatDelayRef.current) {
         clearTimeout(repeatDelayRef.current);
@@ -754,6 +1154,7 @@ export default function Home() {
     window.addEventListener("touchend", stopActiveRepeat);
     window.addEventListener("touchcancel", stopActiveRepeat);
     window.addEventListener("blur", stopActiveRepeat);
+    document.addEventListener("keydown", handleGlobalKeyDown, true);
 
     return () => {
       document.removeEventListener("pointerup", stopActiveRepeat, true);
@@ -768,6 +1169,7 @@ export default function Home() {
       window.removeEventListener("touchend", stopActiveRepeat);
       window.removeEventListener("touchcancel", stopActiveRepeat);
       window.removeEventListener("blur", stopActiveRepeat);
+      document.removeEventListener("keydown", handleGlobalKeyDown, true);
       stopActiveRepeat();
     };
   }, []);
@@ -819,41 +1221,48 @@ export default function Home() {
                   </h2>
                 </div>
               </div>
-              <div className="flex min-h-12 items-center justify-center rounded-full bg-white px-5 text-sm font-black text-[#4f8df7] shadow-[0_5px_0_#d8cff0]">
-                {curriculumPath || "중학교 수학"}
+              <div className="flex w-full min-w-0 items-center justify-end gap-3 sm:w-auto">
+                <div className="flex min-h-12 min-w-0 max-w-full items-center justify-center rounded-full bg-white px-5 text-sm font-black text-[#4f8df7] shadow-[0_5px_0_#d8cff0]">
+                  <span className="truncate">{curriculumPath || "중학교 수학"}</span>
+                </div>
+                {canGoBackCurriculumStep && (
+                  <button
+                    type="button"
+                    onClick={goBackCurriculumStep}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-black text-[#7c5cd6] shadow-[0_5px_0_#d8cff0] transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0"
+                    aria-label="이전 단계"
+                    title="이전 단계"
+                  >
+                    ←
+                  </button>
+                )}
               </div>
             </div>
-
-            <p className="mt-5 max-w-3xl text-base font-bold leading-7 text-[#4f4664] sm:text-lg">
-              학년, 학기, 대단원, 소단원을 차례대로 선택해 오늘 탐험할 수학 개념을
-              정해보세요. 오른쪽 버튼 입력은 언제든 사용할 수 있어요.
-            </p>
 
             <div className="relative mt-6 flex-1 overflow-hidden rounded-[28px] border-4 border-white/80 bg-[#f7f4ff]">
               <div className="absolute inset-x-5 bottom-32 top-8 z-20 overflow-y-auto pr-1">
                 <div className="mx-auto max-w-4xl">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-extrabold text-[#7c5cd6]">{curriculumStepTitle}</p>
-                      <h3 className="text-2xl font-black text-[#3d285f]">
-                        {curriculumPath || "학년을 먼저 골라주세요"}
-                      </h3>
-                    </div>
-                    {selectedGrade && (
+                  {!selectedGrade && !selectedStandaloneSection && (
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                       <button
                         type="button"
-                        onClick={goBackCurriculumStep}
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-black text-[#7c5cd6] shadow-[0_5px_0_#d8cff0] transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0"
-                        aria-label="이전 단계"
-                        title="이전 단계"
+                        onClick={() => selectStandaloneSection("arithmetic")}
+                        className="min-h-36 rounded-[8px] bg-white p-5 text-left shadow-[0_6px_0_#ded9ec] transition hover:-translate-y-0.5 hover:bg-[#fff7ea] active:translate-y-0"
                       >
-                        ←
+                        <div
+                          className="mb-4 flex h-14 w-14 items-center justify-center bg-[#ffb23f] text-2xl font-black text-[#3d285f]"
+                          style={{
+                            borderRadius: expressionTileRadii[3],
+                            transform: `rotate(${expressionTileRotations[3]})`,
+                          }}
+                        >
+                          +×
+                        </div>
+                        <div className="text-2xl font-black text-[#3d285f]">사칙연산</div>
+                        <p className="mt-2 text-sm font-bold leading-6 text-[#6a5a82]">
+                          더하기와 곱하기의 관계
+                        </p>
                       </button>
-                    )}
-                  </div>
-
-                  {!selectedGrade && (
-                    <div className="grid gap-3 sm:grid-cols-3">
                       {curriculum.map((grade, index) => (
                         <button
                           key={grade.id}
@@ -879,6 +1288,10 @@ export default function Home() {
                         </button>
                       ))}
                     </div>
+                  )}
+
+                  {selectedStandaloneSection === "arithmetic" && (
+                    <ArithmeticOperationsSection relation={arithmeticRelation} />
                   )}
 
                   {selectedGrade && !selectedSemester && (
@@ -937,7 +1350,9 @@ export default function Home() {
                     </div>
                   )}
 
-                  {selectedUnit && (
+                  {selectedUnit && selectedSubunit === "소수와 합성수" && <PrimeCompositeSection />}
+
+                  {selectedUnit && selectedSubunit !== "소수와 합성수" && (
                     <div className="rounded-[8px] bg-white p-5 shadow-[0_6px_0_#ded9ec]">
                       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
@@ -975,57 +1390,69 @@ export default function Home() {
                 </div>
               </div>
               <div className="absolute inset-x-0 bottom-6 z-30 flex flex-col items-center px-5 text-center">
-                <div className="flex min-h-[78px] w-full max-w-xl items-center justify-center rounded-[40px] bg-white px-6 py-4 shadow-[0_6px_0_#d8cff0]">
-                  {expressionTokens.length > 0 ? (
-                    <div className="flex max-w-full flex-wrap items-center justify-center gap-2">
-                      {expressionTokens.map((token, index) => {
-                        const tile = expressionTileStyles[token.value] ?? expressionTileStyles["0"];
-                        const radius = expressionTileRadii[index % expressionTileRadii.length];
-                        const rotation = expressionTileRotations[index % expressionTileRotations.length];
+                <div className="flex w-full max-w-3xl items-stretch gap-3">
+                  <div className="flex h-[78px] min-w-0 flex-1 items-center justify-end overflow-hidden rounded-[40px] bg-white px-6 py-4 shadow-[0_6px_0_#d8cff0]">
+                    {expressionTokens.length > 0 ? (
+                      <div className="flex max-w-full flex-nowrap items-center justify-end gap-2 overflow-hidden">
+                        {expressionTokens.map((token, index) => {
+                          const tile = expressionTileStyles[token.value] ?? expressionTileStyles["0"];
+                          const radius = expressionTileRadii[index % expressionTileRadii.length];
+                          const rotation = expressionTileRotations[index % expressionTileRotations.length];
 
-                        if (token.kind === "separator") {
+                          if (token.kind === "separator") {
+                            return (
+                              <span
+                                key={`${token.value}-${index}`}
+                                className="flex h-12 min-w-3 shrink-0 items-end justify-center pb-1 text-2xl font-black leading-none text-[#9f9278]"
+                              >
+                                {token.value}
+                              </span>
+                            );
+                          }
+
+                          if (token.kind === "operator") {
+                            return (
+                              <span
+                                key={`${token.value}-${index}`}
+                                className="flex h-12 min-w-8 shrink-0 items-center justify-center px-1 text-3xl font-black leading-none text-[#4a3470]"
+                              >
+                                {token.value}
+                              </span>
+                            );
+                          }
+
                           return (
                             <span
                               key={`${token.value}-${index}`}
-                              className="flex h-12 min-w-3 items-end justify-center pb-1 text-2xl font-black leading-none text-[#9f9278]"
+                              className={`flex h-12 min-w-12 shrink-0 items-center justify-center px-3 text-2xl font-black shadow-[0_5px_0_rgba(61,40,95,0.16)] ${tile.color} ${tile.text}`}
+                              style={{
+                                borderRadius: radius,
+                                transform: `rotate(${rotation})`,
+                              }}
                             >
                               {token.value}
                             </span>
                           );
-                        }
-
-                        if (token.kind === "operator") {
-                          return (
-                            <span
-                              key={`${token.value}-${index}`}
-                              className="flex h-12 min-w-8 items-center justify-center px-1 text-3xl font-black leading-none text-[#4a3470]"
-                            >
-                              {token.value}
-                            </span>
-                          );
-                        }
-
-                        return (
-                          <span
-                            key={`${token.value}-${index}`}
-                            className={`flex h-12 min-w-12 items-center justify-center px-3 text-2xl font-black shadow-[0_5px_0_rgba(61,40,95,0.16)] ${tile.color} ${tile.text}`}
-                            style={{
-                              borderRadius: radius,
-                              transform: `rotate(${rotation})`,
-                            }}
-                          >
-                            {token.value}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-2xl font-black leading-tight text-[#9f9278] sm:text-3xl">
-                      식을 입력해보세요
-                    </div>
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-2xl font-black leading-tight text-[#9f9278] sm:text-3xl">
+                        식을 입력해보세요
+                      </div>
+                    )}
+                  </div>
+                  {selectedStandaloneSection === "arithmetic" && (
+                    <button
+                      type="button"
+                      onClick={applyExpressionToCurrentSection}
+                      disabled={!canApplyExpressionToSection}
+                      className="h-[78px] w-28 shrink-0 rounded-[28px] bg-[#ffb23f] text-base font-black text-[#3d285f] shadow-[0_6px_0_#b97718] transition enabled:hover:-translate-y-0.5 enabled:hover:brightness-105 enabled:active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      사용하기
+                    </button>
                   )}
                 </div>
-                <div className="mt-3 text-sm font-bold text-[#7b7285]">{preview}</div>
+                <div className="mt-3 max-w-full truncate text-sm font-bold text-[#7b7285]">{preview}</div>
               </div>
             </div>
           </div>
