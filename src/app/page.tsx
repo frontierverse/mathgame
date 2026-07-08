@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent, PointerEvent } from "react";
+import type { KeyboardEvent, PointerEvent, ReactNode } from "react";
 
 type Creature = {
   value: number;
@@ -45,14 +45,22 @@ type CurriculumGrade = {
   semesters: CurriculumSemester[];
 };
 
-type PrimeCompositeExample = {
-  value: number;
-  kind: "소수" | "합성수" | "둘 다 아님";
-  reason: string;
-  color: string;
+type PrimeCompositeQuizChoice = {
+  label: string;
+  isCorrect: boolean;
+};
+
+type PrimeCompositeQuiz = {
+  id: string;
+  question: string;
+  hint: string;
+  explanation: string;
+  choices: PrimeCompositeQuizChoice[];
 };
 
 type StandaloneSection = "arithmetic";
+
+type ArithmeticTopic = "addition-multiplication" | "subtraction-division";
 
 type ArithmeticRelation =
   | {
@@ -73,6 +81,27 @@ type ArithmeticRelation =
       multiplicationExpression: string;
       visibleTerms: string[];
       hiddenTermCount: bigint;
+    };
+
+type SubtractionRelation =
+  | {
+      kind: "empty";
+    }
+  | {
+      kind: "unsupported";
+      sourceExpression: string;
+      message: string;
+    }
+  | {
+      kind: "subtraction" | "division";
+      sourceExpression: string;
+      start: bigint;
+      subtrahend: bigint;
+      count: bigint;
+      remainder: bigint;
+      isComplete: boolean;
+      subtractionExpression: string;
+      divisionExpression: string;
     };
 
 const curriculum: CurriculumGrade[] = [
@@ -359,13 +388,18 @@ const creatures: Creature[] = [
   },
 ];
 
-const primeCompositeExamples: PrimeCompositeExample[] = [
-  { value: 1, kind: "둘 다 아님", reason: "약수가 1개", color: "bg-[#9f70eb]" },
-  { value: 2, kind: "소수", reason: "1, 2", color: "bg-[#ff5963]" },
-  { value: 4, kind: "합성수", reason: "1, 2, 4", color: "bg-[#39b567]" },
-  { value: 7, kind: "소수", reason: "1, 7", color: "bg-[#4f8df7]" },
-  { value: 9, kind: "합성수", reason: "1, 3, 9", color: "bg-[#ffb23f]" },
-  { value: 11, kind: "소수", reason: "1, 11", color: "bg-[#d65fd2]" },
+const primeCompositeQuizzes: PrimeCompositeQuiz[] = [
+  {
+    id: "one-is-not-prime",
+    question: "1은 소수일까요?",
+    hint: "소수는 약수가 1과 자기 자신, 꼭 2개인 수예요. 1의 약수를 세어보세요.",
+    explanation:
+      "1의 약수는 1 하나뿐이에요. 약수가 2개가 아니니까 1은 소수가 아니에요. 합성수도 아니랍니다!",
+    choices: [
+      { label: "소수예요", isCorrect: false },
+      { label: "소수가 아니에요", isCorrect: true },
+    ],
+  },
 ];
 
 function normalizeExpression(expression: string) {
@@ -693,55 +727,169 @@ function isEditableTarget(target: EventTarget | null) {
   );
 }
 
-function PrimeCompositeSection() {
-  return (
-    <section className="rounded-[8px] bg-white p-5 shadow-[0_6px_0_#ded9ec]">
-      <div className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-[8px] bg-[#f7f4ff] p-4">
-          <p className="text-sm font-extrabold text-[#7c5cd6]">소수</p>
-          <p className="mt-2 text-lg font-black leading-7 text-[#3d285f]">
-            약수가 1과 자기 자신뿐인 수
-          </p>
-          <p className="mt-3 text-sm font-bold text-[#6a5a82]">2, 3, 5, 7, 11</p>
-        </div>
-        <div className="rounded-[8px] bg-[#fff7ea] p-4">
-          <p className="text-sm font-extrabold text-[#d57920]">합성수</p>
-          <p className="mt-2 text-lg font-black leading-7 text-[#3d285f]">
-            약수가 3개 이상인 수
-          </p>
-          <p className="mt-3 text-sm font-bold text-[#6a5a82]">4, 6, 8, 9, 10</p>
-        </div>
-        <div className="rounded-[8px] bg-[#efe8ff] p-4">
-          <p className="text-sm font-extrabold text-[#7c5cd6]">1</p>
-          <p className="mt-2 text-lg font-black leading-7 text-[#3d285f]">
-            소수도 합성수도 아니에요
-          </p>
-          <p className="mt-3 text-sm font-bold text-[#6a5a82]">약수가 1 하나뿐이에요</p>
-        </div>
-      </div>
+type MascotTone = "neutral" | "wrong" | "correct";
 
-      <div className="mt-5 rounded-[8px] bg-[#f7f4ff] p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {primeCompositeExamples.map((example, index) => (
-            <div key={example.value} className="rounded-[8px] bg-white p-4 shadow-[0_4px_0_#ded9ec]">
-              <div className="flex items-center gap-3">
-                <span
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center text-xl font-black text-white ${example.color}`}
-                  style={{
-                    borderRadius: expressionTileRadii[index % expressionTileRadii.length],
-                    transform: `rotate(${expressionTileRotations[index % expressionTileRotations.length]})`,
-                  }}
-                >
-                  {example.value}
-                </span>
-                <span>
-                  <span className="block text-lg font-black text-[#3d285f]">{example.kind}</span>
-                  <span className="block text-sm font-bold text-[#6a5a82]">{example.reason}</span>
-                </span>
-              </div>
-            </div>
-          ))}
+function QuizMascotFace({ tone }: { tone: MascotTone }) {
+  const color =
+    tone === "wrong" ? "bg-[#ff5963]" : tone === "correct" ? "bg-[#39b567]" : "bg-[#9f70eb]";
+
+  return (
+    <div
+      className={`relative flex h-20 w-20 shrink-0 items-center justify-center shadow-[inset_0_-8px_0_rgba(61,40,95,0.15)] sm:h-24 sm:w-24 ${color}`}
+      style={{
+        borderRadius: "58% 42% 52% 48% / 44% 58% 42% 56%",
+        transform: "rotate(-3deg)",
+      }}
+    >
+      <span className="absolute left-5 top-4 h-4 w-6 rounded-full bg-white/30 blur-[1px] sm:left-6 sm:top-5 sm:h-4 sm:w-7" />
+      <span className="absolute left-6 top-8 h-2.5 w-2.5 rounded-full bg-[#3d285f] sm:left-7 sm:top-9" />
+      <span className="absolute right-6 top-8 h-2.5 w-2.5 rounded-full bg-[#3d285f] sm:right-7 sm:top-9" />
+      <span className="absolute top-[42px] h-3 w-6 rounded-b-full border-b-4 border-[#3d285f] sm:top-[52px]" />
+    </div>
+  );
+}
+
+function QuizSpeechBubble({
+  tone,
+  size = "md",
+  children,
+}: {
+  tone: MascotTone;
+  size?: "md" | "lg";
+  children: ReactNode;
+}) {
+  const textColor =
+    tone === "wrong" ? "text-[#d5486d]" : tone === "correct" ? "text-[#2e9155]" : "text-[#3d285f]";
+  const textSize = size === "lg" ? "text-3xl sm:text-4xl" : "text-xl sm:text-2xl";
+
+  return (
+    <div className="flex items-end justify-center gap-4">
+      <QuizMascotFace tone={tone} />
+      <div className="relative" style={{ filter: "drop-shadow(0 6px 0 #ded9ec)" }}>
+        <div className="max-w-xl rounded-[30px] bg-white px-7 py-5 text-left">
+          <p className={`break-words font-black leading-snug ${textSize} ${textColor}`}>
+            {children}
+          </p>
         </div>
+        <svg className="absolute -left-6 bottom-3 h-10 w-10" viewBox="0 0 40 40" aria-hidden="true">
+          <path d="M34 2 C 28 14, 18 26, 2 36 C 22 33, 33 22, 37 10 Z" fill="#ffffff" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function PrimeCompositeQuizSection() {
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [isSolved, setIsSolved] = useState(false);
+  const [wrongChoiceIndex, setWrongChoiceIndex] = useState<number | null>(null);
+  const [isFinished, setIsFinished] = useState(false);
+
+  if (isFinished) {
+    return (
+      <section className="rounded-[8px] bg-white p-8 shadow-[0_6px_0_#ded9ec]">
+        <div className="flex min-h-64 flex-col items-center justify-center gap-5 rounded-[8px] bg-[#f7f4ff] px-6 py-8 text-center">
+          <QuizSpeechBubble tone="correct" size="lg">
+            퀴즈를 모두 풀었어요! 다음 퀴즈가 곧 찾아올 거예요.
+          </QuizSpeechBubble>
+          <button
+            type="button"
+            onClick={() => {
+              setQuizIndex(0);
+              setIsSolved(false);
+              setWrongChoiceIndex(null);
+              setIsFinished(false);
+            }}
+            className="rounded-full bg-[#9f70eb] px-8 py-3 text-lg font-black text-white shadow-[0_5px_0_#6644a8] transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0"
+          >
+            처음부터 다시 풀기
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  const quiz = primeCompositeQuizzes[quizIndex];
+  const isLastQuiz = quizIndex === primeCompositeQuizzes.length - 1;
+
+  function chooseAnswer(choiceIndex: number) {
+    if (isSolved) {
+      return;
+    }
+
+    if (quiz.choices[choiceIndex].isCorrect) {
+      setIsSolved(true);
+      setWrongChoiceIndex(null);
+      return;
+    }
+
+    setWrongChoiceIndex(choiceIndex);
+  }
+
+  function goToNextQuiz() {
+    if (isLastQuiz) {
+      setIsFinished(true);
+      return;
+    }
+
+    setQuizIndex((current) => current + 1);
+    setIsSolved(false);
+    setWrongChoiceIndex(null);
+  }
+
+  return (
+    <section className="rounded-[8px] bg-white p-8 shadow-[0_6px_0_#ded9ec]">
+      <div className="flex min-h-64 flex-col items-center justify-center gap-6 rounded-[8px] bg-[#f7f4ff] px-6 py-8 text-center">
+        <div className="flex items-center gap-3">
+          <span className="rounded-full bg-[#9f70eb] px-4 py-1.5 text-sm font-black text-white">
+            퀴즈 {quizIndex + 1}
+          </span>
+          <span className="text-sm font-extrabold text-[#7c5cd6]">
+            {quizIndex + 1} / {primeCompositeQuizzes.length}
+          </span>
+        </div>
+        <QuizSpeechBubble tone="neutral" size="lg">
+          {quiz.question}
+        </QuizSpeechBubble>
+        <div className="flex flex-wrap items-stretch justify-center gap-4">
+          {quiz.choices.map((choice, choiceIndex) => {
+            const isCorrectAndSolved = isSolved && choice.isCorrect;
+            const isWrongPick = wrongChoiceIndex === choiceIndex && !isSolved;
+
+            return (
+              <button
+                key={choice.label}
+                type="button"
+                onClick={() => chooseAnswer(choiceIndex)}
+                disabled={isSolved}
+                className={`min-w-52 rounded-[8px] px-8 py-5 text-2xl font-black transition ${
+                  isCorrectAndSolved
+                    ? "bg-[#39b567] text-white shadow-[0_6px_0_#257a45]"
+                    : isWrongPick
+                      ? "bg-[#ff5963] text-white shadow-[0_6px_0_#a62f38]"
+                      : "bg-white text-[#3d285f] shadow-[0_6px_0_#ded9ec] enabled:hover:-translate-y-0.5 enabled:hover:bg-[#fff7ea] enabled:active:translate-y-0 disabled:opacity-60"
+                }`}
+              >
+                {choice.label}
+              </button>
+            );
+          })}
+        </div>
+        {wrongChoiceIndex !== null && !isSolved && (
+          <QuizSpeechBubble tone="wrong">아직 아니에요! 힌트: {quiz.hint}</QuizSpeechBubble>
+        )}
+        {isSolved && (
+          <>
+            <QuizSpeechBubble tone="correct">정답이에요! {quiz.explanation}</QuizSpeechBubble>
+            <button
+              type="button"
+              onClick={goToNextQuiz}
+              className="rounded-full bg-[#ffb23f] px-8 py-3 text-lg font-black text-[#3d285f] shadow-[0_5px_0_#b97718] transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0"
+            >
+              {isLastQuiz ? "퀴즈 끝내기" : "다음 문제"}
+            </button>
+          </>
+        )}
       </div>
     </section>
   );
@@ -935,12 +1083,251 @@ function ArithmeticOperationsSection({ relation }: { relation: ArithmeticRelatio
   );
 }
 
+function getNumberJosa(value: bigint, consonantForm: string, vowelForm: string) {
+  const lastDigit = Number(value % 10n);
+
+  return [0, 1, 3, 6, 7, 8].includes(lastDigit) ? consonantForm : vowelForm;
+}
+
+function getRepeatedSubtractionExpression(start: bigint, subtrahend: bigint, count: bigint) {
+  if (count <= 0n) {
+    return formatBigIntText(start);
+  }
+
+  const visibleTermCount = Number(count > 12n ? 12n : count);
+  const visibleTerms = Array.from({ length: visibleTermCount }, () => formatBigIntText(subtrahend));
+
+  if (count > 12n) {
+    return `${formatBigIntText(start)} - ${visibleTerms.join(" - ")} - ... - ${formatBigIntText(subtrahend)}`;
+  }
+
+  return `${formatBigIntText(start)} - ${visibleTerms.join(" - ")}`;
+}
+
+function createSubtractionRelation(
+  sourceExpression: string,
+  kind: "subtraction" | "division",
+  start: bigint,
+  subtrahend: bigint,
+  count: bigint,
+): SubtractionRelation {
+  const remainder = start - subtrahend * count;
+
+  return {
+    kind,
+    sourceExpression,
+    start,
+    subtrahend,
+    count,
+    remainder,
+    isComplete: remainder < subtrahend,
+    subtractionExpression: getRepeatedSubtractionExpression(start, subtrahend, count),
+    divisionExpression: `${formatBigIntText(start)} ÷ ${formatBigIntText(subtrahend)}`,
+  };
+}
+
+function getSubtractionDivisionRelation(expression: string): SubtractionRelation {
+  const compactExpression = normalizeExpression(expression).replace(/\s/g, "");
+
+  if (!compactExpression) {
+    return {
+      kind: "empty",
+    };
+  }
+
+  if (/^\d+(?:-\d+)+$/.test(compactExpression)) {
+    const parts = compactExpression.split("-");
+    const start = BigInt(parts[0]);
+    const subtractedValues = parts.slice(1).map((part) => BigInt(part));
+    const subtrahend = subtractedValues[0];
+
+    if (!subtractedValues.every((value) => value === subtrahend)) {
+      return {
+        kind: "unsupported",
+        sourceExpression: expression,
+        message: "같은 수를 반복해서 빼는 식만 나눗셈으로 묶을 수 있어요.",
+      };
+    }
+
+    if (subtrahend === 0n) {
+      return {
+        kind: "unsupported",
+        sourceExpression: expression,
+        message: "0을 빼면 수가 줄어들지 않아요. 0보다 큰 수를 빼보세요.",
+      };
+    }
+
+    const count = BigInt(subtractedValues.length);
+    const remainder = start - subtrahend * count;
+
+    if (remainder < 0n) {
+      return {
+        kind: "unsupported",
+        sourceExpression: expression,
+        message: "너무 많이 뺐어요. 결과가 0보다 작아지지 않게 빼보세요.",
+      };
+    }
+
+    return createSubtractionRelation(expression, "subtraction", start, subtrahend, count);
+  }
+
+  const divisionMatch = compactExpression.match(/^(\d+)\/(\d+)$/);
+
+  if (divisionMatch) {
+    const start = BigInt(divisionMatch[1]);
+    const divisor = BigInt(divisionMatch[2]);
+
+    if (divisor === 0n) {
+      return {
+        kind: "unsupported",
+        sourceExpression: expression,
+        message: "0으로는 나눌 수 없어요.",
+      };
+    }
+
+    return createSubtractionRelation(expression, "division", start, divisor, start / divisor);
+  }
+
+  return {
+    kind: "unsupported",
+    sourceExpression: expression,
+    message: "빼기와 나누기의 관계는 같은 수를 반복해서 빼는 식 또는 두 수의 나눗셈으로 볼 수 있어요.",
+  };
+}
+
+function SubtractionDivisionSection({ relation }: { relation: SubtractionRelation }) {
+  if (relation.kind === "empty") {
+    return (
+      <section className="rounded-[8px] bg-white p-8 shadow-[0_6px_0_#ded9ec]">
+        <div className="flex min-h-64 items-center justify-center rounded-[8px] bg-[#f7f4ff] px-6 text-center">
+          <p className="text-3xl font-black leading-snug text-[#9f9278]">
+            12 - 3 처럼 같은 수를 빼는 식을 만들고
+            <br />
+            &lsquo;한 번 빼기&rsquo;를 눌러보세요
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  if (relation.kind === "unsupported") {
+    return (
+      <section className="rounded-[8px] bg-white p-8 shadow-[0_6px_0_#ded9ec]">
+        <div className="flex min-h-64 flex-col items-center justify-center gap-5 rounded-[8px] bg-[#f7f4ff] px-6 text-center">
+          <p className="break-words text-4xl font-black leading-tight text-[#3d285f]">
+            {relation.sourceExpression}
+          </p>
+          <p className="text-2xl font-black leading-tight text-[#9f9278]">{relation.message}</p>
+        </div>
+      </section>
+    );
+  }
+
+  const showSticks = relation.start > 0n && relation.start <= 24n;
+  const stickGroupCount = showSticks ? Number(relation.count) : 0;
+  const sticksPerGroup = showSticks ? Number(relation.subtrahend) : 0;
+  const remainderSticks = showSticks ? Number(relation.remainder) : 0;
+
+  return (
+    <section className="rounded-[8px] bg-white p-8 shadow-[0_6px_0_#ded9ec]">
+      <div className="flex min-h-64 flex-col items-center justify-center gap-6 rounded-[8px] bg-[#f7f4ff] px-6 py-8 text-center">
+        {showSticks && (
+          <div className="flex max-w-3xl flex-wrap items-end justify-center gap-x-4 gap-y-3">
+            {Array.from({ length: stickGroupCount }, (_, groupIndex) => (
+              <span
+                key={groupIndex}
+                className="flex items-end gap-1.5 rounded-[10px] bg-white/80 px-2.5 py-1.5"
+              >
+                {Array.from({ length: sticksPerGroup }, (_, stickIndex) => (
+                  <span key={stickIndex} className="relative h-9 w-3">
+                    <span className="absolute bottom-0 left-1/2 h-9 w-1 -translate-x-1/2 rotate-[-10deg] rounded-full bg-[#8b5a2b]" />
+                    <span className="absolute left-1/2 top-2 h-3 w-1 rotate-[38deg] rounded-full bg-[#a06a35]" />
+                  </span>
+                ))}
+              </span>
+            ))}
+            {remainderSticks > 0 && (
+              <span className="flex items-end gap-1.5 rounded-[10px] border-2 border-dashed border-[#c9b8f0] px-2.5 py-1.5">
+                {Array.from({ length: remainderSticks }, (_, stickIndex) => (
+                  <span key={stickIndex} className="relative h-9 w-3 opacity-60">
+                    <span className="absolute bottom-0 left-1/2 h-9 w-1 -translate-x-1/2 rotate-[-10deg] rounded-full bg-[#8b5a2b]" />
+                    <span className="absolute left-1/2 top-2 h-3 w-1 rotate-[38deg] rounded-full bg-[#a06a35]" />
+                  </span>
+                ))}
+              </span>
+            )}
+          </div>
+        )}
+        <p className="break-words text-3xl font-black leading-tight text-[#6f4ab4]">
+          {formatBigIntText(relation.start)}에서 {formatBigIntText(relation.subtrahend)}
+          {getNumberJosa(relation.subtrahend, "을", "를")} {formatBigIntText(relation.count)}번 뺐어요
+        </p>
+        <p className="break-words text-5xl font-black leading-tight text-[#3d285f]">
+          {relation.subtractionExpression} = {formatBigIntText(relation.remainder)}
+        </p>
+        <div className="flex flex-wrap items-stretch justify-center gap-3">
+          <div className="min-w-36 rounded-[8px] bg-white px-5 py-3 shadow-[0_4px_0_#ded9ec]">
+            <p className="text-sm font-extrabold text-[#7c5cd6]">뺀 뒤 남은 수</p>
+            <p className="mt-1 text-3xl font-black text-[#3d285f]">
+              {formatBigIntText(relation.remainder)}
+            </p>
+          </div>
+          <div className="min-w-36 rounded-[8px] bg-white px-5 py-3 shadow-[0_4px_0_#ded9ec]">
+            <p className="text-sm font-extrabold text-[#7c5cd6]">뺀 횟수</p>
+            <p className="mt-1 text-3xl font-black text-[#3d285f]">
+              {formatBigIntText(relation.count)}번
+            </p>
+          </div>
+          <div className="min-w-36 rounded-[8px] bg-white px-5 py-3 shadow-[0_4px_0_#ded9ec]">
+            <p className="text-sm font-extrabold text-[#d57920]">나눗셈의 답</p>
+            <p className="mt-1 text-3xl font-black text-[#d57920]">
+              {relation.isComplete ? (
+                <>
+                  {formatBigIntText(relation.count)}
+                  {relation.remainder > 0n && (
+                    <span className="ml-2 text-xl">나머지 {formatBigIntText(relation.remainder)}</span>
+                  )}
+                </>
+              ) : (
+                "?"
+              )}
+            </p>
+          </div>
+        </div>
+        <div className="h-px w-full max-w-2xl bg-white" />
+        {relation.isComplete ? (
+          <>
+            <p className="break-words text-3xl font-black leading-snug text-[#3d285f]">
+              {formatBigIntText(relation.subtrahend)}
+              {getNumberJosa(relation.subtrahend, "을", "를")} {formatBigIntText(relation.count)}번{" "}
+              {relation.remainder > 0n
+                ? `빼면 ${formatBigIntText(relation.remainder)}${getNumberJosa(relation.remainder, "이", "가")} 남으니`
+                : "뺐으니"}
+            </p>
+            <p className="break-words text-5xl font-black leading-tight text-[#d57920]">
+              {relation.divisionExpression} = {formatBigIntText(relation.count)}
+              {relation.remainder > 0n && ` … ${formatBigIntText(relation.remainder)}`}
+            </p>
+          </>
+        ) : (
+          <p className="break-words text-3xl font-black leading-snug text-[#9f9278]">
+            아직 {formatBigIntText(relation.subtrahend)}
+            {getNumberJosa(relation.subtrahend, "을", "를")} 더 뺄 수 있어요. 계속 빼보세요!
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const [expression, setExpression] = useState("");
   const [appliedArithmeticExpression, setAppliedArithmeticExpression] = useState("");
+  const [appliedSubtractionExpression, setAppliedSubtractionExpression] = useState("");
   const [selectedStandaloneSection, setSelectedStandaloneSection] = useState<StandaloneSection | null>(
     null,
   );
+  const [selectedArithmeticTopic, setSelectedArithmeticTopic] = useState<ArithmeticTopic | null>(null);
   const [selectedGradeId, setSelectedGradeId] = useState<CurriculumGrade["id"] | null>(null);
   const [selectedSemesterId, setSelectedSemesterId] = useState<CurriculumSemester["id"] | null>(
     null,
@@ -956,12 +1343,20 @@ export default function Home() {
     () => getArithmeticRelation(appliedArithmeticExpression),
     [appliedArithmeticExpression],
   );
+  const subtractionRelation = useMemo(
+    () => getSubtractionDivisionRelation(appliedSubtractionExpression),
+    [appliedSubtractionExpression],
+  );
   const selectedGrade = curriculum.find((grade) => grade.id === selectedGradeId) ?? null;
   const selectedSemester =
     selectedGrade?.semesters.find((semester) => semester.id === selectedSemesterId) ?? null;
   const selectedUnit = selectedSemester?.units.find((unit) => unit.id === selectedUnitId) ?? null;
   const curriculumStepTitle = selectedStandaloneSection
-    ? "사칙연산"
+    ? selectedArithmeticTopic === "addition-multiplication"
+      ? "덧셈과 곱셈"
+      : selectedArithmeticTopic === "subtraction-division"
+        ? "뺄셈과 나눗셈"
+        : "사칙연산"
     : selectedSubunit
       ? selectedSubunit
       : selectedUnit
@@ -972,15 +1367,18 @@ export default function Home() {
             ? "학기 선택"
             : "학년 선택";
   const curriculumPath = selectedStandaloneSection
-    ? "사칙연산"
+    ? ["사칙연산", curriculumStepTitle !== "사칙연산" ? curriculumStepTitle : null]
+        .filter(Boolean)
+        .join(" / ")
     : [selectedGrade?.label, selectedSemester?.label, selectedUnit?.title, selectedSubunit]
         .filter(Boolean)
         .join(" / ");
   const canGoBackCurriculumStep = selectedStandaloneSection !== null || selectedGrade !== null;
-  const canApplyExpressionToSection = selectedStandaloneSection === "arithmetic" && expression.length > 0;
+  const canApplyExpressionToSection = selectedArithmeticTopic !== null && expression.length > 0;
 
   function selectGrade(gradeId: CurriculumGrade["id"]) {
     setSelectedStandaloneSection(null);
+    setSelectedArithmeticTopic(null);
     setSelectedGradeId(gradeId);
     setSelectedSemesterId(null);
     setSelectedUnitId(null);
@@ -989,10 +1387,15 @@ export default function Home() {
 
   function selectStandaloneSection(section: StandaloneSection) {
     setSelectedStandaloneSection(section);
+    setSelectedArithmeticTopic(null);
     setSelectedGradeId(null);
     setSelectedSemesterId(null);
     setSelectedUnitId(null);
     setSelectedSubunit(null);
+  }
+
+  function selectArithmeticTopic(topic: ArithmeticTopic) {
+    setSelectedArithmeticTopic(topic);
   }
 
   function selectSemester(semesterId: CurriculumSemester["id"]) {
@@ -1007,6 +1410,11 @@ export default function Home() {
   }
 
   function goBackCurriculumStep() {
+    if (selectedArithmeticTopic) {
+      setSelectedArithmeticTopic(null);
+      return;
+    }
+
     if (selectedStandaloneSection) {
       setSelectedStandaloneSection(null);
       return;
@@ -1103,11 +1511,30 @@ export default function Home() {
   }
 
   function applyExpressionToCurrentSection() {
-    if (selectedStandaloneSection !== "arithmetic" || !expression) {
+    if (!expression) {
       return;
     }
 
-    setAppliedArithmeticExpression(expression);
+    if (selectedArithmeticTopic === "addition-multiplication") {
+      setAppliedArithmeticExpression(expression);
+      return;
+    }
+
+    if (selectedArithmeticTopic === "subtraction-division") {
+      if (expression === appliedSubtractionExpression) {
+        const relation = getSubtractionDivisionRelation(expression);
+
+        if (relation.kind === "subtraction" && !relation.isComplete) {
+          const nextExpression = `${expression}-${relation.subtrahend.toString()}`;
+
+          setExpression(nextExpression);
+          setAppliedSubtractionExpression(nextExpression);
+          return;
+        }
+      }
+
+      setAppliedSubtractionExpression(expression);
+    }
   }
 
   useEffect(() => {
@@ -1216,9 +1643,27 @@ export default function Home() {
                 />
                 <div>
                   <p className="text-lg font-extrabold text-[#6f4ab4]">목차 탐험</p>
-                  <h2 className="text-3xl font-black leading-tight text-[#3c2a5c] sm:text-4xl">
-                    {curriculumStepTitle}
-                  </h2>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-3xl font-black leading-tight text-[#3c2a5c] sm:text-4xl">
+                      {curriculumStepTitle}
+                    </h2>
+                    {selectedStandaloneSection === "arithmetic" && !selectedArithmeticTopic && (
+                      <div className="flex items-center gap-1.5">
+                        {operatorKeys.slice(0, 4).map((key, index) => (
+                          <span
+                            key={key.value}
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center text-base font-black shadow-[0_3px_0_rgba(61,40,95,0.16)] ${key.color} ${key.text}`}
+                            style={{
+                              borderRadius: expressionTileRadii[index % expressionTileRadii.length],
+                              transform: `rotate(${expressionTileRotations[index % expressionTileRotations.length]})`,
+                            }}
+                          >
+                            {key.value}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex w-full min-w-0 items-center justify-end gap-3 sm:w-auto">
@@ -1290,8 +1735,55 @@ export default function Home() {
                     </div>
                   )}
 
-                  {selectedStandaloneSection === "arithmetic" && (
+                  {selectedStandaloneSection === "arithmetic" && !selectedArithmeticTopic && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => selectArithmeticTopic("addition-multiplication")}
+                        className="min-h-36 rounded-[8px] bg-white p-5 text-left shadow-[0_6px_0_#ded9ec] transition hover:-translate-y-0.5 hover:bg-[#fff7ea] active:translate-y-0"
+                      >
+                        <div
+                          className="mb-4 flex h-14 w-14 items-center justify-center bg-[#ffb23f] text-2xl font-black text-[#3d285f]"
+                          style={{
+                            borderRadius: expressionTileRadii[0],
+                            transform: `rotate(${expressionTileRotations[0]})`,
+                          }}
+                        >
+                          +×
+                        </div>
+                        <div className="text-2xl font-black text-[#3d285f]">덧셈과 곱셈</div>
+                        <p className="mt-2 text-sm font-bold leading-6 text-[#6a5a82]">
+                          반복되는 덧셈을 곱셈으로 묶어보기
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectArithmeticTopic("subtraction-division")}
+                        className="min-h-36 rounded-[8px] bg-white p-5 text-left shadow-[0_6px_0_#ded9ec] transition hover:-translate-y-0.5 hover:bg-[#fff7ea] active:translate-y-0"
+                      >
+                        <div
+                          className="mb-4 flex h-14 w-14 items-center justify-center bg-[#4f8df7] text-2xl font-black text-white"
+                          style={{
+                            borderRadius: expressionTileRadii[1],
+                            transform: `rotate(${expressionTileRotations[1]})`,
+                          }}
+                        >
+                          −÷
+                        </div>
+                        <div className="text-2xl font-black text-[#3d285f]">뺄셈과 나눗셈</div>
+                        <p className="mt-2 text-sm font-bold leading-6 text-[#6a5a82]">
+                          빼기와 나누기의 관계
+                        </p>
+                      </button>
+                    </div>
+                  )}
+
+                  {selectedArithmeticTopic === "addition-multiplication" && (
                     <ArithmeticOperationsSection relation={arithmeticRelation} />
+                  )}
+
+                  {selectedArithmeticTopic === "subtraction-division" && (
+                    <SubtractionDivisionSection relation={subtractionRelation} />
                   )}
 
                   {selectedGrade && !selectedSemester && (
@@ -1350,7 +1842,7 @@ export default function Home() {
                     </div>
                   )}
 
-                  {selectedUnit && selectedSubunit === "소수와 합성수" && <PrimeCompositeSection />}
+                  {selectedUnit && selectedSubunit === "소수와 합성수" && <PrimeCompositeQuizSection />}
 
                   {selectedUnit && selectedSubunit !== "소수와 합성수" && (
                     <div className="rounded-[8px] bg-white p-5 shadow-[0_6px_0_#ded9ec]">
@@ -1441,14 +1933,14 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  {selectedStandaloneSection === "arithmetic" && (
+                  {selectedArithmeticTopic !== null && (
                     <button
                       type="button"
                       onClick={applyExpressionToCurrentSection}
                       disabled={!canApplyExpressionToSection}
                       className="h-[78px] w-28 shrink-0 rounded-[28px] bg-[#ffb23f] text-base font-black text-[#3d285f] shadow-[0_6px_0_#b97718] transition enabled:hover:-translate-y-0.5 enabled:hover:brightness-105 enabled:active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45"
                     >
-                      사용하기
+                      {selectedArithmeticTopic === "subtraction-division" ? "한 번 빼기" : "사용하기"}
                     </button>
                   )}
                 </div>
