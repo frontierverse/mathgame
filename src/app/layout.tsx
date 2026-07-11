@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "수학 게임 연구소",
-  description: "수학 개념을 게임처럼 탐험하는 웹서비스",
+  title: "수학 공간 · 입체 수학 학습",
+  description: "수식을 입력하고 입체 공간에서 수학 개념을 탐험하는 학습 서비스",
 };
 
 export default function RootLayout({

@@ -1,0 +1,142 @@
+import type { Lesson, MathKey } from "./types";
+
+export const lessons: Lesson[] = [
+  {
+    id: "quantity",
+    index: "01",
+    title: "숫자의 발전",
+    description: "나뭇가지에서 숫자 10까지",
+    example: "10",
+    color: "#72bec8",
+  },
+  {
+    id: "addition",
+    index: "02",
+    title: "덧셈",
+    description: "두 무리를 하나로 모으기",
+    example: "3+4",
+    color: "#9b84d9",
+  },
+  {
+    id: "fast-addition",
+    index: "03",
+    title: "더 빠른 덧셈",
+    description: "열 개씩 묶어 빠르게 더하기",
+    example: "10+10",
+    color: "#d3a94e",
+  },
+  {
+    id: "multiplication",
+    index: "04",
+    title: "곱셈",
+    description: "가로와 세로의 묶음을 한 번에 세기",
+    example: "10×10",
+    color: "#9b84d9",
+  },
+  {
+    id: "times-table-two",
+    index: "05",
+    title: "구구단 2단",
+    description: "반복 덧셈을 빠르게 기억하기",
+    example: "2×1",
+    color: "#72bec8",
+  },
+  {
+    id: "square-area",
+    index: "06",
+    title: "사각형의 넓이",
+    description: "넓이 1인 조각으로 사각형 채우기",
+    example: "3×3",
+    color: "#9fd8b8",
+  },
+  {
+    id: "triangle-area",
+    index: "07",
+    title: "삼각형의 넓이",
+    description: "사각형으로 삼각형의 넓이 이해하기",
+    example: "10",
+    color: "#75bde7",
+  },
+  {
+    id: "circle-area",
+    index: "08",
+    title: "원의 넓이",
+    description: "원의 넓이를 사각형과 연결하기",
+    example: "5×5",
+    color: "#6fb7ea",
+  },
+  {
+    id: "powers",
+    index: "09",
+    title: "거듭제곱",
+    description: "같은 수를 반복해서 곱하기",
+    example: "2×2",
+    color: "#b6a5df",
+  },
+  {
+    id: "subtraction",
+    index: "10",
+    title: "뺄셈",
+    description: "전체에서 일부 덜어내기",
+    example: "7-3",
+    color: "#d98291",
+  },
+  {
+    id: "division",
+    index: "11",
+    title: "나눗셈",
+    description: "같은 크기의 그룹으로 나누기",
+    example: "12÷3",
+    color: "#68b58d",
+  },
+  {
+    id: "parentheses",
+    index: "12",
+    title: "괄호",
+    description: "먼저 계산할 세계 묶기",
+    example: "(4+2)×3",
+    color: "#739fda",
+  },
+  {
+    id: "mixed",
+    index: "13",
+    title: "복합 계산",
+    description: "연산의 순서 탐험하기",
+    example: "8÷2+3",
+    color: "#b27bc4",
+  },
+  {
+    id: "explore",
+    index: "14",
+    title: "자유 탐구",
+    description: "나만의 식으로 공간 바꾸기",
+    example: "6+3",
+    color: "#72bec8",
+  },
+];
+
+export function getLessonIdFromQuery(value: string | null) {
+  return value && lessons.some((lesson) => lesson.id === value) ? value : lessons[0].id;
+}
+
+export const numberKeys: MathKey[] = [
+  { value: "7", color: "bg-[#9fc4f2]", shadow: "shadow-[0_5px_0_#7099ce]", text: "text-[#38445d]" },
+  { value: "8", color: "bg-[#f5a7b0]", shadow: "shadow-[0_5px_0_#ca7b87]", text: "text-[#5b3e49]" },
+  { value: "9", color: "bg-[#9fd8b8]", shadow: "shadow-[0_5px_0_#70aa8b]", text: "text-[#365443]" },
+  { value: "4", color: "bg-[#f6cf8f]", shadow: "shadow-[0_5px_0_#c79f5e]", text: "text-[#5b4930]" },
+  { value: "5", color: "bg-[#c3afe9]", shadow: "shadow-[0_5px_0_#9480bd]", text: "text-[#493d62]" },
+  { value: "6", color: "bg-[#9edce3]", shadow: "shadow-[0_5px_0_#6dadb6]", text: "text-[#35545b]" },
+  { value: "1", color: "bg-[#e9aed8]", shadow: "shadow-[0_5px_0_#ba7eaa]", text: "text-[#5b4155]" },
+  { value: "2", color: "bg-[#f4aaa4]", shadow: "shadow-[0_5px_0_#c77a75]", text: "text-[#5c403d]" },
+  { value: "3", color: "bg-[#f4dc8f]", shadow: "shadow-[0_5px_0_#c4ac60]", text: "text-[#564c31]" },
+  { value: "0", color: "bg-[#b6a5df]", shadow: "shadow-[0_5px_0_#8776b2]", text: "text-[#453b5e]" },
+];
+
+export const operatorKeys: MathKey[] = [
+  { value: "+", color: "bg-[#f3a0aa]", shadow: "shadow-[0_5px_0_#c57480]", text: "text-[#5b3c45]" },
+  { value: "-", color: "bg-[#9fc4f2]", shadow: "shadow-[0_5px_0_#7099ce]", text: "text-[#38445d]" },
+  { value: "×", color: "bg-[#9fd8b8]", shadow: "shadow-[0_5px_0_#70aa8b]", text: "text-[#365443]" },
+  { value: "÷", color: "bg-[#f4d98a]", shadow: "shadow-[0_5px_0_#c4a95d]", text: "text-[#564a2f]" },
+  { value: "(", color: "bg-[#d9a8db]", shadow: "shadow-[0_5px_0_#aa79ad]", text: "text-[#573d59]" },
+  { value: ")", color: "bg-[#9edce3]", shadow: "shadow-[0_5px_0_#6dadb6]", text: "text-[#35545b]" },
+];
