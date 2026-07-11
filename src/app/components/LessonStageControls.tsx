@@ -1,22 +1,44 @@
-import type { CircleAreaStage, TriangleAreaStage } from "./types";
+import type { CircleAreaStage, PowersStage, TriangleAreaStage } from "./types";
 
 type LessonStageControlsProps = {
   lessonId: string;
   triangleAreaStage: TriangleAreaStage;
   circleAreaStage: CircleAreaStage;
+  powersStage: PowersStage;
   onTriangleAreaStageChange: (stage: TriangleAreaStage) => void;
   onCircleAreaStageChange: (stage: CircleAreaStage) => void;
+  onPowersStageChange: (stage: PowersStage) => void;
 };
 
 export default function LessonStageControls({
   lessonId,
   triangleAreaStage,
   circleAreaStage,
+  powersStage,
   onTriangleAreaStageChange,
   onCircleAreaStageChange,
+  onPowersStageChange,
 }: LessonStageControlsProps) {
   return (
     <>
+      {lessonId === "powers" && powersStage === 0 && (
+        <button
+          type="button"
+          onClick={() => onPowersStageChange(1)}
+          className="absolute bottom-5 left-1/2 z-20 -translate-x-1/2 rounded-xl border border-[#5487bf] bg-[#eef7ff] px-5 py-3 text-sm font-bold text-[#335f91] shadow-[0_4px_0_#b6d4ec] transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
+        >
+          다음
+        </button>
+      )}
+      {lessonId === "powers" && powersStage === 1 && (
+        <button
+          type="button"
+          onClick={() => onPowersStageChange(0)}
+          className="absolute bottom-5 left-1/2 z-20 -translate-x-1/2 rounded-xl border border-[#b9add2] bg-[#f7f3fb] px-5 py-3 text-sm font-bold text-[#685c76] shadow-[0_4px_0_#d8cfe3] transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
+        >
+          이전
+        </button>
+      )}
       {lessonId === "triangle-area" && triangleAreaStage === 0 && (
         <button
           type="button"

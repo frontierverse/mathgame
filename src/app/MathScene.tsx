@@ -6,13 +6,14 @@ import * as THREE from "three";
 import { getDefaultExpression, parseVisualExpression } from "./scenes/expression";
 import { createSceneHelpers, type AnimatedOrb } from "./scenes/helpers";
 import { buildLessonScene, hasDedicatedLessonScene } from "./scenes/lessonRegistry";
-import type { CircleAreaStage, LessonSceneContext, TriangleAreaStage } from "./scenes/types";
+import type { CircleAreaStage, LessonSceneContext, PowersStage, TriangleAreaStage } from "./scenes/types";
 
 type MathSceneProps = {
   expression: string;
   lessonId: string;
   triangleStage?: TriangleAreaStage;
   circleStage?: CircleAreaStage;
+  powersStage?: PowersStage;
 };
 
 export default function MathScene({
@@ -20,6 +21,7 @@ export default function MathScene({
   lessonId,
   triangleStage = 0,
   circleStage = 0,
+  powersStage = 0,
 }: MathSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +88,7 @@ export default function MathScene({
       parsed,
       triangleStage,
       circleStage,
+      powersStage,
       maxVisible,
       helpers,
     };
@@ -208,7 +211,7 @@ export default function MathScene({
       renderer.dispose();
       if (renderer.domElement.parentElement === container) container.removeChild(renderer.domElement);
     };
-  }, [expression, lessonId, triangleStage, circleStage]);
+  }, [expression, lessonId, triangleStage, circleStage, powersStage]);
 
   return <div ref={containerRef} className="h-full min-h-[420px] w-full touch-none" />;
 }

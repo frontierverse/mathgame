@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+@keyframes mineral-thumbnail-float {
+  0%,
+  100% {
+    transform: translateY(1px) rotate(-2deg) scale(0.98);
+  }
+  50% {
+    transform: translateY(-3px) rotate(2deg) scale(1.03);
+  }
+}
+
+.mineral-thumbnail-motion {
+  animation: mineral-thumbnail-float 2.4s ease-in-out infinite;
+  transform-origin: center bottom;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mineral-thumbnail-motion {
+    animation: none;
+  }
+}
+
 :root {
   --background: #fbf4e7;
   --foreground: #443b50;

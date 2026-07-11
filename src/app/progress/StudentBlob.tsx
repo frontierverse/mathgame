@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
-export type BlobVariant = "rock" | "crystal" | "ruby" | "diamond";
+import { MINERALS, type BlobVariant } from "./mineralData";
+
+export type { BlobVariant } from "./mineralData";
 
 type StudentBlobProps = {
   /** Which mineral to render (rock → crystal → ruby → diamond, cheap → precious). */
@@ -14,6 +16,8 @@ type StudentBlobProps = {
   seed?: number;
   /** Use a cached still frame for dense grids, or a live animated canvas. */
   renderMode?: "animated" | "thumbnail";
+  /** Add lightweight CSS motion to a cached thumbnail. */
+  thumbnailMotion?: boolean;
   /** Sizing/layout classes for the canvas wrapper. */
   className?: string;
 };
@@ -256,6 +260,8 @@ function renderThumbnail(variant: BlobVariant, color: string) {
 function StudentBlobThumbnail({
   variant,
   color,
+  seed = 0,
+  thumbnailMotion = false,
   className = "h-9 w-9 shrink-0",
 }: StudentBlobProps) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
@@ -274,17 +280,20 @@ function StudentBlobThumbnail({
 
   return (
     <div
-      className={className}
-      style={
-        thumbnail
+      className={`${className}${thumbnailMotion ? " mineral-thumbnail-motion" : ""}`}
+      style={{
+        ...(thumbnail
           ? {
               backgroundImage: `url(${thumbnail})`,
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",
               backgroundSize: "contain",
             }
-          : undefined
-      }
+          : {}),
+        ...(thumbnailMotion
+          ? { animationDelay: `-${(Math.abs(seed) % 11) * 0.13}s` }
+          : {}),
+      }}
       aria-hidden="true"
     />
   );
@@ -370,9 +379,21 @@ function AnimatedStudentBlob({
 }
 
 export default function StudentBlob(props: StudentBlobProps) {
-  return props.renderMode === "thumbnail" ? (
-    <StudentBlobThumbnail {...props} />
-  ) : (
-    <AnimatedStudentBlob {...props} />
+  return (
+    <span
+      className="group/mineral relative inline-flex shrink-0"
+      role="img"
+      aria-label={`${MINERALS[props.variant].label} 광물 캐릭터`}
+    >
+      {props.renderMode === "thumbnail" ? (
+        <StudentBlobThumbnail {...props} />
+      ) : (
+        <AnimatedStudentBlob {...props} />
+      )}
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-[80] mb-2 -translate-x-1/2 scale-90 whitespace-nowrap rounded-full border border-[#e3d6f2] bg-[#fffaff] px-2.5 py-1 text-[11px] font-black text-[#6d5a91] opacity-0 shadow-[0_6px_18px_rgba(87,64,120,0.2)] transition duration-150 group-hover/mineral:scale-100 group-hover/mineral:opacity-100">
+        {MINERALS[props.variant].label}
+        <span className="absolute left-1/2 top-full h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-[#e3d6f2] bg-[#fffaff]" />
+      </span>
+    </span>
   );
 }

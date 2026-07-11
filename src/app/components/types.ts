@@ -23,4 +23,4 @@ export type ExpressionPreview = {
   label: string;
   result: string | null;
 };
-export type { CircleAreaStage, TriangleAreaStage } from "../shared/lessonScenes";
+export type { CircleAreaStage, PowersStage, TriangleAreaStage } from "../shared/lessonScenes";

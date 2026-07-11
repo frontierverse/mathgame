@@ -1,5 +1,6 @@
 export type TriangleAreaStage = 0 | 1 | 2;
 export type CircleAreaStage = 0 | 1 | 2 | 3;
+export type PowersStage = 0 | 1;
 
 const dedicatedSceneLessonIds = new Set([
   "quantity",
@@ -11,6 +12,7 @@ const dedicatedSceneLessonIds = new Set([
   "triangle-area",
   "circle-area",
   "powers",
+  "powers-two",
 ]);
 
 export function hasDedicatedLessonScene(lessonId: string) {

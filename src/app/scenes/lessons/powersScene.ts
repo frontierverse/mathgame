@@ -2,7 +2,11 @@ import * as THREE from "three";
 
 import type { LessonScene, LessonSceneContext } from "../types";
 
-export function buildPowersScene({ contentGroup, helpers }: LessonSceneContext): LessonScene {
+export function buildPowersScene({ contentGroup, helpers, powersStage }: LessonSceneContext): LessonScene {
+  if (powersStage === 1) {
+    return buildPowersTermsScene(contentGroup, helpers);
+  }
+
   const { createDigitSlot, showDigit, createEquationSymbol } = helpers;
   const baseColor = 0x53aebb;
   const additionColor = 0xe6894e;
@@ -121,7 +125,140 @@ export function buildPowersScene({ contentGroup, helpers }: LessonSceneContext):
   return {};
 }
 
-function createTextPlane(text: string, color: string, fontSize: number) {
+function buildPowersTermsScene(contentGroup: THREE.Group, helpers: LessonSceneContext["helpers"]): LessonScene {
+  const { createDigitSlot, showDigit, createEquationSymbol } = helpers;
+  const baseColor = 0x53aebb;
+  const exponentColor = 0x9b84d9;
+  const symbolColor = 0x8a8194;
+
+  const repeatedNumbers = new THREE.Group();
+  for (let index = 0; index < 4; index += 1) {
+    const factor = createDigitSlot(baseColor);
+    showDigit(factor, "2");
+    factor.position.x = index * 1.05;
+    repeatedNumbers.add(factor);
+
+    if (index > 0) {
+      const multiply = createEquationSymbol("multiply", symbolColor);
+      multiply.position.x = index * 1.05 - 0.52;
+      multiply.scale.setScalar(0.68);
+      repeatedNumbers.add(multiply);
+    }
+  }
+  repeatedNumbers.position.set(-2.95, 0.35, 0.3);
+  repeatedNumbers.scale.setScalar(0.78);
+  contentGroup.add(repeatedNumbers);
+
+  const equals = createEquationSymbol("equals", symbolColor);
+  equals.position.set(0.35, 0.35, 0.3);
+  equals.scale.setScalar(0.82);
+  contentGroup.add(equals);
+
+  const powerExpression = new THREE.Group();
+  const base = createDigitSlot(baseColor);
+  showDigit(base, "2");
+  base.scale.setScalar(1.65);
+  base.position.set(1.5, 0.1, 0.3);
+
+  const exponent = createDigitSlot(exponentColor);
+  showDigit(exponent, "4");
+  exponent.scale.setScalar(0.82);
+  exponent.position.set(2.45, 1.2, 0.35);
+  powerExpression.add(base, exponent);
+  contentGroup.add(powerExpression);
+
+  const repeatedCount = createLabelPlane("4개", "#7258b1", "#f1edff");
+  repeatedCount.position.set(-1.72, 1.78, 0.28);
+  repeatedCount.scale.setScalar(0.82);
+  contentGroup.add(repeatedCount);
+
+  const countArrow = createArrow(
+    new THREE.Vector3(-0.95, 1.82, 0.2),
+    new THREE.Vector3(2.12, 1.46, 0.2),
+    exponentColor,
+  );
+  contentGroup.add(countArrow);
+
+  const baseName = createLabelPlane("밑", "#318696", "#e7f8fa");
+  baseName.position.set(1.5, -1.5, 0.28);
+  baseName.scale.setScalar(0.82);
+  const exponentName = createLabelPlane("지수", "#7258b1", "#f1edff");
+  exponentName.position.set(3.5, 1.2, 0.28);
+  exponentName.scale.setScalar(0.82);
+  contentGroup.add(baseName, exponentName);
+
+  const baseLabelArrow = createArrow(
+    new THREE.Vector3(1.5, -1.08, 0.2),
+    new THREE.Vector3(1.5, -0.5, 0.2),
+    baseColor,
+  );
+  const exponentLabelArrow = createArrow(
+    new THREE.Vector3(3.08, 1.2, 0.2),
+    new THREE.Vector3(2.72, 1.2, 0.2),
+    exponentColor,
+  );
+  contentGroup.add(baseLabelArrow, exponentLabelArrow);
+
+  const layoutBounds = new THREE.Mesh(
+    new THREE.BoxGeometry(7.5, 6.2, 0.01),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
+  );
+  layoutBounds.position.set(0, 0.15, -0.5);
+  contentGroup.add(layoutBounds);
+
+  return {};
+}
+
+function createArrow(start: THREE.Vector3, end: THREE.Vector3, color: number) {
+  const direction = end.clone().sub(start);
+  const length = direction.length();
+  const group = new THREE.Group();
+  const shaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.035, 0.035, Math.max(0.1, length - 0.18), 12),
+    new THREE.MeshBasicMaterial({ color }),
+  );
+  shaft.position.copy(start).lerp(end, 0.46);
+  shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
+  const head = new THREE.Mesh(
+    new THREE.ConeGeometry(0.13, 0.3, 16),
+    new THREE.MeshBasicMaterial({ color }),
+  );
+  head.position.copy(end);
+  head.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
+  group.add(shaft, head);
+  return group;
+}
+
+function createLabelPlane(text: string, color: string, background: string) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 500;
+  canvas.height = 220;
+  const context = canvas.getContext("2d");
+  if (context) {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = background;
+    context.beginPath();
+    context.roundRect(18, 18, canvas.width - 36, canvas.height - 36, 72);
+    context.fill();
+    context.strokeStyle = color;
+    context.lineWidth = 8;
+    context.stroke();
+    context.fillStyle = color;
+    context.font = '900 104px "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif';
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(text, canvas.width / 2, canvas.height / 2 + 4);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  return new THREE.Mesh(
+    new THREE.PlaneGeometry(1.45, 0.64),
+    new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }),
+  );
+}
+
+function createTextPlane(text: string, color: string, fontSize: number, width = 3.8) {
   const canvas = document.createElement("canvas");
   canvas.width = 1000;
   canvas.height = 220;
@@ -138,7 +275,7 @@ function createTextPlane(text: string, color: string, fontSize: number) {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   return new THREE.Mesh(
-    new THREE.PlaneGeometry(3.8, 0.84),
+    new THREE.PlaneGeometry(width, 0.84),
     new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }),
   );
 }

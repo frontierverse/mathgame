@@ -74,8 +74,16 @@ export const lessons: Lesson[] = [
     color: "#b6a5df",
   },
   {
-    id: "subtraction",
+    id: "powers-two",
     index: "10",
+    title: "거듭제곱 2",
+    description: "8을 2의 세제곱으로 바꾸어 보기",
+    example: "2×8",
+    color: "#8d78c9",
+  },
+  {
+    id: "subtraction",
+    index: "11",
     title: "뺄셈",
     description: "전체에서 일부 덜어내기",
     example: "7-3",
@@ -83,7 +91,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "division",
-    index: "11",
+    index: "12",
     title: "나눗셈",
     description: "같은 크기의 그룹으로 나누기",
     example: "12÷3",
@@ -91,7 +99,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "parentheses",
-    index: "12",
+    index: "13",
     title: "괄호",
     description: "먼저 계산할 세계 묶기",
     example: "(4+2)×3",
@@ -99,7 +107,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "mixed",
-    index: "13",
+    index: "14",
     title: "복합 계산",
     description: "연산의 순서 탐험하기",
     example: "8÷2+3",
@@ -107,7 +115,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "explore",
-    index: "14",
+    index: "15",
     title: "자유 탐구",
     description: "나만의 식으로 공간 바꾸기",
     example: "6+3",

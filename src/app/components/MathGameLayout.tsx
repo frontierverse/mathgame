@@ -8,6 +8,7 @@ import type {
   CircleAreaStage,
   ExpressionPreview,
   Lesson,
+  PowersStage,
   TriangleAreaStage,
 } from "./types";
 
@@ -21,6 +22,7 @@ type MathGameLayoutProps = {
   isCommitted: boolean;
   triangleAreaStage: TriangleAreaStage;
   circleAreaStage: CircleAreaStage;
+  powersStage: PowersStage;
   onSelectLesson: (lessonId: string) => void;
   onToggleLessonComplete: (lessonId: string) => void;
   onAddToken: (token: string) => void;
@@ -29,6 +31,7 @@ type MathGameLayoutProps = {
   onCommitExpression: () => void;
   onTriangleAreaStageChange: (stage: TriangleAreaStage) => void;
   onCircleAreaStageChange: (stage: CircleAreaStage) => void;
+  onPowersStageChange: (stage: PowersStage) => void;
 };
 
 export default function MathGameLayout({
@@ -41,6 +44,7 @@ export default function MathGameLayout({
   isCommitted,
   triangleAreaStage,
   circleAreaStage,
+  powersStage,
   onSelectLesson,
   onToggleLessonComplete,
   onAddToken,
@@ -49,6 +53,7 @@ export default function MathGameLayout({
   onCommitExpression,
   onTriangleAreaStageChange,
   onCircleAreaStageChange,
+  onPowersStageChange,
 }: MathGameLayoutProps) {
   return (
     <main className="min-h-screen bg-[#fbf4e7] text-[#443b50] xl:h-screen xl:overflow-hidden">
@@ -90,8 +95,10 @@ export default function MathGameLayout({
             preview={preview}
             triangleAreaStage={triangleAreaStage}
             circleAreaStage={circleAreaStage}
+            powersStage={powersStage}
             onTriangleAreaStageChange={onTriangleAreaStageChange}
             onCircleAreaStageChange={onCircleAreaStageChange}
+            onPowersStageChange={onPowersStageChange}
           />
           <ExpressionKeypad
             expression={expression}

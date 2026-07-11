@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import MathGameLayout from "./components/MathGameLayout";
 import { getLessonIdFromQuery, lessons } from "./components/mathGameData";
 import { getPreview } from "./components/mathExpression";
-import type { CircleAreaStage, TriangleAreaStage } from "./components/types";
+import type { CircleAreaStage, PowersStage, TriangleAreaStage } from "./components/types";
 
 const COMPLETED_LESSONS_STORAGE_KEY = "math-space-completed-lessons";
 const PROGRESS_CHANGE_EVENT = "math-space-progress-change";
@@ -74,6 +74,10 @@ function MathGame() {
     lessonId: string;
     stage: CircleAreaStage;
   } | null>(null);
+  const [powersStageFor, setPowersStageFor] = useState<{
+    lessonId: string;
+    stage: PowersStage;
+  } | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -81,6 +85,7 @@ function MathGame() {
   const triangleAreaStage =
     triangleAreaStageFor?.lessonId === selectedLessonId ? triangleAreaStageFor.stage : 0;
   const circleAreaStage = circleAreaStageFor?.lessonId === selectedLessonId ? circleAreaStageFor.stage : 0;
+  const powersStage = powersStageFor?.lessonId === selectedLessonId ? powersStageFor.stage : 0;
   const selectedLesson = lessons.find((lesson) => lesson.id === selectedLessonId) ?? lessons[0];
   const preview = useMemo(() => getPreview(expression), [expression]);
   const sceneExpression = expression || selectedLesson.example;
@@ -104,6 +109,7 @@ function MathGame() {
     setIsCommitted(false);
     setTriangleAreaStageFor(null);
     setCircleAreaStageFor(null);
+    setPowersStageFor(null);
   }, [pathname, router, searchParams]);
 
   const addToken = useCallback((token: string) => {
@@ -146,6 +152,10 @@ function MathGame() {
     setCircleAreaStageFor({ lessonId: selectedLessonId, stage });
   }, [selectedLessonId]);
 
+  const changePowersStage = useCallback((stage: PowersStage) => {
+    setPowersStageFor({ lessonId: selectedLessonId, stage });
+  }, [selectedLessonId]);
+
   return (
     <MathGameLayout
       lessons={lessons}
@@ -157,6 +167,7 @@ function MathGame() {
       isCommitted={isCommitted}
       triangleAreaStage={triangleAreaStage}
       circleAreaStage={circleAreaStage}
+      powersStage={powersStage}
       onSelectLesson={selectLesson}
       onToggleLessonComplete={toggleLessonComplete}
       onAddToken={addToken}
@@ -165,6 +176,7 @@ function MathGame() {
       onCommitExpression={commitExpression}
       onTriangleAreaStageChange={changeTriangleAreaStage}
       onCircleAreaStageChange={changeCircleAreaStage}
+      onPowersStageChange={changePowersStage}
     />
   );
 }

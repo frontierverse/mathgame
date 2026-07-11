@@ -4,6 +4,7 @@ import { buildFastAdditionScene } from "./lessons/fastAdditionScene";
 import { buildFallbackScene } from "./lessons/fallbackScene";
 import { buildMultiplicationScene } from "./lessons/multiplicationScene";
 import { buildPowersScene } from "./lessons/powersScene";
+import { buildPowersTwoScene } from "./lessons/powersTwoScene";
 import { buildQuantityScene } from "./lessons/quantityScene";
 import { buildSquareAreaScene } from "./lessons/squareAreaScene";
 import { buildTimesTableTwoScene } from "./lessons/timesTableTwoScene";
@@ -32,6 +33,8 @@ export function buildLessonScene(lessonId: string, context: LessonSceneContext):
       return buildCircleAreaScene(context);
     case "powers":
       return buildPowersScene(context);
+    case "powers-two":
+      return buildPowersTwoScene(context);
     default:
       return buildFallbackScene(context);
   }
