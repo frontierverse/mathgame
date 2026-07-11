@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getStudentNames } from "../data/students";
+import StudentRoster from "./StudentRoster";
 
 export const dynamic = "force-dynamic";
 
@@ -38,9 +39,7 @@ export default async function ProgressPage() {
         </header>
 
         <section className="mt-8 rounded-3xl border border-[#e7dccb] bg-[#fffdf8] p-5 shadow-[0_12px_30px_rgba(111,92,74,0.08)] sm:p-8">
-          <p className="text-xs font-bold tracking-[0.12em] text-[#8f78c9]">PROGRESS CHECK</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-[-0.05em]">학생 진도 체크하기</h1>
-          <p className="mt-2 text-sm text-[#766b7d]">진도를 체크할 학생 목록이에요.</p>
+          <h1 className="text-3xl font-bold tracking-[-0.05em]">학생 진도 체크하기</h1>
 
           {errorMessage ? (
             <div className="mt-8 rounded-2xl border border-[#efd0d5] bg-[#fff4f5] p-5">
@@ -57,36 +56,7 @@ export default async function ProgressPage() {
               <p className="text-sm font-bold text-[#665c6f]">등록된 학생이 아직 없어요.</p>
             </div>
           ) : (
-            <section className="mt-8" aria-labelledby="student-list-title">
-              <h2 id="student-list-title" className="text-sm font-medium text-[#766b7d]">
-                등록 학생 <strong className="font-bold text-[#4a4057]">{students.length}명</strong>
-              </h2>
-              <ol className="mt-4 grid gap-3 sm:grid-cols-2" aria-label="진도 체크할 학생 목록">
-                {students.map((name, index) => {
-                  const surname = name.slice(0, 1);
-                  const givenName = name.slice(1);
-                  return (
-                    <li
-                      key={`${name}-${index}`}
-                      className="flex items-center gap-3 rounded-2xl border border-[#eee4d7] bg-[#fffefa] px-4 py-4"
-                    >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f1ecfb] font-mono text-xs font-bold text-[#8f78c9]">
-                        {index + 1}
-                      </span>
-                      <span className="min-w-0 truncate text-base font-bold text-[#51475c]">
-                        <span
-                          className="text-transparent selection:text-[#51475c]"
-                          aria-hidden="true"
-                        >
-                          {surname}
-                        </span>
-                        {givenName}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
+            <StudentRoster students={students} />
           )}
         </section>
       </div>
