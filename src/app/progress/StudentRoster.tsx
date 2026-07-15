@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import QuizBoard from "./QuizBoard";
-import QuizModal from "./QuizModal";
+import QuizPanel from "./QuizPanel";
 import { STUDENT_COLORS } from "./quizData";
 import StudentList from "./StudentList";
 import useQuizProgress from "./useQuizProgress";
@@ -48,7 +48,7 @@ export default function StudentRoster({ students }: StudentRosterProps) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selectStudent, students.length]);
 
-  const closeModal = useCallback(() => setOpenQuizIndex(null), []);
+  const closePanel = useCallback(() => setOpenQuizIndex(null), []);
   const navigateQuiz = useCallback((quizIndex: number) => setOpenQuizIndex(quizIndex), []);
 
   const selectedName = students[selectedStudentIndex] ?? null;
@@ -57,7 +57,7 @@ export default function StudentRoster({ students }: StudentRosterProps) {
 
   return (
     <section className="mt-5" aria-label="학생별 퀴즈 진행도">
-      <div className="grid gap-4 lg:grid-cols-[500px_minmax(0,1fr)]">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(360px,500px)_minmax(0,1fr)] xl:grid-cols-[minmax(300px,400px)_minmax(516px,1fr)_minmax(300px,390px)] 2xl:grid-cols-[minmax(360px,480px)_minmax(596px,1fr)_minmax(320px,390px)]">
         <StudentList
           students={students}
           selectedIndex={selectedStudentIndex}
@@ -73,22 +73,25 @@ export default function StudentRoster({ students }: StudentRosterProps) {
             studentColor={selectedColor}
             counts={selectedCounts}
             onOpenQuiz={setOpenQuizIndex}
+            selectedQuizIndex={openQuizIndex}
           />
         ) : null}
-      </div>
 
-      {openQuizIndex !== null && selectedName ? (
-        <QuizModal
-          name={selectedName.slice(1)}
-          quizIndex={openQuizIndex}
-          counts={selectedCounts}
-          color={selectedColor}
-          onSolve={() => solveQuiz(selectedName, openQuizIndex)}
-          onUndo={() => undoQuiz(selectedName, openQuizIndex)}
-          onNavigate={navigateQuiz}
-          onClose={closeModal}
-        />
-      ) : null}
+        {openQuizIndex !== null && selectedName ? (
+          <div className="min-w-0 lg:col-start-2 xl:col-start-auto">
+            <QuizPanel
+              name={selectedName.slice(1)}
+              quizIndex={openQuizIndex}
+              counts={selectedCounts}
+              color={selectedColor}
+              onSolve={() => solveQuiz(selectedName, openQuizIndex)}
+              onUndo={() => undoQuiz(selectedName, openQuizIndex)}
+              onNavigate={navigateQuiz}
+              onClose={closePanel}
+            />
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }

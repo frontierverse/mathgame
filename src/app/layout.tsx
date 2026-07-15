@@ -1,15 +1,28 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = Geist({
+const notoSansKr = localFont({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  display: "swap",
+  src: [
+    {
+      path: "../../public/fonts/MalgunGothic.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/MalgunGothic-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+  ],
 });
 
-const geistMono = Geist_Mono({
+const notoSansKrMono = localFont({
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
+  src: "../../public/fonts/MalgunGothic.ttf",
 });
 
 export const metadata: Metadata = {
@@ -23,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="ko" className={`${notoSansKr.variable} ${notoSansKrMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

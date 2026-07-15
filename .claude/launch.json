@@ -7,6 +7,15 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "bubble",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:\\Users\\신승식\\AppData\\Local\\Temp\\claude\\C--Users-----Desktop-mathgame\\a552bd5d-b4d5-4f9f-a312-f3aa38a3cad2\\scratchpad\\bubble-test\\server.js"
+      ],
+      "port": 4321,
+      "autoPort": true
     }
   ]
 }
