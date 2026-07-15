@@ -1,15 +1,21 @@
 import Link from "next/link";
 import { getStudentNames } from "../data/students";
+import MineralEvolutionLegend from "./MineralEvolutionLegend";
 import StudentRoster from "./StudentRoster";
 
 export const dynamic = "force-dynamic";
+
+const HIDDEN_STUDENT_NAMES = new Set(["하늘", "지민"]);
 
 export default async function ProgressPage() {
   let students: string[] = [];
   let errorMessage: string | null = null;
 
   try {
-    students = await getStudentNames();
+    students = (await getStudentNames()).filter((name) => {
+      const displayName = name.slice(1).trim();
+      return !HIDDEN_STUDENT_NAMES.has(name) && !HIDDEN_STUDENT_NAMES.has(displayName);
+    });
   } catch {
     errorMessage = "학생 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
   }
@@ -39,7 +45,12 @@ export default async function ProgressPage() {
         </header>
 
         <section className="mt-8 rounded-3xl border border-[#e7dccb] bg-[#fffdf8] p-5 shadow-[0_12px_30px_rgba(111,92,74,0.08)] sm:p-8">
-          <h1 className="text-3xl font-bold tracking-[-0.05em]">학생 진도 체크하기</h1>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <h1 className="shrink-0 text-3xl font-bold">
+              학생 진도 체크하기
+            </h1>
+            <MineralEvolutionLegend />
+          </div>
 
           {errorMessage ? (
             <div className="mt-8 rounded-2xl border border-[#efd0d5] bg-[#fff4f5] p-5">

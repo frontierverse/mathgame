@@ -1,0 +1,156 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+
+import QuizDetail from "./QuizDetail";
+import { quizTextForIndex } from "./quizData";
+import StudentBlob from "./StudentBlob";
+
+type DiamondModalProps = {
+  studentName: string;
+  studentColor: string;
+  diamondIndex: number;
+  rubyQuizIndexes: number[];
+  counts: number[];
+  onSolveQuiz: (quizIndex: number) => void;
+  onUndoQuiz: (quizIndex: number) => void;
+  onClose: () => void;
+};
+
+export default function DiamondModal({
+  studentName,
+  studentColor,
+  diamondIndex,
+  rubyQuizIndexes,
+  counts,
+  onSolveQuiz,
+  onUndoQuiz,
+  onClose,
+}: DiamondModalProps) {
+  const [mounted, setMounted] = useState(false);
+  const [selectedQuizIndex, setSelectedQuizIndex] = useState<number | null>(
+    rubyQuizIndexes[0] ?? null,
+  );
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const previouslyFocused = document.activeElement;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    closeButtonRef.current?.focus();
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
+  }, [mounted, onClose]);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-[#312a38]/45 p-4 backdrop-blur-[2px]"
+      onPointerDown={(event) => {
+        if (event.currentTarget === event.target) onClose();
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="diamond-modal-title"
+        className="relative max-h-[calc(100vh-2rem)] w-full max-w-5xl overflow-y-auto rounded-lg border border-[#dce8ef] bg-[#fffefa] p-5 shadow-[0_24px_70px_rgba(46,37,57,0.25)] sm:p-7"
+      >
+        <button
+          ref={closeButtonRef}
+          type="button"
+          onClick={onClose}
+          aria-label="닫기"
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-lg font-bold text-[#7a7183] transition hover:bg-[#edf4f8] hover:text-[#4f4658] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7ec2f0]"
+        >
+          ×
+        </button>
+
+        <div className="flex items-center gap-3 pr-10">
+          <span className="diamond-reward-circle flex h-16 w-16 shrink-0 items-center justify-center rounded-full">
+            <StudentBlob
+              variant="diamond"
+              color={studentColor}
+              seed={diamondIndex}
+              renderMode="thumbnail"
+              thumbnailMotion
+              className="h-12 w-12"
+            />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-[#6f91a6]">
+              {studentName} · 다이아몬드 {diamondIndex + 1}
+            </p>
+            <h2 id="diamond-modal-title" className="mt-0.5 text-xl font-black text-[#463c56]">
+              다이아몬드를 만든 루비 10개
+            </h2>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)]">
+          <div className="grid grid-cols-2 content-start gap-2.5 sm:grid-cols-5 lg:grid-cols-3 xl:grid-cols-5">
+            {rubyQuizIndexes.map((quizIndex, rubyIndex) => {
+              const selected = quizIndex === selectedQuizIndex;
+              return (
+                <button
+                  key={quizIndex}
+                  type="button"
+                  onClick={() => setSelectedQuizIndex(quizIndex)}
+                  aria-pressed={selected}
+                  aria-label={`${quizIndex + 1}번 퀴즈 보기: ${quizTextForIndex(quizIndex)}`}
+                  title={`${quizIndex + 1}번 퀴즈`}
+                  className={`flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-lg border px-2 py-3 text-[#7d4351] transition hover:-translate-y-0.5 hover:border-[#e99aac] hover:bg-[#fff0f3] hover:shadow-[0_7px_16px_rgba(170,74,97,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e14b63] ${
+                    selected
+                      ? "border-[#e14b63] bg-[#fff0f3] ring-2 ring-inset ring-[#f0a5b5]"
+                      : "border-[#eed4db] bg-[#fff7f8]"
+                  }`}
+                >
+                  <StudentBlob
+                    variant="ruby"
+                    color={studentColor}
+                    seed={diamondIndex * 10 + rubyIndex}
+                    renderMode="thumbnail"
+                    thumbnailMotion
+                    className="h-12 w-12"
+                  />
+                  <span className="text-xs font-black tabular-nums">{quizIndex + 1}번</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <aside
+            className="min-h-[280px] border-t border-[#e3e9ec] pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0"
+            aria-live="polite"
+          >
+            {selectedQuizIndex !== null ? (
+              <QuizDetail
+                name={studentName}
+                quizIndex={selectedQuizIndex}
+                counts={counts}
+                color={studentColor}
+                onSolve={() => onSolveQuiz(selectedQuizIndex)}
+                onUndo={() => onUndoQuiz(selectedQuizIndex)}
+              />
+            ) : null}
+          </aside>
+        </div>
+      </section>
+    </div>,
+    document.body,
+  );
+}

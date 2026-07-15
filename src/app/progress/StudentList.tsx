@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 import type { QuizProgress } from "./quizProgress";
 import { startedQuizCount } from "./quizProgress";
 
@@ -10,7 +12,7 @@ type StudentListProps = {
   onSelect: (index: number) => void;
 };
 
-export default function StudentList({
+function StudentList({
   students,
   selectedIndex,
   progress,
@@ -53,3 +55,5 @@ export default function StudentList({
     </aside>
   );
 }
+
+export default memo(StudentList);

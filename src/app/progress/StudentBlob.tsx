@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import * as THREE from "three";
 
 import { MINERALS, type BlobVariant } from "./mineralData";
@@ -97,6 +98,29 @@ function makeCrystal(mat: THREE.Material, radius: number, height: number) {
   return crystal;
 }
 
+function addDiamondSparkle(
+  parent: THREE.Group,
+  position: THREE.Vector3,
+  scale: number,
+  color: number,
+) {
+  const sparkle = new THREE.Group();
+  const material = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.95,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const vertical = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), material);
+  vertical.scale.set(0.045 * scale, 0.3 * scale, 0.035 * scale);
+  const horizontal = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), material);
+  horizontal.scale.set(0.2 * scale, 0.04 * scale, 0.035 * scale);
+  sparkle.add(vertical, horizontal);
+  sparkle.position.copy(position);
+  parent.add(sparkle);
+}
+
 function buildCharacter(variant: BlobVariant, color: string, seed: number) {
   const character = new THREE.Group();
 
@@ -169,34 +193,102 @@ function buildCharacter(variant: BlobVariant, color: string, seed: number) {
   }
 
   // diamond — the most precious tier
-  const diamondMat = new THREE.MeshStandardMaterial({
-    color: 0xdaf0ff,
-    roughness: 0.04,
-    metalness: 0.3,
-    emissive: 0x9fd4ff,
-    emissiveIntensity: 0.2,
+  const diamondMat = new THREE.MeshPhysicalMaterial({
+    color: 0xcaf5ff,
+    roughness: 0.03,
+    metalness: 0.16,
+    clearcoat: 1,
+    clearcoatRoughness: 0.025,
+    emissive: 0x65cfff,
+    emissiveIntensity: 0.38,
     flatShading: true,
   });
-  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.78, 0.34, 8), diamondMat);
+  const crown = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.48, 0.8, 0.36, 8),
+    diamondMat,
+  );
   crown.position.y = 0.3;
   character.add(crown);
-  const pavilion = new THREE.Mesh(new THREE.ConeGeometry(0.78, 0.86, 8), diamondMat);
-  pavilion.position.y = -0.3;
-  pavilion.rotation.x = Math.PI; // point downward
+  const pavilion = new THREE.Mesh(new THREE.ConeGeometry(0.8, 0.92, 8), diamondMat);
+  pavilion.position.y = -0.34;
+  pavilion.rotation.x = Math.PI;
   character.add(pavilion);
-  // sparkles
-  const sparkleMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  for (const s of [
-    { x: 0.7, y: 0.6, z: 0.5, r: 0.06 },
-    { x: -0.65, y: 0.2, z: 0.6, r: 0.045 },
-    { x: 0.2, y: 0.85, z: 0.4, r: 0.04 },
-  ]) {
-    const sparkle = new THREE.Mesh(new THREE.SphereGeometry(s.r, 8, 8), sparkleMat);
-    sparkle.position.set(s.x, s.y, s.z);
-    character.add(sparkle);
-  }
-  addFace(character, { eyeY: 0.32, eyeSpread: 0.16, eyeZ: 0.46, eyeR: 0.09, cheekY: 0.16, cheekSpread: 0.3, cheekZ: 0.4 });
-  addBow(character, color, new THREE.Vector3(0.4, 0.7, 0.3));
+
+  const table = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.39, 0.48, 0.075, 8),
+    new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      roughness: 0,
+      metalness: 0.08,
+      clearcoat: 1,
+      emissive: 0xbff7ff,
+      emissiveIntensity: 0.75,
+      flatShading: true,
+    }),
+  );
+  table.position.y = 0.515;
+  character.add(table);
+
+  const innerLight = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.43, 0),
+    new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.72,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+  );
+  innerLight.position.set(0, 0.03, 0.79);
+  innerLight.scale.set(0.72, 0.9, 0.12);
+  character.add(innerLight);
+
+  const cyanRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.9, 0.025, 8, 48),
+    new THREE.MeshBasicMaterial({
+      color: 0x72e9ff,
+      transparent: true,
+      opacity: 0.76,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+  );
+  cyanRing.position.z = -0.12;
+  character.add(cyanRing);
+
+  const prismRing = new THREE.Mesh(
+    new THREE.TorusGeometry(1.02, 0.018, 8, 48),
+    new THREE.MeshBasicMaterial({
+      color: 0xffa9df,
+      transparent: true,
+      opacity: 0.55,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+  );
+  prismRing.position.z = -0.16;
+  prismRing.rotation.z = 0.34;
+  prismRing.scale.y = 0.88;
+  character.add(prismRing);
+
+  addDiamondSparkle(character, new THREE.Vector3(0.78, 0.66, 0.8), 1, 0xffffff);
+  addDiamondSparkle(character, new THREE.Vector3(-0.75, 0.12, 0.82), 0.72, 0x8feeff);
+  addDiamondSparkle(character, new THREE.Vector3(0.28, 0.98, 0.68), 0.56, 0xffc1e8);
+
+  const innerGlow = new THREE.PointLight(0x99ecff, 3.4, 4.5);
+  innerGlow.position.set(0, 0.12, 1.25);
+  character.add(innerGlow);
+
+  addFace(character, {
+    eyeY: 0.3,
+    eyeSpread: 0.18,
+    eyeZ: 0.82,
+    eyeR: 0.09,
+    cheekY: 0.13,
+    cheekSpread: 0.32,
+    cheekZ: 0.78,
+  });
+  addBow(character, color, new THREE.Vector3(0.45, 0.72, 0.72));
   return character;
 }
 
@@ -265,6 +357,7 @@ function StudentBlobThumbnail({
   className = "h-9 w-9 shrink-0",
 }: StudentBlobProps) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const diamondGlow = variant === "diamond" && thumbnailMotion;
 
   useEffect(() => {
     let active = true;
@@ -280,7 +373,9 @@ function StudentBlobThumbnail({
 
   return (
     <div
-      className={`${className}${thumbnailMotion ? " mineral-thumbnail-motion" : ""}`}
+      className={`${className}${thumbnailMotion ? " mineral-thumbnail-motion" : ""}${
+        diamondGlow ? " diamond-thumbnail" : ""
+      }`}
       style={{
         ...(thumbnail
           ? {
@@ -379,21 +474,49 @@ function AnimatedStudentBlob({
 }
 
 export default function StudentBlob(props: StudentBlobProps) {
+  const tooltipAnchorRef = useRef<HTMLSpanElement>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ left: number; top: number } | null>(null);
+
+  const showTooltip = () => {
+    const anchor = tooltipAnchorRef.current;
+    if (!anchor) return;
+
+    const rect = anchor.getBoundingClientRect();
+    setTooltipPosition({
+      left: rect.left + rect.width / 2,
+      top: rect.top - 8,
+    });
+  };
+
   return (
-    <span
-      className="group/mineral relative inline-flex shrink-0"
-      role="img"
-      aria-label={`${MINERALS[props.variant].label} 광물 캐릭터`}
-    >
-      {props.renderMode === "thumbnail" ? (
-        <StudentBlobThumbnail {...props} />
-      ) : (
-        <AnimatedStudentBlob {...props} />
-      )}
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-[80] mb-2 -translate-x-1/2 scale-90 whitespace-nowrap rounded-full border border-[#e3d6f2] bg-[#fffaff] px-2.5 py-1 text-[11px] font-black text-[#6d5a91] opacity-0 shadow-[0_6px_18px_rgba(87,64,120,0.2)] transition duration-150 group-hover/mineral:scale-100 group-hover/mineral:opacity-100">
-        {MINERALS[props.variant].label}
-        <span className="absolute left-1/2 top-full h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-[#e3d6f2] bg-[#fffaff]" />
+    <>
+      <span
+        ref={tooltipAnchorRef}
+        className="relative inline-flex shrink-0"
+        role="img"
+        aria-label={`${MINERALS[props.variant].label} 광물 캐릭터`}
+        onPointerEnter={showTooltip}
+        onPointerLeave={() => setTooltipPosition(null)}
+      >
+        {props.renderMode === "thumbnail" ? (
+          <StudentBlobThumbnail {...props} />
+        ) : (
+          <AnimatedStudentBlob {...props} />
+        )}
       </span>
-    </span>
+      {tooltipPosition
+        ? createPortal(
+            <span
+              role="tooltip"
+              className="pointer-events-none fixed z-[100] -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-full border border-[#e3d6f2] bg-[#fffaff] px-2.5 py-1 text-[11px] font-black text-[#6d5a91] shadow-[0_6px_18px_rgba(87,64,120,0.2)]"
+              style={{ left: tooltipPosition.left, top: tooltipPosition.top }}
+            >
+              {MINERALS[props.variant].label}
+              <span className="absolute left-1/2 top-full h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-[#e3d6f2] bg-[#fffaff]" />
+            </span>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }

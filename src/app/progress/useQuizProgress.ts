@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { MAX_SOLVES, QUIZZES } from "./quizData";
+import { MAX_QUIZ_COUNT, MAX_SOLVES } from "./quizData";
 import type { QuizProgress } from "./quizProgress";
 
 const STORAGE_KEY = "math-space-quiz-progress-v4";
@@ -13,7 +13,7 @@ function normalizeProgress(value: unknown): QuizProgress {
   const progress: QuizProgress = {};
   Object.entries(value).forEach(([studentName, rawCounts]) => {
     if (!Array.isArray(rawCounts)) return;
-    progress[studentName] = rawCounts.map((count) =>
+    progress[studentName] = rawCounts.slice(0, MAX_QUIZ_COUNT).map((count) =>
       typeof count === "number" && Number.isInteger(count)
         ? Math.min(MAX_SOLVES, Math.max(0, count))
         : 0,
@@ -135,9 +135,11 @@ export default function useQuizProgress(students: string[]) {
 
   const solveQuiz = useCallback(
     (studentName: string, quizIndex: number) => {
+      if (!Number.isInteger(quizIndex) || quizIndex < 0 || quizIndex >= MAX_QUIZ_COUNT) return;
+
       const current = progressRef.current;
       const counts = [...(current[studentName] ?? [])];
-      while (counts.length < QUIZZES.length) counts.push(0);
+      while (counts.length <= quizIndex) counts.push(0);
       if (counts[quizIndex] >= MAX_SOLVES) return;
 
       counts[quizIndex] += 1;
@@ -166,6 +168,8 @@ export default function useQuizProgress(students: string[]) {
 
   const undoQuiz = useCallback(
     (studentName: string, quizIndex: number) => {
+      if (!Number.isInteger(quizIndex) || quizIndex < 0 || quizIndex >= MAX_QUIZ_COUNT) return;
+
       const current = progressRef.current;
       const counts = [...(current[studentName] ?? [])];
       const currentCount = counts[quizIndex] ?? 0;

@@ -1,5 +1,5 @@
 import { createSupabaseAdminHeaders, getSupabaseAdminConfig } from "../../data/supabaseAdmin";
-import { QUIZZES } from "../../progress/quizData";
+import { MAX_QUIZ_COUNT } from "../../progress/quizData";
 import type { QuizProgress } from "../../progress/quizProgress";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ function parseRows(rows: unknown): QuizProgress {
 
     const index = quizIndex as number;
     const count = solveCount as number;
-    if (index < 0 || index >= QUIZZES.length || count < 0 || count > 3) return;
+    if (index < 0 || index >= MAX_QUIZ_COUNT || count < 0 || count > 3) return;
 
     const counts = progress[studentName] ?? [];
     counts[index] = count;
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       !Number.isInteger(quizIndex) ||
       !Number.isInteger(solveCount) ||
       (quizIndex as number) < 0 ||
-      (quizIndex as number) >= QUIZZES.length ||
+      (quizIndex as number) >= MAX_QUIZ_COUNT ||
       (solveCount as number) < 0 ||
       (solveCount as number) > 3
     ) {
@@ -142,7 +142,7 @@ export async function DELETE(request: Request) {
       !studentName ||
       !Number.isInteger(quizIndex) ||
       (quizIndex as number) < 0 ||
-      (quizIndex as number) >= QUIZZES.length
+      (quizIndex as number) >= MAX_QUIZ_COUNT
     ) {
       return Response.json({ error: "잘못된 진행도 취소 요청입니다." }, { status: 400 });
     }

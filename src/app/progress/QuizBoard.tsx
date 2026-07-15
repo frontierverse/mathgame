@@ -1,10 +1,12 @@
 "use client";
 
+import { memo } from "react";
+
+import DiamondRewardButton from "./DiamondRewardButton";
 import { MINERALS } from "./mineralData";
-import { QUIZZES } from "./quizData";
 import {
-  countMinerals,
   EARNABLE_MINERALS,
+  getMineralInventory,
   mineralForCount,
   unlockedQuizCount,
 } from "./quizProgress";
@@ -15,32 +17,49 @@ type QuizBoardProps = {
   studentIndex: number;
   studentColor: string;
   counts: number[];
-  onOpenQuiz: (quizIndex: number) => void;
+  onOpenQuiz: (studentIndex: number, quizIndex: number) => void;
+  onOpenDiamond: (studentIndex: number, diamondIndex: number) => void;
   selectedQuizIndex: number | null;
 };
 
-const FADED_PREVIEW_COUNT = 10;
+type QuizBoardItem =
+  | { type: "quiz"; quizIndex: number }
+  | { type: "diamond"; diamondIndex: number };
 
-export default function QuizBoard({
+function QuizBoard({
   studentName,
   studentIndex,
   studentColor,
   counts,
   onOpenQuiz,
+  onOpenDiamond,
   selectedQuizIndex,
 }: QuizBoardProps) {
-  const mineralCounts = countMinerals(counts);
+  const { totals: mineralCounts, diamondGroups, consumedRubyQuizIndexes } =
+    getMineralInventory(counts);
   const unlockedCount = unlockedQuizCount(counts);
-  const renderedCount = Math.min(QUIZZES.length, unlockedCount + FADED_PREVIEW_COUNT);
-  const visibleQuizzes = QUIZZES.slice(0, renderedCount);
+  const renderedCount = unlockedCount;
+  const diamondIndexByFirstQuiz = new Map(
+    diamondGroups.map((rubyQuizIndexes, diamondIndex) => [rubyQuizIndexes[0], diamondIndex]),
+  );
+  const boardItems: QuizBoardItem[] = [];
+
+  for (let quizIndex = 0; quizIndex < renderedCount; quizIndex += 1) {
+    if (consumedRubyQuizIndexes.has(quizIndex)) {
+      const diamondIndex = diamondIndexByFirstQuiz.get(quizIndex);
+      if (diamondIndex !== undefined) boardItems.push({ type: "diamond", diamondIndex });
+      continue;
+    }
+    boardItems.push({ type: "quiz", quizIndex });
+  }
 
   return (
     <div className="min-w-0 p-1 sm:p-2">
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <h3 className="text-xl font-bold tracking-[-0.04em] text-[#51475c]">
           {studentName.slice(1)}의 퀴즈
         </h3>
-        <div className="ml-auto flex items-center gap-2.5">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-x-2.5 gap-y-1">
           {EARNABLE_MINERALS.map((mineral, index) => (
             <span
               key={mineral}
@@ -57,34 +76,57 @@ export default function QuizBoard({
               {mineralCounts[mineral]}
             </span>
           ))}
+          <span
+            className="flex items-center gap-1 text-sm font-bold tabular-nums text-[#766b7d]"
+            aria-label={`다이아몬드 ${mineralCounts.diamond}개`}
+          >
+            <StudentBlob
+              variant="diamond"
+              color={studentColor}
+              seed={3}
+              renderMode="thumbnail"
+              thumbnailMotion={mineralCounts.diamond > 0}
+              className={`h-7 w-7 ${mineralCounts.diamond > 0 ? "" : "opacity-40 grayscale"}`}
+            />
+            {mineralCounts.diamond}
+          </span>
         </div>
       </div>
 
-      <div className="progress-scroll mt-5 overflow-x-auto pb-2 pt-1">
+      <div className="progress-scroll mt-5 max-h-[168px] overflow-x-hidden overflow-y-auto overscroll-contain px-2 py-4 2xl:max-h-[184px]">
         <ol
-          className="grid w-max grid-cols-10 gap-1"
-          aria-label={`${studentName.slice(1)}의 퀴즈, ${unlockedCount}개 열림`}
+          className="grid w-max grid-cols-5 gap-2"
+          aria-label={`${studentName.slice(1)}의 퀴즈, ${unlockedCount}개 열림, 다이아몬드 ${diamondGroups.length}개`}
         >
-          {visibleQuizzes.map((_, quizIndex) => {
+          {boardItems.map((item) => {
+            if (item.type === "diamond") {
+              return (
+                <li key={`diamond-${item.diamondIndex}`}>
+                  <DiamondRewardButton
+                    studentColor={studentColor}
+                    seed={studentIndex * 10 + item.diamondIndex}
+                    diamondIndex={item.diamondIndex}
+                    onClick={() => onOpenDiamond(studentIndex, item.diamondIndex)}
+                  />
+                </li>
+              );
+            }
+
+            const { quizIndex } = item;
             const count = counts[quizIndex] ?? 0;
             const mineral = mineralForCount(count);
-            const locked = quizIndex >= unlockedCount;
             const selected = quizIndex === selectedQuizIndex;
-            const fadeDistance = quizIndex - unlockedCount;
-            const opacity = locked ? Math.max(0.07, 0.7 - fadeDistance * 0.07) : 1;
             return (
               <li key={quizIndex}>
                 <button
                   type="button"
-                  onClick={() => onOpenQuiz(quizIndex)}
-                  disabled={locked}
+                  onClick={() => onOpenQuiz(studentIndex, quizIndex)}
                   aria-pressed={selected}
-                  aria-label={`${quizIndex + 1}번 퀴즈${locked ? " · 아직 잠김" : mineral ? ` · ${MINERALS[mineral].label}` : ""}`}
-                  style={{ opacity }}
-                  className={`flex h-12 w-12 items-center justify-center rounded-full border transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b5a3f0] focus-visible:ring-offset-1 2xl:h-14 2xl:w-14 ${
-                    locked
-                      ? "cursor-default border-[#e5ddd2] bg-white text-[#c8bdaf]"
-                      : mineral
+                  aria-label={`${quizIndex + 1}번 퀴즈${
+                    mineral ? ` · ${MINERALS[mineral].label}` : ""
+                  }`}
+                  className={`flex h-16 w-16 items-center justify-center rounded-full border transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b5a3f0] focus-visible:ring-offset-1 2xl:h-[72px] 2xl:w-[72px] ${
+                    mineral
                       ? "border-[#d6c8e8] bg-[#f7f2ff] hover:border-[#9b84d9]"
                       : "border-[#dfd3c3] bg-white text-[#b3a693] hover:border-[#b6a5df] hover:bg-[#f8f4ff]"
                   } ${selected ? "border-[#8f78c9] ring-2 ring-inset ring-[#b5a3f0]" : ""}`}
@@ -96,10 +138,12 @@ export default function QuizBoard({
                       seed={studentIndex * 100 + quizIndex}
                       renderMode="thumbnail"
                       thumbnailMotion
-                      className="h-10 w-10 2xl:h-12 2xl:w-12"
+                      className="h-14 w-14 2xl:h-16 2xl:w-16"
                     />
                   ) : (
-                    <span className="text-sm font-bold tabular-nums 2xl:text-base">{quizIndex + 1}</span>
+                    <span className="text-base font-bold tabular-nums 2xl:text-lg">
+                      {quizIndex + 1}
+                    </span>
                   )}
                 </button>
               </li>
@@ -110,3 +154,5 @@ export default function QuizBoard({
     </div>
   );
 }
+
+export default memo(QuizBoard);
