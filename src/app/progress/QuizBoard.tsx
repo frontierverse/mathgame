@@ -14,12 +14,14 @@ import StudentBlob from "./StudentBlob";
 
 type QuizBoardProps = {
   studentName: string;
+  studentAge: number | null;
   studentIndex: number;
   studentColor: string;
   counts: number[];
   onOpenQuiz: (studentIndex: number, quizIndex: number) => void;
   onOpenDiamond: (studentIndex: number, diamondIndex: number) => void;
   selectedQuizIndex: number | null;
+  compact?: boolean;
 };
 
 type QuizBoardItem =
@@ -28,12 +30,14 @@ type QuizBoardItem =
 
 function QuizBoard({
   studentName,
+  studentAge,
   studentIndex,
   studentColor,
   counts,
   onOpenQuiz,
   onOpenDiamond,
   selectedQuizIndex,
+  compact = false,
 }: QuizBoardProps) {
   const { totals: mineralCounts, diamondGroups, consumedRubyQuizIndexes } =
     getMineralInventory(counts);
@@ -58,6 +62,11 @@ function QuizBoard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h3 className="text-xl font-bold tracking-[-0.04em] text-[#51475c]">
           {studentName.slice(1)}의 퀴즈
+          {studentAge === null ? null : (
+            <span className="select-text text-transparent selection:bg-[#e8def8] selection:text-[#51475c]">
+              {` (${studentAge})`}
+            </span>
+          )}
         </h3>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-x-2.5 gap-y-1">
           {EARNABLE_MINERALS.map((mineral, index) => (
@@ -95,7 +104,7 @@ function QuizBoard({
 
       <div className="progress-scroll mt-5 max-h-[168px] overflow-x-hidden overflow-y-auto overscroll-contain px-2 py-4 2xl:max-h-[184px]">
         <ol
-          className="grid w-max grid-cols-5 gap-2"
+          className="grid w-max grid-cols-6 gap-2"
           aria-label={`${studentName.slice(1)}의 퀴즈, ${unlockedCount}개 열림, 다이아몬드 ${diamondGroups.length}개`}
         >
           {boardItems.map((item) => {
@@ -106,6 +115,7 @@ function QuizBoard({
                     studentColor={studentColor}
                     seed={studentIndex * 10 + item.diamondIndex}
                     diamondIndex={item.diamondIndex}
+                    compact={compact}
                     onClick={() => onOpenDiamond(studentIndex, item.diamondIndex)}
                   />
                 </li>
@@ -125,7 +135,9 @@ function QuizBoard({
                   aria-label={`${quizIndex + 1}번 퀴즈${
                     mineral ? ` · ${MINERALS[mineral].label}` : ""
                   }`}
-                  className={`flex h-16 w-16 items-center justify-center rounded-full border transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b5a3f0] focus-visible:ring-offset-1 2xl:h-[72px] 2xl:w-[72px] ${
+                  className={`flex items-center justify-center rounded-full border transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b5a3f0] focus-visible:ring-offset-1 ${
+                    compact ? "h-14 w-14" : "h-16 w-16 2xl:h-[72px] 2xl:w-[72px]"
+                  } ${
                     mineral
                       ? "border-[#d6c8e8] bg-[#f7f2ff] hover:border-[#9b84d9]"
                       : "border-[#dfd3c3] bg-white text-[#b3a693] hover:border-[#b6a5df] hover:bg-[#f8f4ff]"
@@ -138,7 +150,7 @@ function QuizBoard({
                       seed={studentIndex * 100 + quizIndex}
                       renderMode="thumbnail"
                       thumbnailMotion
-                      className="h-14 w-14 2xl:h-16 2xl:w-16"
+                      className={compact ? "h-12 w-12" : "h-14 w-14 2xl:h-16 2xl:w-16"}
                     />
                   ) : (
                     <span className="text-base font-bold tabular-nums 2xl:text-lg">

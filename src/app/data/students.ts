@@ -2,7 +2,40 @@ import "server-only";
 
 type YouthRecord = {
   name?: unknown;
+  age?: unknown;
+  birthDate?: unknown;
 };
+
+function readAge(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return Math.floor(value);
+  }
+
+  return null;
+}
+
+function ageFromBirthDate(value: unknown) {
+  if (typeof value !== "string") return null;
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!match) return null;
+
+  const [, year, month, day] = match;
+  const birthDate = new Date(Number(year), Number(month) - 1, Number(day));
+  if (
+    birthDate.getFullYear() !== Number(year) ||
+    birthDate.getMonth() !== Number(month) - 1 ||
+    birthDate.getDate() !== Number(day)
+  ) {
+    return null;
+  }
+
+  const today = new Date();
+  const hasHadBirthday =
+    today.getMonth() > birthDate.getMonth() ||
+    (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
+  return Math.max(0, today.getFullYear() - birthDate.getFullYear() - (hasHadBirthday ? 0 : 1));
+}
 
 export class StudentListError extends Error {
   constructor(message: string) {
@@ -11,7 +44,7 @@ export class StudentListError extends Error {
   }
 }
 
-export async function getStudentNames() {
+export async function getStudents() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -47,8 +80,16 @@ export async function getStudentNames() {
     }
 
     return records.flatMap((record) => {
-      const name = (record as YouthRecord)?.name;
-      return typeof name === "string" && name.trim() ? [name.trim()] : [];
+      const youth = record as YouthRecord;
+      const name = youth?.name;
+      if (typeof name !== "string" || !name.trim()) return [];
+
+      return [
+        {
+          name: name.trim(),
+          age: readAge(youth.age) ?? ageFromBirthDate(youth.birthDate),
+        },
+      ];
     });
   } catch (error) {
     if (error instanceof StudentListError) throw error;

@@ -6,7 +6,7 @@ import type { QuizProgress } from "./quizProgress";
 import { startedQuizCount } from "./quizProgress";
 
 type StudentListProps = {
-  students: string[];
+  students: { name: string; age: number | null }[];
   selectedIndex: number;
   progress: QuizProgress;
   onSelect: (index: number) => void;
@@ -21,12 +21,12 @@ function StudentList({
   return (
     <aside className="rounded-2xl border border-[#eee4d7] bg-[#fffefa] p-3.5">
       <ol className="grid grid-cols-2 gap-2.5" aria-label="진도 체크할 학생 목록">
-        {students.map((name, index) => {
-          const givenName = name.slice(1);
-          const started = startedQuizCount(progress[name] ?? []);
+        {students.map((student, index) => {
+          const givenName = student.name.slice(1);
+          const started = startedQuizCount(progress[student.name] ?? []);
           const selected = index === selectedIndex;
           return (
-            <li key={`${name}-${index}`}>
+            <li key={`${student.name}-${index}`}>
               <button
                 type="button"
                 onClick={() => onSelect(index)}

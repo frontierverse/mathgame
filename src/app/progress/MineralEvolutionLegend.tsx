@@ -19,14 +19,16 @@ export default function MineralEvolutionLegend() {
             </span>
           ) : null}
           <span className="flex items-center gap-1 text-xs font-black text-[#675d70]">
-            <StudentBlob
-              variant={mineral}
-              color={LEGEND_COLOR}
-              seed={index}
-              renderMode="thumbnail"
-              thumbnailMotion
-              className="h-10 w-10"
-            />
+            <span className="flex h-10 w-10 shrink-0 overflow-hidden rounded-full">
+              <StudentBlob
+                variant={mineral}
+                color={LEGEND_COLOR}
+                seed={index}
+                renderMode="thumbnail"
+                thumbnailMotion
+                className="h-10 w-10"
+              />
+            </span>
             {MINERALS[mineral].label}
           </span>
         </div>

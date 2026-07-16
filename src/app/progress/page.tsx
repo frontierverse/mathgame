@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getStudentNames } from "../data/students";
+import { getStudents } from "../data/students";
 import MineralEvolutionLegend from "./MineralEvolutionLegend";
 import StudentRoster from "./StudentRoster";
 
@@ -8,11 +8,11 @@ export const dynamic = "force-dynamic";
 const HIDDEN_STUDENT_NAMES = new Set(["하늘", "지민"]);
 
 export default async function ProgressPage() {
-  let students: string[] = [];
+  let students: { name: string; age: number | null }[] = [];
   let errorMessage: string | null = null;
 
   try {
-    students = (await getStudentNames()).filter((name) => {
+    students = (await getStudents()).filter(({ name }) => {
       const displayName = name.slice(1).trim();
       return !HIDDEN_STUDENT_NAMES.has(name) && !HIDDEN_STUDENT_NAMES.has(displayName);
     });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import DiamondModal from "./DiamondModal";
 import QuizBoard from "./QuizBoard";
@@ -11,7 +11,7 @@ import StudentList from "./StudentList";
 import useQuizProgress from "./useQuizProgress";
 
 type StudentRosterProps = {
-  students: string[];
+  students: { name: string; age: number | null }[];
 };
 
 export default function StudentRoster({ students }: StudentRosterProps) {
@@ -21,7 +21,8 @@ export default function StudentRoster({ students }: StudentRosterProps) {
     studentIndex: number;
     diamondIndex: number;
   } | null>(null);
-  const { progress, solveQuiz, undoQuiz } = useQuizProgress(students);
+  const studentNames = useMemo(() => students.map((student) => student.name), [students]);
+  const { progress, solveQuiz, undoQuiz } = useQuizProgress(studentNames);
 
   const selectStudent = useCallback((index: number) => {
     setSelectedStudentIndex(index);
@@ -69,10 +70,13 @@ export default function StudentRoster({ students }: StudentRosterProps) {
     setOpenDiamond({ studentIndex, diamondIndex });
   }, []);
 
-  const selectedName = students[selectedStudentIndex] ?? null;
+  const selectedStudent = students[selectedStudentIndex] ?? null;
+  const selectedName = selectedStudent?.name ?? null;
+  const selectedAge = selectedStudent?.age ?? null;
   const selectedCounts = selectedName ? progress[selectedName] ?? [] : [];
   const selectedColor = STUDENT_COLORS[selectedStudentIndex % STUDENT_COLORS.length];
-  const diamondStudentName = openDiamond ? students[openDiamond.studentIndex] ?? null : null;
+  const diamondStudent = openDiamond ? students[openDiamond.studentIndex] ?? null : null;
+  const diamondStudentName = diamondStudent?.name ?? null;
   const diamondStudentCounts = diamondStudentName ? progress[diamondStudentName] ?? [] : [];
   const diamondRubyQuizIndexes = openDiamond
     ? getMineralInventory(diamondStudentCounts).diamondGroups[openDiamond.diamondIndex] ?? null
@@ -110,6 +114,7 @@ export default function StudentRoster({ students }: StudentRosterProps) {
               <QuizBoard
                 key={selectedName}
                 studentName={selectedName}
+                studentAge={selectedAge}
                 studentIndex={selectedStudentIndex}
                 studentColor={selectedColor}
                 counts={selectedCounts}
@@ -122,25 +127,27 @@ export default function StudentRoster({ students }: StudentRosterProps) {
 
           <div className="mt-10 border-t border-[#e7dccb] pt-8" aria-label="전체 학생 체크리스트">
             <h2 className="text-xl font-bold text-[#51475c]">전체 학생 체크리스트</h2>
-            <div className="mt-5 min-w-0 space-y-6">
-              {students.map((studentName, studentIndex) => {
-                const counts = progress[studentName] ?? [];
+            <div className="mt-5 grid min-w-0 grid-cols-2 gap-x-12 gap-y-6">
+              {students.map((student, studentIndex) => {
+                const counts = progress[student.name] ?? [];
                 const color = STUDENT_COLORS[studentIndex % STUDENT_COLORS.length];
                 const isSelected = studentIndex === selectedStudentIndex;
 
                 return (
                   <div
-                    key={`${studentName}-${studentIndex}`}
-                    className="min-w-0 border-b border-[#eee4d7] pb-6 last:border-b-0"
+                    key={`${student.name}-${studentIndex}`}
+                    className="min-w-0 border-b border-[#eee4d7] pb-6"
                   >
                     <QuizBoard
-                      studentName={studentName}
+                      studentName={student.name}
+                      studentAge={student.age}
                       studentIndex={studentIndex}
                       studentColor={color}
                       counts={counts}
                       onOpenQuiz={openStudentQuiz}
                       onOpenDiamond={openStudentDiamond}
                       selectedQuizIndex={isSelected ? openQuizIndex : null}
+                      compact
                     />
                   </div>
                 );

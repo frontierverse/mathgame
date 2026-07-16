@@ -68,7 +68,7 @@ export default function DiamondModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="diamond-modal-title"
-        className="relative max-h-[calc(100vh-2rem)] w-full max-w-5xl overflow-y-auto rounded-lg border border-[#dce8ef] bg-[#fffefa] p-5 shadow-[0_24px_70px_rgba(46,37,57,0.25)] sm:p-7"
+        className="relative h-[min(640px,calc(100vh-2rem))] w-full max-w-5xl overflow-y-auto rounded-lg border border-[#dce8ef] bg-[#fffefa] p-5 shadow-[0_24px_70px_rgba(46,37,57,0.25)] sm:p-7"
       >
         <button
           ref={closeButtonRef}

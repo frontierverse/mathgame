@@ -41,14 +41,14 @@
   0%,
   100% {
     box-shadow:
-      0 0 7px rgba(89, 213, 255, 0.75),
-      0 0 15px rgba(137, 107, 255, 0.34);
+      inset 0 0 4px rgba(89, 213, 255, 0.75),
+      inset 0 0 9px rgba(137, 107, 255, 0.34);
   }
   50% {
     box-shadow:
-      0 0 11px rgba(255, 255, 255, 0.92),
-      0 0 22px rgba(74, 211, 255, 0.88),
-      0 0 30px rgba(255, 135, 220, 0.42);
+      inset 0 0 6px rgba(255, 255, 255, 0.92),
+      inset 0 0 12px rgba(74, 211, 255, 0.88),
+      inset 0 0 17px rgba(255, 135, 220, 0.42);
   }
 }
 
@@ -68,18 +68,10 @@
 .diamond-reward-circle {
   position: relative;
   isolation: isolate;
+  overflow: hidden;
   border: 2px solid #d7f8ff;
   background-color: transparent !important;
   box-shadow: none;
-}
-
-.diamond-reward-aura {
-  position: fixed;
-  z-index: 20;
-  border-radius: 999px;
-  pointer-events: none;
-  animation: diamond-reward-aura-pulse 1.85s ease-in-out infinite;
-  will-change: box-shadow;
 }
 
 .diamond-reward-circle::before {
@@ -90,6 +82,8 @@
   border-radius: 999px;
   content: "";
   pointer-events: none;
+  animation: diamond-reward-aura-pulse 1.85s ease-in-out infinite;
+  will-change: box-shadow;
 }
 
 .diamond-reward-circle::after {
@@ -118,7 +112,7 @@
   }
 
   .diamond-thumbnail.mineral-thumbnail-motion,
-  .diamond-reward-aura,
+  .diamond-reward-circle::before,
   .diamond-reward-circle::after {
     animation: none;
   }
