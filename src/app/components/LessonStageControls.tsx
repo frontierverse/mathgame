@@ -121,9 +121,27 @@ export default function LessonStageControls({
         </div>
       )}
       {lessonId === "circle-area" && circleAreaStage === 3 && (
+        <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 gap-3">
+          <button
+            type="button"
+            onClick={() => onCircleAreaStageChange(2)}
+            className="rounded-xl border border-[#b9add2] bg-[#f7f3fb] px-5 py-3 text-sm font-bold text-[#685c76] shadow-[0_4px_0_#d8cfe3] transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
+          >
+            이전
+          </button>
+          <button
+            type="button"
+            onClick={() => onCircleAreaStageChange(4)}
+            className="rounded-xl border border-[#5487bf] bg-[#eef7ff] px-5 py-3 text-sm font-bold text-[#335f91] shadow-[0_4px_0_#b6d4ec] transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
+          >
+            다음
+          </button>
+        </div>
+      )}
+      {lessonId === "circle-area" && circleAreaStage === 4 && (
         <button
           type="button"
-          onClick={() => onCircleAreaStageChange(2)}
+          onClick={() => onCircleAreaStageChange(3)}
           className="absolute bottom-5 left-1/2 z-20 -translate-x-1/2 rounded-xl border border-[#b9add2] bg-[#f7f3fb] px-5 py-3 text-sm font-bold text-[#685c76] shadow-[0_4px_0_#d8cfe3] transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
         >
           이전

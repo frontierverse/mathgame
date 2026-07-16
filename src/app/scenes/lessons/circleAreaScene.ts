@@ -57,15 +57,17 @@ export function buildCircleAreaScene(context: LessonSceneContext): LessonScene {
   const isDiameterGuideStage = circleStage === 1;
   const isPizzaStage = circleStage === 2;
   const isFineSliceStage = circleStage === 3;
-  const sliceCount = isDiameterGuideStage ? 0 : isPizzaStage ? 8 : 48;
+  const isUltraFineSliceStage = circleStage === 4;
+  const isDenseSliceStage = isFineSliceStage || isUltraFineSliceStage;
+  const sliceCount = isDiameterGuideStage ? 0 : isPizzaStage ? 8 : isUltraFineSliceStage ? 160 : 48;
   const sliceAngle = sliceCount > 0 ? (Math.PI * 2) / sliceCount : 0;
   const columns = sliceCount / 2;
   const sliceWidth = isPizzaStage ? 2 * radius * Math.sin(sliceAngle / 2) : radius * sliceAngle;
   const rectangleWidth = (columns + 0.5) * sliceWidth;
   const referenceRadius = 1.3;
   const referenceCircleY = 1.75;
-  const sliceScale = isFineSliceStage ? 0.78 : 1;
-  const arrangedSlices = isFineSliceStage ? new THREE.Group() : null;
+  const sliceScale = isDenseSliceStage ? 0.78 : 1;
+  const arrangedSlices = isDenseSliceStage ? new THREE.Group() : null;
   if (arrangedSlices) {
     arrangedSlices.position.y = -1.75;
     arrangedSlices.scale.setScalar(sliceScale);
@@ -385,7 +387,7 @@ export function buildCircleAreaScene(context: LessonSceneContext): LessonScene {
   return {
     animate(elapsed) {
       const startsAt = circleStage === 2 ? 0.8 : 0.2;
-      const duration = circleStage === 2 ? 2.2 : 2.8;
+      const duration = circleStage === 2 ? 2.2 : isUltraFineSliceStage ? 6 : isFineSliceStage ? 5 : 2.8;
       circleSlices.forEach(({ object, target, targetRotation, delay }) => {
         const progress = THREE.MathUtils.smoothstep((elapsed - startsAt - delay) / duration, 0, 1);
         const lift = Math.sin(progress * Math.PI) * 0.55;
