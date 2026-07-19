@@ -10,14 +10,19 @@ export const STUDENT_COLORS = [
 ];
 
 export {
+  CURRICULUM_QUIZ_ROUNDS,
   getQuizForIndex,
+  getQuizRoundById,
   getQuizSetForSubunit,
   MAX_QUIZ_COUNT,
   migrateLegacyQuizCounts,
+  QUIZZES_PER_ROUND,
   QUIZZES,
   quizTextForIndex,
   REGISTERED_QUIZ_COUNT,
 } from "../shared/curriculumQuizzes";
+
+export type { CurriculumQuizRound } from "../shared/curriculumQuizzes";
 
 export const MAX_SOLVES = 3;
 

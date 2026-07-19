@@ -25,6 +25,7 @@ type QuizBoardProps = {
   onOpenDiamond: (studentIndex: number, diamondIndex: number) => void;
   selectedQuizIndex: number | null;
   diamondCountLimit?: number;
+  quizIndexes?: readonly number[];
   compact?: boolean;
 };
 
@@ -42,29 +43,35 @@ function QuizBoard({
   onOpenDiamond,
   selectedQuizIndex,
   diamondCountLimit,
+  quizIndexes,
   compact = false,
 }: QuizBoardProps) {
   const { totals: mineralCounts, diamondGroups, consumedRubyQuizIndexes } =
     getMineralInventory(counts, diamondCountLimit);
   const unlockedCount = unlockedQuizCount(counts, diamondCountLimit);
   const waitingForTeam =
+    quizIndexes === undefined &&
     diamondCountLimit !== undefined &&
     diamondCountLimit < MAX_DIAMOND_COUNT &&
     getRubyCountForDiamondBatch(counts, diamondCountLimit) === RUBIES_PER_DIAMOND;
-  const renderedCount = unlockedCount;
+  const renderedQuizIndexes =
+    quizIndexes ?? Array.from({ length: unlockedCount }, (_, quizIndex) => quizIndex);
   const diamondIndexByFirstQuiz = new Map(
     diamondGroups.map((rubyQuizIndexes, diamondIndex) => [rubyQuizIndexes[0], diamondIndex]),
   );
   const boardItems: QuizBoardItem[] = [];
 
-  for (let quizIndex = 0; quizIndex < renderedCount; quizIndex += 1) {
+  renderedQuizIndexes.forEach((quizIndex) => {
     if (consumedRubyQuizIndexes.has(quizIndex)) {
       const diamondIndex = diamondIndexByFirstQuiz.get(quizIndex);
       if (diamondIndex !== undefined) boardItems.push({ type: "diamond", diamondIndex });
-      continue;
+      return;
     }
     boardItems.push({ type: "quiz", quizIndex });
-  }
+  });
+  const displayedDiamondCount = boardItems.filter(
+    (item) => item.type === "diamond",
+  ).length;
 
   return (
     <div className="min-w-0 p-1 sm:p-2">
@@ -120,7 +127,7 @@ function QuizBoard({
       <div className="progress-scroll mt-5 max-h-[168px] overflow-x-hidden overflow-y-auto overscroll-contain px-2 py-4 2xl:max-h-[184px]">
         <ol
           className="grid w-max grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"
-          aria-label={`${studentName.slice(1)}의 퀴즈, ${unlockedCount}개 열림, 다이아몬드 ${diamondGroups.length}개`}
+          aria-label={`${studentName.slice(1)}의 퀴즈, ${renderedQuizIndexes.length}개 표시, 다이아몬드 ${displayedDiamondCount}개`}
         >
           {boardItems.map((item) => {
             if (item.type === "diamond") {

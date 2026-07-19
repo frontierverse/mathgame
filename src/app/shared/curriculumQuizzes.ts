@@ -1,6 +1,7 @@
 import { curriculum } from "../mathLogic";
 
 const QUIZ_STORAGE_CAPACITY = 100;
+export const QUIZZES_PER_ROUND = 10;
 
 export type CurriculumSubunitContext = {
   subunitId: string;
@@ -24,6 +25,17 @@ export type CurriculumQuiz = CurriculumSubunitContext & {
 export type CurriculumQuizSet = CurriculumSubunitContext & {
   startIndex: number;
   quizzes: readonly CurriculumQuiz[];
+};
+
+export type CurriculumQuizRound = {
+  id: string;
+  roundNumber: number;
+  quizzes: readonly CurriculumQuiz[];
+  quizIndexes: readonly number[];
+  gradeLabel: string;
+  semesterLabel: string;
+  unitTitle: string;
+  subunitTitle: string;
 };
 
 type QuizSetDefinition = {
@@ -209,6 +221,38 @@ export const getQuizSetForSubunit = (subunitId: string) =>
 
 export const quizTextForIndex = (quizIndex: number) =>
   getQuizForIndex(quizIndex)?.question ?? String(quizIndex + 1);
+
+function joinUniqueLabels(labels: readonly string[]) {
+  return Array.from(new Set(labels)).join(" · ");
+}
+
+export const CURRICULUM_QUIZ_ROUNDS: readonly CurriculumQuizRound[] = Array.from(
+  { length: Math.ceil(MAX_QUIZ_COUNT / QUIZZES_PER_ROUND) },
+  (_, roundIndex) => {
+    const startIndex = roundIndex * QUIZZES_PER_ROUND;
+    const quizzes = Array.from(
+      { length: Math.min(QUIZZES_PER_ROUND, MAX_QUIZ_COUNT - startIndex) },
+      (__, offset) => quizzesByIndex.get(startIndex + offset),
+    ).filter((quiz): quiz is CurriculumQuiz => quiz !== undefined);
+
+    return {
+      id: `round-${roundIndex + 1}`,
+      roundNumber: roundIndex + 1,
+      quizzes,
+      quizIndexes: quizzes.map(({ quizIndex }) => quizIndex),
+      gradeLabel: joinUniqueLabels(quizzes.map(({ gradeLabel }) => gradeLabel)),
+      semesterLabel: joinUniqueLabels(quizzes.map(({ semesterLabel }) => semesterLabel)),
+      unitTitle: joinUniqueLabels(quizzes.map(({ unitTitle }) => unitTitle)),
+      subunitTitle: joinUniqueLabels(quizzes.map(({ subunitTitle }) => subunitTitle)),
+    } satisfies CurriculumQuizRound;
+  },
+);
+
+const quizRoundsById = new Map(
+  CURRICULUM_QUIZ_ROUNDS.map((round) => [round.id, round]),
+);
+
+export const getQuizRoundById = (roundId: string) => quizRoundsById.get(roundId) ?? null;
 
 const LEGACY_QUIZ_INDEX_MAP: readonly (readonly number[])[] = [
   [0],

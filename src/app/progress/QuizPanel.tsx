@@ -11,6 +11,7 @@ type QuizPanelProps = {
   quizIndex: number;
   counts: number[];
   diamondCountLimit?: number;
+  navigationQuizIndexes?: readonly number[];
   color: string;
   onAward: (stage: QuizMineralStage) => void;
   onUndo: () => void;
@@ -23,6 +24,7 @@ export default function QuizPanel({
   quizIndex,
   counts,
   diamondCountLimit,
+  navigationQuizIndexes,
   color,
   onAward,
   onUndo,
@@ -44,19 +46,33 @@ export default function QuizPanel({
       }
       if (event.key === "ArrowLeft") {
         event.preventDefault();
-        onNavigate(Math.max(0, quizIndex - 1));
+        if (navigationQuizIndexes) {
+          const position = navigationQuizIndexes.indexOf(quizIndex);
+          onNavigate(navigationQuizIndexes[Math.max(0, position - 1)] ?? quizIndex);
+        } else {
+          onNavigate(Math.max(0, quizIndex - 1));
+        }
         return;
       }
       if (event.key === "ArrowRight") {
         event.preventDefault();
-        onNavigate(
-          Math.min(unlockedQuizCount(counts, diamondCountLimit) - 1, quizIndex + 1),
-        );
+        if (navigationQuizIndexes) {
+          const position = navigationQuizIndexes.indexOf(quizIndex);
+          onNavigate(
+            navigationQuizIndexes[
+              Math.min(navigationQuizIndexes.length - 1, position + 1)
+            ] ?? quizIndex,
+          );
+        } else {
+          onNavigate(
+            Math.min(unlockedQuizCount(counts, diamondCountLimit) - 1, quizIndex + 1),
+          );
+        }
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [counts, diamondCountLimit, onClose, onNavigate, quizIndex]);
+  }, [counts, diamondCountLimit, navigationQuizIndexes, onClose, onNavigate, quizIndex]);
 
   return (
     <aside
