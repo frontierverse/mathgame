@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { createPortal } from "react-dom";
 
 import QuizDetail from "./QuizDetail";
@@ -33,6 +38,70 @@ export default function DiamondModal({
     rubyQuizIndexes[0] ?? null,
   );
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const rubyGridRef = useRef<HTMLDivElement>(null);
+  const rubyButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const focusRubyCard = (rubyIndex: number) => {
+    const rubyCount = rubyQuizIndexes.length;
+    if (rubyCount === 0) return;
+
+    const wrappedRubyIndex = (rubyIndex + rubyCount) % rubyCount;
+    setSelectedQuizIndex(rubyQuizIndexes[wrappedRubyIndex]);
+    rubyButtonRefs.current[wrappedRubyIndex]?.focus();
+  };
+
+  const getRubyGridColumnCount = () => {
+    const grid = rubyGridRef.current;
+    if (!grid) return 1;
+
+    const gridTemplateColumns = window.getComputedStyle(grid).gridTemplateColumns;
+    if (!gridTemplateColumns || gridTemplateColumns === "none") return 1;
+
+    return Math.max(1, gridTemplateColumns.split(/\s+/).filter(Boolean).length);
+  };
+
+  const onRubyCardKeyDown = (
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+    rubyIndex: number,
+  ) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+
+    const rubyCount = rubyQuizIndexes.length;
+    if (rubyCount === 0) return;
+
+    let nextRubyIndex: number | null = null;
+
+    if (event.key === "ArrowLeft") {
+      nextRubyIndex = rubyIndex - 1;
+    } else if (event.key === "ArrowRight") {
+      nextRubyIndex = rubyIndex + 1;
+    } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      const columnCount = getRubyGridColumnCount();
+      const currentColumn = rubyIndex % columnCount;
+
+      if (event.key === "ArrowUp") {
+        nextRubyIndex = rubyIndex - columnCount;
+        if (nextRubyIndex < 0) {
+          nextRubyIndex = currentColumn;
+          while (nextRubyIndex + columnCount < rubyCount) {
+            nextRubyIndex += columnCount;
+          }
+        }
+      } else {
+        nextRubyIndex = rubyIndex + columnCount;
+        if (nextRubyIndex >= rubyCount) nextRubyIndex = currentColumn;
+      }
+    } else if (event.key === "Home") {
+      nextRubyIndex = 0;
+    } else if (event.key === "End") {
+      nextRubyIndex = rubyCount - 1;
+    }
+
+    if (nextRubyIndex === null) return;
+
+    event.preventDefault();
+    focusRubyCard(nextRubyIndex);
+  };
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setMounted(true));
@@ -47,7 +116,9 @@ export default function DiamondModal({
       if (event.key === "Escape") onClose();
     };
 
-    closeButtonRef.current?.focus();
+    const firstRubyButton = rubyButtonRefs.current[0];
+    if (firstRubyButton) firstRubyButton.focus();
+    else closeButtonRef.current?.focus();
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
@@ -102,15 +173,30 @@ export default function DiamondModal({
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)]">
-          <div className="grid grid-cols-2 content-start gap-2.5 sm:grid-cols-5 lg:grid-cols-3 xl:grid-cols-5">
+          <p id="diamond-ruby-navigation-hint" className="sr-only">
+            좌우 화살표 키로 앞뒤 루비를, 위아래 화살표 키로 같은 열의 루비를 이동할 수 있습니다.
+          </p>
+          <div
+            ref={rubyGridRef}
+            role="group"
+            aria-label="다이아몬드를 만든 루비 목록"
+            aria-describedby="diamond-ruby-navigation-hint"
+            className="grid grid-cols-2 content-start gap-2.5 sm:grid-cols-5 lg:grid-cols-3 xl:grid-cols-5"
+          >
             {rubyQuizIndexes.map((quizIndex, rubyIndex) => {
               const selected = quizIndex === selectedQuizIndex;
               return (
                 <button
                   key={quizIndex}
+                  ref={(button) => {
+                    rubyButtonRefs.current[rubyIndex] = button;
+                  }}
                   type="button"
                   onClick={() => setSelectedQuizIndex(quizIndex)}
+                  onKeyDown={(event) => onRubyCardKeyDown(event, rubyIndex)}
+                  tabIndex={selected ? 0 : -1}
                   aria-pressed={selected}
+                  aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Home End"
                   aria-label={`${quizIndex + 1}번 퀴즈 보기: ${quizTextForIndex(quizIndex)}`}
                   title={`${quizIndex + 1}번 퀴즈`}
                   className={`flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-lg border px-2 py-3 text-[#7d4351] transition hover:-translate-y-0.5 hover:border-[#e99aac] hover:bg-[#fff0f3] hover:shadow-[0_7px_16px_rgba(170,74,97,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e14b63] ${

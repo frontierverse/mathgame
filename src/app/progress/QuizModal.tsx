@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { MINERALS } from "./mineralData";
-import { MAX_SOLVES, QUIZZES } from "./quizData";
+import { MAX_SOLVES, quizTextForIndex } from "./quizData";
 import { mineralForCount, mineralForStage, unlockedQuizCount } from "./quizProgress";
+import QuizQuestionText from "./QuizQuestionText";
 import StudentBlob from "./StudentBlob";
 
 type QuizModalProps = {
@@ -105,9 +106,10 @@ export default function QuizModal({
           {name} · QUIZ {quizIndex + 1}
         </p>
         <div className="mt-5 flex items-center justify-between gap-4">
-          <p className="text-3xl font-bold tracking-[-0.05em] text-[#463c56]">
-            {QUIZZES[quizIndex]}
-          </p>
+          <QuizQuestionText
+            text={quizTextForIndex(quizIndex)}
+            className="min-w-0 flex-1 text-3xl font-bold leading-relaxed tracking-[-0.05em] text-[#463c56]"
+          />
           {currentMineral ? (
             <button
               type="button"

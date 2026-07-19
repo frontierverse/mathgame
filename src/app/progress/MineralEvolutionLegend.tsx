@@ -8,7 +8,7 @@ const LEGEND_COLOR = "#9b84d9";
 export default function MineralEvolutionLegend() {
   return (
     <div
-      className="flex max-w-full items-center gap-1 overflow-x-auto pb-1"
+      className="flex max-w-full items-center gap-1 overflow-x-auto px-3 py-2"
       aria-label="광물 진화 순서: 돌, 수정, 루비, 다이아몬드"
     >
       {MINERAL_ORDER.map((mineral, index) => (

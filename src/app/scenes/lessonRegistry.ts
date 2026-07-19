@@ -1,5 +1,8 @@
 import { buildAdditionScene } from "./lessons/additionScene";
-import { buildCircleAreaScene } from "./lessons/circleAreaScene";
+import {
+  buildCircleAreaScene,
+  buildCircleCircumferenceScene,
+} from "./lessons/circleAreaScene";
 import { buildFastAdditionScene } from "./lessons/fastAdditionScene";
 import { buildFallbackScene } from "./lessons/fallbackScene";
 import { buildMultiplicationScene } from "./lessons/multiplicationScene";
@@ -29,6 +32,8 @@ export function buildLessonScene(lessonId: string, context: LessonSceneContext):
       return buildSquareAreaScene(context);
     case "triangle-area":
       return buildTriangleAreaScene(context);
+    case "circle-circumference":
+      return buildCircleCircumferenceScene(context);
     case "circle-area":
       return buildCircleAreaScene(context);
     case "powers":

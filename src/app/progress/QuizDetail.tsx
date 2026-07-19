@@ -1,8 +1,9 @@
 "use client";
 
 import { MINERALS } from "./mineralData";
-import { MAX_SOLVES, quizTextForIndex } from "./quizData";
+import { getQuizForIndex, MAX_SOLVES, quizTextForIndex } from "./quizData";
 import { mineralForCount, mineralForStage } from "./quizProgress";
+import QuizQuestionText from "./QuizQuestionText";
 import StudentBlob from "./StudentBlob";
 
 type QuizDetailProps = {
@@ -22,6 +23,7 @@ export default function QuizDetail({
   onSolve,
   onUndo,
 }: QuizDetailProps) {
+  const quiz = getQuizForIndex(quizIndex);
   const solveCount = counts[quizIndex] ?? 0;
   const currentMineral = mineralForCount(solveCount);
   const maxed = solveCount >= MAX_SOLVES;
@@ -32,10 +34,16 @@ export default function QuizDetail({
       <p className="pr-10 text-[11px] font-bold tracking-[0.16em] text-[#8f78c9]">
         {name} · QUIZ {quizIndex + 1}
       </p>
-      <div className="mt-5 flex min-w-0 flex-col gap-4 2xl:flex-row 2xl:items-start 2xl:justify-between">
-        <p className="min-w-0 flex-1 break-words text-xl font-bold leading-relaxed text-[#463c56] 2xl:text-2xl">
-          {quizTextForIndex(quizIndex)}
+      {quiz ? (
+        <p className="mt-1 pr-10 text-xs font-bold text-[#8a7f95]">
+          {quiz.gradeLabel} · {quiz.semesterLabel} · {quiz.unitTitle} · {quiz.subunitTitle}
         </p>
+      ) : null}
+      <div className="mt-5 flex min-w-0 flex-col gap-4 2xl:flex-row 2xl:items-start 2xl:justify-between">
+        <QuizQuestionText
+          text={quizTextForIndex(quizIndex)}
+          className="min-w-0 flex-1 text-xl font-bold leading-relaxed text-[#463c56] 2xl:text-2xl"
+        />
         {currentMineral ? (
           <button
             type="button"

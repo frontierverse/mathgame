@@ -1,0 +1,9 @@
+{
+  "id": "m1-s1-u1-su1",
+  "grade": "중1",
+  "semester": "1학기",
+  "unit": "1단원 소인수분해",
+  "title": "소수와 합성수",
+  "description": "약수의 개수를 기준으로 자연수를 소수와 합성수로 분류하는 연습 문제지입니다.",
+  "pdfUrl": "/api/worksheets/m1-s1-u1-su1/pdf"
+}

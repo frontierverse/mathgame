@@ -145,7 +145,7 @@ export default function ExpressionKeypad({
           onKeyDown={(event) => handleRepeatKeyDown(event, onRemoveToken, deleteRepeatInterval)}
           onKeyUp={handleRepeatKeyUp}
           onBlur={stopRepeatPress}
-          className="flex aspect-[1.22] items-center justify-center rounded-xl border border-[#ddd3e2] bg-[#eee9f1] text-xl font-bold text-[#766c7d] shadow-[0_5px_0_#d3c8d7] transition hover:-translate-y-0.5 hover:bg-[#e8e0eb] active:translate-y-0"
+          className="flex aspect-[1.22] items-center justify-center rounded-xl border border-[#454545] bg-[#242424] text-xl font-bold text-[#f5f5f5] shadow-[0_5px_0_#0a0a0a] transition hover:-translate-y-0.5 hover:bg-[#303030] active:translate-y-0"
           aria-label="한 글자 지우기"
         >
           ⌫
@@ -153,7 +153,7 @@ export default function ExpressionKeypad({
         <button
           type="button"
           onClick={onClear}
-          className="flex aspect-[1.22] items-center justify-center rounded-xl border border-[#e7b7bf] bg-[#f8e2e6] text-[11px] font-bold uppercase tracking-wider text-[#a95d6b] shadow-[0_5px_0_#d9bfc4] transition hover:-translate-y-0.5 hover:bg-[#f4d8dd] active:translate-y-0"
+          className="flex aspect-[1.22] items-center justify-center rounded-xl border border-[#613742] bg-[#3d2027] text-[11px] font-bold uppercase tracking-wider text-[#fecdd3] shadow-[0_5px_0_#1d0d12] transition hover:-translate-y-0.5 hover:bg-[#512a34] active:translate-y-0"
           aria-label="전체 지우기"
         >
           모두 지우기
@@ -186,7 +186,7 @@ export default function ExpressionKeypad({
         type="button"
         onClick={onCommit}
         disabled={!expression || !preview.result}
-        className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#9edce3] to-[#b9afe8] px-4 text-sm font-black text-[#443b50] shadow-[0_5px_0_#8fadc2] transition enabled:hover:-translate-y-0.5 enabled:hover:brightness-105 enabled:active:translate-y-0 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-30"
+        className="main-primary-action mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#e5e5e5] px-4 text-sm font-black text-[#101010] shadow-[0_5px_0_#0a0a0a] transition enabled:hover:-translate-y-0.5 enabled:active:translate-y-0 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-30"
       >
         <span>{isCommitted ? "탐구 완료" : "입체 공간에 적용"}</span>
         <span aria-hidden="true">→</span>

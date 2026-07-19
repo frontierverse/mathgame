@@ -22,6 +22,7 @@ export function getDefaultExpression(lessonId: string): ParsedExpression {
     "times-table-two": { left: 2, operator: "×", right: 1 },
     "square-area": { left: 3, operator: "×", right: 3 },
     "triangle-area": { left: 10, operator: "×", right: 10 },
+    "circle-circumference": { left: 2, operator: "×", right: 5 },
     "circle-area": { left: 5, operator: "×", right: 5 },
     powers: { left: 2, operator: "×", right: 2 },
     division: { left: 12, operator: "÷", right: 3 },

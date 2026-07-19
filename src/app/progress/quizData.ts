@@ -9,34 +9,14 @@ export const STUDENT_COLORS = [
   "#e2a0e0",
 ];
 
-const REGISTERED_QUIZZES = [
-  "숫자와 수는 왜 사용하는가?",
-  "곱셈은 왜 사용하는가? 덧셈으로도 설명하라.",
-  "거듭제곱이란 무엇인가? 2^4를 곱셈으로 나타내고 값을 구하라.",
-  "약수와 배수의 뜻을 각각 설명하라. 24의 약수를 모두 쓰고, 7의 배수를 작은 수부터 5개 쓰라.",
-  "소수와 합성수의 뜻을 설명하라. 1이 소수도 합성수도 아닌 이유를 설명하라.",
-  "1부터 20까지의 소수와 합성수를 각각 모두 쓰라.",
-  "2, 3, 5, 7, 11 중 짝수인 소수를 찾고, 가장 작은 소수와 가장 작은 합성수를 쓰라.",
-  "29가 소수인지 판별하라. 51, 57, 91이 소수인지 합성수인지 판별하고 이유를 쓰라.",
-  "2, 3, 5, 9의 배수 판별법을 각각 설명하라.",
-  "1부터 100까지의 소수를 찾을 때, 어떤 수들의 배수를 지우면 되는지 설명하라.",
-  "소인수분해의 뜻을 설명하라. 12를 소수의 곱으로 나타내고, 거듭제곱을 사용하여 나타내라.",
-  "18과 24를 각각 소인수분해하라.",
-  "36과 45를 각각 소인수분해하라.",
-  "60과 72를 각각 소인수분해하라.",
-  "84와 90을 각각 소인수분해하라.",
-  "다음을 거듭제곱을 사용하여 간단히 나타내라. (1) 2 × 2 × 2 × 3 (2) 2 × 2 × 3 × 3 × 3 (3) 5 × 5 × 7",
-  "다음을 실제 곱셈으로 나타내고 값을 구하라. (1) 2^3 × 3 (2) 2^2 × 3^2 (3) 2^2 × 5^2",
-  "다음 소인수분해의 원래 수를 구하라. (1) 2^3 × 3^2 (2) 2^2 × 3 × 5 (3) 2^4 × 5",
-  "다음 중 잘못된 소인수분해를 모두 고치라. (1) 24 = 2 × 12 (2) 36 = 2^2 × 3^2 (3) 45 = 3 × 15 (4) 70 = 2 × 5 × 7",
-  "24와 36을 각각 소인수분해한 뒤, 최대공약수와 최소공배수를 구하라.",
-] as const;
-
-export const QUIZZES = REGISTERED_QUIZZES;
-
-export const MAX_QUIZ_COUNT = 100;
-
-export const quizTextForIndex = (quizIndex: number) =>
-  QUIZZES[quizIndex] ?? String(quizIndex + 1);
+export {
+  getQuizForIndex,
+  getQuizSetForSubunit,
+  MAX_QUIZ_COUNT,
+  migrateLegacyQuizCounts,
+  QUIZZES,
+  quizTextForIndex,
+  REGISTERED_QUIZ_COUNT,
+} from "../shared/curriculumQuizzes";
 
 export const MAX_SOLVES = 3;

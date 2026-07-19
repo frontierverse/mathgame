@@ -7,7 +7,10 @@ import { MINERALS } from "./mineralData";
 import {
   EARNABLE_MINERALS,
   getMineralInventory,
+  getRubyCountForDiamondBatch,
+  MAX_DIAMOND_COUNT,
   mineralForCount,
+  RUBIES_PER_DIAMOND,
   unlockedQuizCount,
 } from "./quizProgress";
 import StudentBlob from "./StudentBlob";
@@ -21,6 +24,7 @@ type QuizBoardProps = {
   onOpenQuiz: (studentIndex: number, quizIndex: number) => void;
   onOpenDiamond: (studentIndex: number, diamondIndex: number) => void;
   selectedQuizIndex: number | null;
+  diamondCountLimit?: number;
   compact?: boolean;
 };
 
@@ -37,11 +41,16 @@ function QuizBoard({
   onOpenQuiz,
   onOpenDiamond,
   selectedQuizIndex,
+  diamondCountLimit,
   compact = false,
 }: QuizBoardProps) {
   const { totals: mineralCounts, diamondGroups, consumedRubyQuizIndexes } =
-    getMineralInventory(counts);
-  const unlockedCount = unlockedQuizCount(counts);
+    getMineralInventory(counts, diamondCountLimit);
+  const unlockedCount = unlockedQuizCount(counts, diamondCountLimit);
+  const waitingForTeam =
+    diamondCountLimit !== undefined &&
+    diamondCountLimit < MAX_DIAMOND_COUNT &&
+    getRubyCountForDiamondBatch(counts, diamondCountLimit) === RUBIES_PER_DIAMOND;
   const renderedCount = unlockedCount;
   const diamondIndexByFirstQuiz = new Map(
     diamondGroups.map((rubyQuizIndexes, diamondIndex) => [rubyQuizIndexes[0], diamondIndex]),
@@ -63,7 +72,7 @@ function QuizBoard({
         <h3 className="text-xl font-bold tracking-[-0.04em] text-[#51475c]">
           {studentName.slice(1)}의 퀴즈
           {studentAge === null ? null : (
-            <span className="select-text text-transparent selection:bg-[#e8def8] selection:text-[#51475c]">
+            <span className="age-hidden-until-selected">
               {` (${studentAge})`}
             </span>
           )}
@@ -102,9 +111,15 @@ function QuizBoard({
         </div>
       </div>
 
+      {waitingForTeam ? (
+        <p className="mt-2 inline-flex rounded-full border border-[#e0c9da] bg-[#fff4fa] px-2.5 py-1 text-[11px] font-black text-[#8e5576]">
+          루비 10/10 · 전원 완성까지 다이아 변환 대기
+        </p>
+      ) : null}
+
       <div className="progress-scroll mt-5 max-h-[168px] overflow-x-hidden overflow-y-auto overscroll-contain px-2 py-4 2xl:max-h-[184px]">
         <ol
-          className="grid w-max grid-cols-6 gap-2"
+          className="grid w-max grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"
           aria-label={`${studentName.slice(1)}의 퀴즈, ${unlockedCount}개 열림, 다이아몬드 ${diamondGroups.length}개`}
         >
           {boardItems.map((item) => {

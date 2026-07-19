@@ -35,7 +35,7 @@ export default function LessonScene({
   onPowersStageChange,
 }: LessonSceneProps) {
   return (
-    <section className="relative flex min-h-[620px] flex-col overflow-hidden rounded-2xl border border-[#ded3ed] bg-[#f8f4fb] shadow-[0_12px_30px_rgba(111,92,130,0.09)] xl:min-h-0">
+    <section className="relative flex min-h-[620px] flex-col overflow-hidden rounded-2xl border border-[#ded3ed] bg-[#f8f4fb] shadow-[0_12px_30px_rgba(111,92,130,0.09)] lg:min-h-0">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(197,226,230,0.45),transparent_52%)]" />
       <div className="relative z-10 px-5 pb-2 pt-5 sm:px-6">
         <div>
@@ -43,7 +43,7 @@ export default function LessonScene({
         </div>
       </div>
 
-      <div className="relative min-h-[420px] flex-1">
+      <div className="relative min-h-[420px] flex-1 lg:min-h-0">
         <MathScene
           key={`centered-scene-v6-${lesson.id}-${triangleAreaStage}-${circleAreaStage}-${powersStage}`}
           expression={sceneExpression}

@@ -21,6 +21,7 @@ export type SceneHelpers = {
 export type LessonSceneContext = {
   contentGroup: THREE.Group;
   interactiveMeshes: THREE.Mesh[];
+  isLightTheme: boolean;
   parsed: ParsedExpression;
   triangleStage: TriangleAreaStage;
   circleStage: CircleAreaStage;

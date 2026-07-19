@@ -58,16 +58,24 @@ export const lessons: Lesson[] = [
     color: "#75bde7",
   },
   {
-    id: "circle-area",
+    id: "circle-circumference",
     index: "08",
+    title: "원의 둘레",
+    description: "지름 · 반지름 · π",
+    example: "2×r×π",
+    color: "#72bec8",
+  },
+  {
+    id: "circle-area",
+    index: "09",
     title: "원의 넓이",
-    description: "원의 넓이를 사각형과 연결하기",
-    example: "5×5",
+    description: "원 조각 → 사각형",
+    example: "π×r²",
     color: "#6fb7ea",
   },
   {
     id: "powers",
-    index: "09",
+    index: "10",
     title: "거듭제곱",
     description: "같은 수를 반복해서 곱하기",
     example: "2×2",
@@ -75,7 +83,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "powers-two",
-    index: "10",
+    index: "11",
     title: "거듭제곱 2",
     description: "8을 2의 세제곱으로 바꾸어 보기",
     example: "2×8",
@@ -83,7 +91,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "subtraction",
-    index: "11",
+    index: "12",
     title: "뺄셈",
     description: "전체에서 일부 덜어내기",
     example: "7-3",
@@ -91,7 +99,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "division",
-    index: "12",
+    index: "13",
     title: "나눗셈",
     description: "같은 크기의 그룹으로 나누기",
     example: "12÷3",
@@ -99,7 +107,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "parentheses",
-    index: "13",
+    index: "14",
     title: "괄호",
     description: "먼저 계산할 세계 묶기",
     example: "(4+2)×3",
@@ -107,7 +115,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "mixed",
-    index: "14",
+    index: "15",
     title: "복합 계산",
     description: "연산의 순서 탐험하기",
     example: "8÷2+3",
@@ -115,7 +123,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "explore",
-    index: "15",
+    index: "16",
     title: "자유 탐구",
     description: "나만의 식으로 공간 바꾸기",
     example: "6+3",
@@ -128,23 +136,23 @@ export function getLessonIdFromQuery(value: string | null) {
 }
 
 export const numberKeys: MathKey[] = [
-  { value: "7", color: "bg-[#9fc4f2]", shadow: "shadow-[0_5px_0_#7099ce]", text: "text-[#38445d]" },
-  { value: "8", color: "bg-[#f5a7b0]", shadow: "shadow-[0_5px_0_#ca7b87]", text: "text-[#5b3e49]" },
-  { value: "9", color: "bg-[#9fd8b8]", shadow: "shadow-[0_5px_0_#70aa8b]", text: "text-[#365443]" },
-  { value: "4", color: "bg-[#f6cf8f]", shadow: "shadow-[0_5px_0_#c79f5e]", text: "text-[#5b4930]" },
-  { value: "5", color: "bg-[#c3afe9]", shadow: "shadow-[0_5px_0_#9480bd]", text: "text-[#493d62]" },
-  { value: "6", color: "bg-[#9edce3]", shadow: "shadow-[0_5px_0_#6dadb6]", text: "text-[#35545b]" },
-  { value: "1", color: "bg-[#e9aed8]", shadow: "shadow-[0_5px_0_#ba7eaa]", text: "text-[#5b4155]" },
-  { value: "2", color: "bg-[#f4aaa4]", shadow: "shadow-[0_5px_0_#c77a75]", text: "text-[#5c403d]" },
-  { value: "3", color: "bg-[#f4dc8f]", shadow: "shadow-[0_5px_0_#c4ac60]", text: "text-[#564c31]" },
-  { value: "0", color: "bg-[#b6a5df]", shadow: "shadow-[0_5px_0_#8776b2]", text: "text-[#453b5e]" },
+  { value: "7", color: "bg-[#242424]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-[#f5f5f5]" },
+  { value: "8", color: "bg-[#2a2a2a]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-[#f5f5f5]" },
+  { value: "9", color: "bg-[#242424]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-[#f5f5f5]" },
+  { value: "4", color: "bg-[#2a2a2a]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-[#f5f5f5]" },
+  { value: "5", color: "bg-[#242424]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-[#f5f5f5]" },
+  { value: "6", color: "bg-[#2a2a2a]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-[#f5f5f5]" },
+  { value: "1", color: "bg-[#242424]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-[#f5f5f5]" },
+  { value: "2", color: "bg-[#2a2a2a]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-[#f5f5f5]" },
+  { value: "3", color: "bg-[#242424]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-[#f5f5f5]" },
+  { value: "0", color: "bg-[#2a2a2a]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-[#f5f5f5]" },
 ];
 
 export const operatorKeys: MathKey[] = [
-  { value: "+", color: "bg-[#f3a0aa]", shadow: "shadow-[0_5px_0_#c57480]", text: "text-[#5b3c45]" },
-  { value: "-", color: "bg-[#9fc4f2]", shadow: "shadow-[0_5px_0_#7099ce]", text: "text-[#38445d]" },
-  { value: "×", color: "bg-[#9fd8b8]", shadow: "shadow-[0_5px_0_#70aa8b]", text: "text-[#365443]" },
-  { value: "÷", color: "bg-[#f4d98a]", shadow: "shadow-[0_5px_0_#c4a95d]", text: "text-[#564a2f]" },
-  { value: "(", color: "bg-[#d9a8db]", shadow: "shadow-[0_5px_0_#aa79ad]", text: "text-[#573d59]" },
-  { value: ")", color: "bg-[#9edce3]", shadow: "shadow-[0_5px_0_#6dadb6]", text: "text-[#35545b]" },
+  { value: "+", color: "bg-[#353535]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-white" },
+  { value: "-", color: "bg-[#353535]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-white" },
+  { value: "×", color: "bg-[#353535]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-white" },
+  { value: "÷", color: "bg-[#353535]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-white" },
+  { value: "(", color: "bg-[#353535]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-white" },
+  { value: ")", color: "bg-[#353535]", shadow: "shadow-[0_5px_0_#0a0a0a]", text: "text-white" },
 ];

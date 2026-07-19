@@ -9,6 +9,7 @@ type QuizPanelProps = {
   name: string;
   quizIndex: number;
   counts: number[];
+  diamondCountLimit?: number;
   color: string;
   onSolve: () => void;
   onUndo: () => void;
@@ -20,6 +21,7 @@ export default function QuizPanel({
   name,
   quizIndex,
   counts,
+  diamondCountLimit,
   color,
   onSolve,
   onUndo,
@@ -46,12 +48,14 @@ export default function QuizPanel({
       }
       if (event.key === "ArrowRight") {
         event.preventDefault();
-        onNavigate(Math.min(unlockedQuizCount(counts) - 1, quizIndex + 1));
+        onNavigate(
+          Math.min(unlockedQuizCount(counts, diamondCountLimit) - 1, quizIndex + 1),
+        );
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [counts, onClose, onNavigate, quizIndex]);
+  }, [counts, diamondCountLimit, onClose, onNavigate, quizIndex]);
 
   return (
     <aside

@@ -96,7 +96,7 @@ export async function POST(request: Request) {
 
     const { url, serviceRoleKey } = getSupabaseAdminConfig();
     if (!(await studentExists(studentName, url, serviceRoleKey))) {
-      return Response.json({ error: "등록되지 않은 학생입니다." }, { status: 404 });
+      return Response.json({ error: "등록되지 않은 이름입니다." }, { status: 404 });
     }
 
     const endpoint = new URL("/rest/v1/rpc/save_quiz_progress", url);
@@ -149,7 +149,7 @@ export async function DELETE(request: Request) {
 
     const { url, serviceRoleKey } = getSupabaseAdminConfig();
     if (!(await studentExists(studentName, url, serviceRoleKey))) {
-      return Response.json({ error: "등록되지 않은 학생입니다." }, { status: 404 });
+      return Response.json({ error: "등록되지 않은 이름입니다." }, { status: 404 });
     }
 
     const endpoint = new URL("/rest/v1/rpc/decrement_quiz_progress", url);

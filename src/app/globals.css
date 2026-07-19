@@ -119,8 +119,34 @@
 }
 
 :root {
+  color-scheme: light;
   --background: #fbf4e7;
   --foreground: #443b50;
+  --surface: #fffdf8;
+  --surface-raised: #fffefa;
+  --surface-hover: #f1ecfb;
+  --border: #e7dccb;
+  --muted: #95899a;
+  --selection-background: #d8c9ef;
+  --selection-foreground: #332a3d;
+  --skeleton-primary: #e8e0eb;
+  --skeleton-secondary: #eee4d7;
+  --focus-ring: #624393;
+  --control-background: #f8f4ff;
+  --control-background-active: #eee8fa;
+  --control-border: #cfc1e5;
+  --control-border-active: #8068c5;
+  --control-foreground: #594572;
+  --lesson-row-hover: #faf6ef;
+  --lesson-row-selected: #f1ecfb;
+  --lesson-border-hover: #eadfce;
+  --lesson-border-selected: #cfc1e5;
+  --lesson-accent: #8068c5;
+  --lesson-text: #665c6f;
+  --lesson-text-selected: #4a4057;
+  --lesson-marker-border: #c8bbc8;
+  --lesson-marker-active: #6d559e;
+  --lesson-marker-complete-background: #eee8fa;
 }
 
 @theme inline {
@@ -142,8 +168,18 @@ button {
   cursor: pointer;
 }
 
-button:focus-visible {
-  outline: 2px solid #8fcfd8;
+.app-logo-mark {
+  background-color: #9edce3;
+  color: #3f4358;
+  box-shadow: 0 8px 22px rgba(100, 175, 185, 0.22);
+}
+
+.app-logo-accent {
+  background-color: #8f78ff;
+}
+
+:is(button, a):focus-visible {
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -162,6 +198,465 @@ button:focus-visible {
 }
 
 ::selection {
-  background: rgba(158, 220, 227, 0.45);
-  color: #443b50;
+  background: var(--selection-background);
+  color: var(--selection-foreground);
+}
+
+.age-hidden-until-selected {
+  color: transparent;
+  cursor: text;
+  user-select: text;
+}
+
+.age-hidden-until-selected::selection {
+  background: var(--selection-background);
+  color: var(--selection-foreground);
+}
+
+/* The app uses a warm, hard-coded utility palette. Keep that component API
+   intact while remapping its shared surfaces to a consistent dark theme. */
+.theme-dark {
+  color-scheme: dark;
+  --background: #080808;
+  --foreground: #ededed;
+  --surface: #121212;
+  --surface-raised: #1a1a1a;
+  --surface-hover: #292929;
+  --border: #383838;
+  --muted: #a3a3a3;
+  --selection-background: #525252;
+  --selection-foreground: #fafafa;
+  --skeleton-primary: #303030;
+  --skeleton-secondary: #242424;
+  --focus-ring: #d4d4d4;
+  --control-background: #121212;
+  --control-background-active: #292929;
+  --control-border: #383838;
+  --control-border-active: #737373;
+  --control-foreground: #ededed;
+  --lesson-row-hover: #1a1a1a;
+  --lesson-row-selected: #1f1f1f;
+  --lesson-border-hover: #4a4a4a;
+  --lesson-border-selected: #525252;
+  --lesson-accent: #d4d4d4;
+  --lesson-text: #d4d4d4;
+  --lesson-text-selected: #f5f5f5;
+  --lesson-marker-border: #4a4a4a;
+  --lesson-marker-active: #f5f5f5;
+  --lesson-marker-complete-background: #2a2a2a;
+}
+
+.theme-light {
+  color-scheme: light;
+}
+
+.theme-dark :is(
+  [class~="bg-[#fbf4e7]"],
+  [class~="bg-[#fffdf8]"],
+  [class~="bg-[#fffefa]"],
+  [class~="bg-[#fffaff]"],
+  [class~="bg-[#faf7ff]"],
+  [class~="bg-[#f8f4fb]"],
+  [class~="bg-[#f8f4ff]"],
+  [class~="bg-[#f7f3fb]"],
+  [class~="bg-[#f8f3ff]"],
+  [class~="bg-[#f7f2ff]"]
+) {
+  background-color: var(--surface);
+}
+
+.theme-dark :is(
+  .bg-white,
+  [class~="bg-white/60"],
+  [class~="bg-white/80"],
+  [class~="bg-white/85"],
+  [class~="bg-[#f1ecfb]"],
+  [class~="bg-[#f3ede4]"],
+  [class~="bg-[#eee4d7]"],
+  [class~="bg-[#eee8fa]"],
+  [class~="bg-[#eee9f1]"],
+  [class~="bg-[#eef7ff]"],
+  [class~="bg-[#edf4f8]"],
+  [class~="bg-[#e8e0eb]"],
+  [class~="bg-[#e6ddea]"]
+) {
+  background-color: var(--surface-raised);
+}
+
+.theme-dark :is(
+  [class~="bg-[#9edce3]"],
+  [class~="bg-[#9fc4f2]"]
+) {
+  background-color: #414141;
+}
+
+.theme-dark :is(
+  [class~="bg-[#9b84d9]"],
+  [class~="bg-[#8a72cb]"],
+  [class~="bg-[#b6a5df]"],
+  [class~="bg-[#c3afe9]"]
+) {
+  background-color: #684ca0;
+}
+
+.theme-dark :is(
+  [class~="bg-[#9fd8b8]"],
+  [class~="bg-[#eef9f0]"]
+) {
+  background-color: #276749;
+}
+
+.theme-dark :is(
+  [class~="bg-[#f3a0aa]"],
+  [class~="bg-[#f4aaa4]"],
+  [class~="bg-[#f5a7b0]"],
+  [class~="bg-[#f8e2e6]"],
+  [class~="bg-[#f4d8dd]"],
+  [class~="bg-[#fff0f3]"],
+  [class~="bg-[#fff4f5]"],
+  [class~="bg-[#fff4fa]"],
+  [class~="bg-[#fff7f8]"]
+) {
+  background-color: #73364d;
+}
+
+.theme-dark :is(
+  [class~="bg-[#f4d98a]"],
+  [class~="bg-[#f4dc8f]"],
+  [class~="bg-[#f6cf8f]"]
+) {
+  background-color: #745c1f;
+}
+
+.theme-dark :is(
+  [class*="border-[#"],
+  [class~="border-white"]
+) {
+  border-color: var(--border);
+}
+
+.theme-dark :is(
+  [class*="text-[#"],
+  [class~="text-black"]
+) {
+  color: var(--foreground);
+}
+
+.theme-dark :is(
+  [class~="text-[#95899a]"],
+  [class~="text-[#9b909f]"],
+  [class~="text-[#a99cc0]"],
+  [class~="text-[#b3a693]"],
+  [class~="text-[#b5a9bd]"],
+  [class~="text-[#c3b8c6]"]
+) {
+  color: var(--muted);
+}
+
+.theme-dark :is(
+  [class~="text-[#4b9aa6]"],
+  [class~="text-[#3f8a5b]"],
+  [class~="text-[#8f78c9]"],
+  [class~="text-[#7c68b8]"]
+) {
+  color: #d4d4d4;
+}
+
+.theme-dark :is(
+  [class~="text-[#9e5260]"],
+  [class~="text-[#a95d6b]"],
+  [class~="text-[#8e5576]"],
+  [class~="text-[#7d4351]"]
+) {
+  color: #fecdd3;
+}
+
+.theme-dark :is(
+  [class~="bg-[radial-gradient(circle_at_50%_35%,rgba(197,226,230,0.45),transparent_52%)]"]
+) {
+  background-image: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.08), transparent 52%);
+}
+
+.theme-dark [class*="shadow-[0_12px_30px_rgba("] {
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.32);
+}
+
+.theme-dark [class*="shadow-[0_8px_22px_rgba("] {
+  box-shadow: 0 8px 22px rgb(0 0 0 / 0.36);
+}
+
+.theme-dark [class*="shadow-[0_4px_12px_rgba("] {
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.32);
+}
+
+.theme-dark button[class*="shadow-[0_4px_0_#"] {
+  border-color: #4a4a4a;
+  background-color: #242424;
+  color: #f5f5f5;
+  box-shadow: 0 4px 0 #0a0a0a;
+}
+
+.theme-dark .main-primary-action,
+.theme-dark .main-primary-action:hover {
+  background-color: #e5e5e5;
+  color: #101010;
+}
+
+.theme-dark .progress-scroll {
+  scrollbar-color: #737373 transparent;
+}
+
+.theme-dark .progress-scroll::-webkit-scrollbar-thumb {
+  background: #737373;
+}
+
+.theme-toggle {
+  background-color: transparent;
+}
+
+.theme-toggle:hover {
+  background-color: rgb(155 132 217 / 0.12);
+}
+
+.theme-dark .theme-toggle:hover {
+  background-color: var(--surface-hover);
+}
+
+.theme-toggle-track {
+  background-color: #8068c5;
+}
+
+.theme-dark .theme-toggle-track {
+  background-color: #4a4a4a;
+}
+
+.theme-toggle-thumb {
+  transform: translateX(1.25rem);
+}
+
+.theme-dark .theme-toggle-thumb {
+  transform: translateX(0);
+}
+
+.theme-toggle-sun,
+.theme-toggle-moon {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.theme-toggle-sun {
+  color: #b77a00;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.theme-toggle-moon {
+  opacity: 0;
+  transform: scale(0.7) rotate(-18deg);
+}
+
+.theme-dark .theme-toggle-sun {
+  opacity: 0;
+  transform: scale(0.7) rotate(18deg);
+}
+
+.theme-dark .theme-toggle-moon {
+  color: #d4d4d4;
+  opacity: 1;
+  transform: scale(1) rotate(0);
+}
+
+body:has(> .learning-page-shell) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.worksheet-print-document {
+  display: none;
+}
+
+@page worksheet {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  html:has(.worksheet-print-document),
+  body:has(.worksheet-print-document) {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #18181b !important;
+  }
+
+  body:has(.worksheet-print-document) {
+    display: block !important;
+  }
+
+  body:has(.worksheet-print-document) > header,
+  .worksheet-screen-only {
+    display: none !important;
+  }
+
+  .worksheet-print-document {
+    display: block !important;
+    font-family: var(--font-geist-sans), "Malgun Gothic", sans-serif;
+    print-color-adjust: exact;
+  }
+
+  .worksheet-print-page {
+    position: relative;
+    box-sizing: border-box;
+    page: worksheet;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 14mm 16mm 15mm;
+    break-after: page;
+    background: #ffffff;
+    color: #18181b;
+  }
+
+  .worksheet-print-page:last-child {
+    break-after: auto;
+  }
+
+  .worksheet-print-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12mm;
+    padding-bottom: 5mm;
+    border-bottom: 0.8mm solid #18181b;
+  }
+
+  .worksheet-print-header p {
+    margin: 0 0 2mm;
+    color: #625878;
+    font-size: 9pt;
+    font-weight: 700;
+  }
+
+  .worksheet-print-header h1 {
+    margin: 0;
+    font-size: 23pt;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+  }
+
+  .worksheet-print-fields {
+    display: flex;
+    gap: 4mm;
+    font-size: 8.5pt;
+    white-space: nowrap;
+  }
+
+  .worksheet-print-fields span {
+    min-width: 28mm;
+    padding-bottom: 1.5mm;
+    border-bottom: 0.3mm solid #777777;
+  }
+
+  .worksheet-print-goals {
+    display: grid;
+    grid-template-columns: 22mm 1fr;
+    gap: 4mm;
+    margin: 5mm 0;
+    padding: 4mm;
+    border: 0.3mm solid #d7cdea;
+    border-radius: 3mm;
+    background: #f5f1fb;
+    font-size: 8.5pt;
+    line-height: 1.55;
+  }
+
+  .worksheet-print-goals ul {
+    margin: 0;
+    padding-left: 4mm;
+  }
+
+  .worksheet-print-questions h2 {
+    margin: 5mm 0 2.5mm;
+    color: #5f477f;
+    font-size: 11pt;
+    font-weight: 900;
+  }
+
+  .worksheet-print-question {
+    break-inside: avoid;
+    margin-bottom: 2.5mm;
+    font-size: 9.5pt;
+    line-height: 1.55;
+  }
+
+  .worksheet-print-question p {
+    margin: 0;
+  }
+
+  .worksheet-print-prompt {
+    display: grid;
+    grid-template-columns: 10mm minmax(0, 1fr);
+    align-items: baseline;
+  }
+
+  .worksheet-print-answer-lines {
+    display: grid;
+    gap: 2.3mm;
+    margin-top: 2mm;
+  }
+
+  .worksheet-print-answer-lines span {
+    display: block;
+    height: 3.8mm;
+    border-bottom: 0.2mm solid #d4d4d8;
+  }
+
+  .worksheet-print-solutions ol {
+    columns: 2;
+    column-gap: 10mm;
+    margin: 7mm 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .worksheet-print-solutions li {
+    break-inside: avoid;
+    margin: 0 0 4mm;
+    font-size: 9pt;
+    line-height: 1.6;
+  }
+
+  .worksheet-print-note {
+    margin-top: 8mm;
+    padding: 5mm;
+    border: 0.3mm solid #d7cdea;
+    border-radius: 3mm;
+    background: #f5f1fb;
+    font-size: 9pt;
+  }
+
+  .worksheet-print-note p {
+    margin: 2mm 0 0;
+  }
+
+  .worksheet-print-page footer {
+    position: absolute;
+    right: 16mm;
+    bottom: 7mm;
+    left: 16mm;
+    display: flex;
+    justify-content: space-between;
+    padding-top: 2mm;
+    border-top: 0.2mm solid #d4d4d8;
+    color: #71717a;
+    font-size: 7.5pt;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-track,
+  .theme-toggle-thumb,
+  .theme-toggle-sun,
+  .theme-toggle-moon {
+    transition: none;
+  }
 }

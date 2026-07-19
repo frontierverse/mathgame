@@ -9,7 +9,7 @@ const CHARACTERS: { variant: BlobVariant; color: string; label: string }[] = [
 
 export default function BlobGalleryPage() {
   return (
-    <main className="min-h-screen bg-[#fbf4e7] px-6 py-10 text-[#443b50]">
+    <main className="min-h-0 flex-1 bg-[var(--background)] px-6 py-10 text-[var(--foreground)]">
       <div className="mx-auto max-w-[900px]">
         <h1 className="text-2xl font-bold tracking-[-0.04em]">광물 진화 단계 미리보기</h1>
         <p className="mt-2 text-sm text-[#766b7d]">돌 → 수정 → 루비 → 다이아몬드 (가치 낮은 순 → 높은 순)</p>

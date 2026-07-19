@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { MAX_QUIZ_COUNT, MAX_SOLVES } from "./quizData";
+import { MAX_QUIZ_COUNT, MAX_SOLVES, migrateLegacyQuizCounts } from "./quizData";
 import type { QuizProgress } from "./quizProgress";
 
-const STORAGE_KEY = "math-space-quiz-progress-v4";
+const STORAGE_KEY = "math-space-quiz-progress-v5";
+const LEGACY_STORAGE_KEY = "math-space-quiz-progress-v4";
 
 function normalizeProgress(value: unknown): QuizProgress {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -25,7 +26,18 @@ function normalizeProgress(value: unknown): QuizProgress {
 function loadLocalProgress() {
   if (typeof window === "undefined") return {};
   try {
-    return normalizeProgress(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}"));
+    const savedProgress = window.localStorage.getItem(STORAGE_KEY);
+    if (savedProgress !== null) return normalizeProgress(JSON.parse(savedProgress));
+
+    const legacyProgress = normalizeProgress(
+      JSON.parse(window.localStorage.getItem(LEGACY_STORAGE_KEY) ?? "{}"),
+    );
+    return Object.fromEntries(
+      Object.entries(legacyProgress).map(([studentName, counts]) => [
+        studentName,
+        migrateLegacyQuizCounts(counts),
+      ]),
+    );
   } catch {
     return {};
   }

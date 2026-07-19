@@ -1,5 +1,5 @@
 export type TriangleAreaStage = 0 | 1 | 2;
-export type CircleAreaStage = 0 | 1 | 2 | 3 | 4;
+export type CircleAreaStage = 0 | 1 | 2 | 3 | 4 | 5;
 export type PowersStage = 0 | 1;
 
 const dedicatedSceneLessonIds = new Set([
@@ -10,6 +10,7 @@ const dedicatedSceneLessonIds = new Set([
   "times-table-two",
   "square-area",
   "triangle-area",
+  "circle-circumference",
   "circle-area",
   "powers",
   "powers-two",

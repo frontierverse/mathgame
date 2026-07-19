@@ -1,10 +1,10 @@
 "use client";
 
-import { Suspense, useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import MathGameLayout from "./components/MathGameLayout";
 import { getLessonIdFromQuery, lessons } from "./components/mathGameData";
-import { getPreview } from "./components/mathExpression";
+import { getPreview, isEditableTarget } from "./components/mathExpression";
 import type { CircleAreaStage, PowersStage, TriangleAreaStage } from "./components/types";
 
 const COMPLETED_LESSONS_STORAGE_KEY = "math-space-completed-lessons";
@@ -48,7 +48,7 @@ function getServerProgressSnapshot() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<main className="min-h-screen bg-[#fbf4e7]" />}>
+    <Suspense fallback={<main className="min-h-0 flex-1 bg-[var(--background)]" />}>
       <MathGame />
     </Suspense>
   );
@@ -111,6 +111,34 @@ function MathGame() {
     setCircleAreaStageFor(null);
     setPowersStageFor(null);
   }, [pathname, router, searchParams]);
+
+  useEffect(() => {
+    function handleLessonArrowKey(event: KeyboardEvent) {
+      if (
+        event.repeat ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        isEditableTarget(event.target) ||
+        (event.key !== "ArrowUp" && event.key !== "ArrowDown")
+      ) {
+        return;
+      }
+
+      const currentIndex = lessons.findIndex((lesson) => lesson.id === selectedLessonId);
+      if (currentIndex < 0) return;
+
+      event.preventDefault();
+      const direction = event.key === "ArrowUp" ? -1 : 1;
+      const nextIndex = Math.min(Math.max(currentIndex + direction, 0), lessons.length - 1);
+      if (nextIndex === currentIndex) return;
+      selectLesson(lessons[nextIndex].id);
+    }
+
+    document.addEventListener("keydown", handleLessonArrowKey, true);
+    return () => document.removeEventListener("keydown", handleLessonArrowKey, true);
+  }, [selectLesson, selectedLessonId]);
 
   const addToken = useCallback((token: string) => {
     setIsCommitted(false);

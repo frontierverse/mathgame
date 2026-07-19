@@ -49,7 +49,7 @@ export async function getStudents() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new StudentListError("학생 목록을 불러오기 위한 서버 설정이 없습니다.");
+    throw new StudentListError("명단을 불러오기 위한 서버 설정이 없습니다.");
   }
 
   const endpoint = new URL("/rest/v1/Youth", supabaseUrl);
@@ -70,13 +70,13 @@ export async function getStudents() {
 
     if (!response.ok) {
       console.error("Student list request failed", { status: response.status });
-      throw new StudentListError("학생 목록을 불러오지 못했습니다.");
+      throw new StudentListError("명단을 불러오지 못했습니다.");
     }
 
     const records: unknown = await response.json();
     if (!Array.isArray(records)) {
       console.error("Student list response has an unexpected shape");
-      throw new StudentListError("학생 목록 응답을 처리하지 못했습니다.");
+      throw new StudentListError("명단 응답을 처리하지 못했습니다.");
     }
 
     return records.flatMap((record) => {
@@ -95,6 +95,6 @@ export async function getStudents() {
     if (error instanceof StudentListError) throw error;
 
     console.error("Student list request could not reach Supabase");
-    throw new StudentListError("학생 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    throw new StudentListError("명단을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 }
