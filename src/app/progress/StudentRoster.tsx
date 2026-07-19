@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import DiamondModal from "./DiamondModal";
-import MineralIcon from "./MineralIcon";
 import MineralEvolutionLegend from "./MineralEvolutionLegend";
 import QuizBoard from "./QuizBoard";
 import QuizPanel from "./QuizPanel";
@@ -16,7 +15,6 @@ import {
   MAX_SOLVES,
   resolveQuizContent,
   STUDENT_COLORS,
-  type CurriculumQuizRound,
   type QuizMineralStage,
 } from "./quizData";
 import { getMineralInventory } from "./quizProgress";
@@ -31,26 +29,13 @@ import {
   RESET_RANDOM_QUIZ_QUEUE_STORAGE_KEYS,
   type RandomQuizQueueState,
 } from "./randomQuizQueue";
-import { getRoundProgress } from "./roundProgress";
 import useQuizProgress from "./useQuizProgress";
 import useRoundAssignments from "./useRoundAssignments";
 
 const EMPTY_HIDDEN_STUDENT_NAMES: readonly string[] = [];
 const EMPTY_QUIZ_INDEXES: readonly number[] = [];
 const ROUND_IDS = CURRICULUM_QUIZ_ROUNDS.map(({ id }) => id);
-const RAINBOW_PROGRESS_BACKGROUND =
-  "linear-gradient(90deg, #ff375f 0%, #ff9f0a 16%, #ffd60a 31%, #30d158 47%, #64d2ff 63%, #0a84ff 78%, #5e5ce6 90%, #bf5af2 100%)";
-
 type Student = { name: string; age: number | null };
-
-function quizRangeLabel(round: CurriculumQuizRound) {
-  const firstQuizIndex = round.quizIndexes[0];
-  const lastQuizIndex = round.quizIndexes.at(-1);
-  if (firstQuizIndex === undefined || lastQuizIndex === undefined) return "";
-  return firstQuizIndex === lastQuizIndex
-    ? `${firstQuizIndex + 1}번`
-    : `${firstQuizIndex + 1}~${lastQuizIndex + 1}번`;
-}
 
 type StudentRosterProps = {
   students: Student[];
@@ -215,9 +200,6 @@ export default function StudentRoster({
     selectedRound?.id,
   ]);
   const sharedQueueReady = progressReady && randomQueueReady && roundAssignmentsReady;
-  const selectedRoundProgress = selectedRound
-    ? getRoundProgress(selectedRound, currentRoundParticipantNames, progress)
-    : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -653,93 +635,17 @@ export default function StudentRoster({
         <MineralEvolutionLegend />
       </div>
 
-      {selectedRound && selectedRoundProgress ? (
-        <>
-          <div className="mt-5">
-            <RoundToolbar
-              rounds={CURRICULUM_QUIZ_ROUNDS}
-              selectedRoundId={selectedRound.id}
-              assignments={roundAssignments}
-              progress={progress}
-              onSelectRound={selectRound}
-              onOpenSettings={openRoundSettings}
-            />
-          </div>
-
-          <section
-            aria-label={`${selectedRound.roundNumber}라운드 진행도`}
-            aria-live="polite"
-            className="mt-4 flex flex-col gap-5 rounded-2xl border border-[var(--control-border-active)] bg-[var(--surface-raised)] p-5 lg:flex-row lg:items-center lg:justify-between"
-          >
-            <div className="flex min-w-0 items-center gap-4">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[var(--control-border)] bg-[var(--control-background)]">
-                <MineralIcon
-                  variant={selectedRoundProgress.complete ? "diamond" : "ruby"}
-                  className="h-10 w-10"
-                />
-              </span>
-              <div className="min-w-0">
-                <p className="text-xs font-black text-[var(--lesson-accent)]">
-                  ROUND {String(selectedRound.roundNumber).padStart(2, "0")}
-                </p>
-                <h2 className="mt-1 text-xl font-black tracking-[-0.03em]">
-                  {selectedRoundProgress.complete ? "완료" : "진행 중"}
-                </h2>
-                <p className="mt-1 text-xs leading-5 text-[var(--muted)] sm:text-sm">
-                  {selectedRound.gradeLabel} · {selectedRound.semesterLabel} ·{" "}
-                  {selectedRound.unitTitle} · {selectedRound.subunitTitle} ·{" "}
-                  {quizRangeLabel(selectedRound)}
-                </p>
-              </div>
-            </div>
-
-            <div className="w-full shrink-0 lg:max-w-[420px]">
-              <div className="flex items-center justify-between gap-4 text-xs font-black text-[var(--lesson-text)]">
-                <span>
-                  루비 {selectedRoundProgress.rubyCount}/{selectedRoundProgress.rubyTarget}
-                </span>
-                <span>
-                  {selectedRoundProgress.completedStudentCount}/
-                  {selectedRoundProgress.participantCount}명 통과
-                </span>
-              </div>
-              <div
-                className="mt-2 h-3 overflow-hidden rounded-full bg-[var(--border)]"
-                role={selectedRoundProgress.rubyTarget > 0 ? "progressbar" : undefined}
-                aria-hidden={selectedRoundProgress.rubyTarget === 0 || undefined}
-                aria-label={
-                  selectedRoundProgress.rubyTarget > 0
-                    ? `${selectedRound.roundNumber}라운드 루비 진행도`
-                    : undefined
-                }
-                aria-valuemin={selectedRoundProgress.rubyTarget > 0 ? 0 : undefined}
-                aria-valuemax={
-                  selectedRoundProgress.rubyTarget > 0
-                    ? selectedRoundProgress.rubyTarget
-                    : undefined
-                }
-                aria-valuenow={
-                  selectedRoundProgress.rubyTarget > 0
-                    ? selectedRoundProgress.rubyCount
-                    : undefined
-                }
-              >
-                <div
-                  className="h-full rounded-full transition-[width] duration-500"
-                  style={{
-                    width: `${selectedRoundProgress.progressPercent}%`,
-                    backgroundImage: RAINBOW_PROGRESS_BACKGROUND,
-                  }}
-                />
-              </div>
-              <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">
-                {selectedRoundProgress.participantCount === 0
-                  ? "설정에서 참여 학생을 배정해 주세요."
-                  : "배정 학생 전원이 루비를 완성하면 라운드 완료"}
-              </p>
-            </div>
-          </section>
-        </>
+      {selectedRound ? (
+        <div className="mt-5">
+          <RoundToolbar
+            rounds={CURRICULUM_QUIZ_ROUNDS}
+            selectedRoundId={selectedRound.id}
+            assignments={roundAssignments}
+            progress={progress}
+            onSelectRound={selectRound}
+            onOpenSettings={openRoundSettings}
+          />
+        </div>
       ) : null}
 
       <section className="mt-5" aria-label="퀴즈 진행도">

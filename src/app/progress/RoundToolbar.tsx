@@ -7,8 +7,12 @@ import {
   type CurriculumQuizRound,
 } from "./quizData";
 import type { QuizProgress } from "./quizProgress";
+import { getRoundProgress } from "./roundProgress";
 
 export type RoundAssignments = Readonly<Record<string, readonly string[]>>;
+
+const RAINBOW_PROGRESS_BACKGROUND =
+  "linear-gradient(90deg, #ff375f 0%, #ff9f0a 16%, #ffd60a 31%, #30d158 47%, #64d2ff 63%, #0a84ff 78%, #5e5ce6 90%, #bf5af2 100%)";
 
 type RoundToolbarProps = {
   rounds: readonly CurriculumQuizRound[];
@@ -58,9 +62,10 @@ export default function RoundToolbar({
   const assignedNames = selectedRound
     ? uniqueNames(assignments[selectedRound.id])
     : [];
-  const complete = selectedRound
-    ? isRoundComplete(selectedRound, assignedNames, progress)
-    : false;
+  const roundProgress = selectedRound
+    ? getRoundProgress(selectedRound, assignedNames, progress)
+    : null;
+  const complete = roundProgress?.complete ?? false;
 
   return (
     <section
@@ -112,25 +117,68 @@ export default function RoundToolbar({
         </button>
       </div>
 
-      {selectedRound ? (
-        <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] font-black sm:text-xs">
-          <span className="rounded-full bg-[var(--control-background-active)] px-2.5 py-1 text-[var(--control-foreground)]">
-            ROUND {selectedRound.roundNumber}
-          </span>
-          <span className="rounded-full border border-[var(--control-border)] bg-[var(--surface)] px-2.5 py-1 text-[var(--muted)]">
-            {selectedRound.gradeLabel}
-          </span>
-          <span className="rounded-full border border-[var(--control-border)] bg-[var(--surface)] px-2.5 py-1 text-[var(--muted)]">
-            {selectedRound.semesterLabel}
-          </span>
-          <span className="rounded-full border border-[var(--control-border)] bg-[var(--surface)] px-2.5 py-1 text-[var(--muted)]">
-            {assignedNames.length}명
-          </span>
-          {complete ? (
-            <span className="rounded-full border border-[#b9dec5] bg-[#ecf8ef] px-2.5 py-1 text-[#287245]">
-              ✓ 완료
+      {selectedRound && roundProgress ? (
+        <div className="mt-4 grid gap-3 border-t border-[var(--border)] pt-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)] lg:items-center">
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-black sm:text-xs">
+            <span className="rounded-full bg-[var(--control-background-active)] px-2.5 py-1 text-[var(--control-foreground)]">
+              ROUND {selectedRound.roundNumber}
             </span>
-          ) : null}
+            <span className="rounded-full border border-[var(--control-border)] bg-[var(--surface)] px-2.5 py-1 text-[var(--muted)]">
+              {selectedRound.gradeLabel}
+            </span>
+            <span className="rounded-full border border-[var(--control-border)] bg-[var(--surface)] px-2.5 py-1 text-[var(--muted)]">
+              {selectedRound.semesterLabel}
+            </span>
+            <span className="rounded-full border border-[var(--control-border)] bg-[var(--surface)] px-2.5 py-1 text-[var(--muted)]">
+              {assignedNames.length}명
+            </span>
+            {complete ? (
+              <span className="rounded-full border border-[#b9dec5] bg-[#ecf8ef] px-2.5 py-1 text-[#287245]">
+                ✓ 완료
+              </span>
+            ) : null}
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between gap-4 text-[11px] font-black text-[var(--lesson-text)]">
+              <span>
+                루비 {roundProgress.rubyCount}/{roundProgress.rubyTarget}
+              </span>
+              <span>
+                {roundProgress.completedStudentCount}/
+                {roundProgress.participantCount}명 통과
+              </span>
+            </div>
+            <div
+              className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-[var(--border)]"
+              role={roundProgress.rubyTarget > 0 ? "progressbar" : undefined}
+              aria-hidden={roundProgress.rubyTarget === 0 || undefined}
+              aria-label={
+                roundProgress.rubyTarget > 0
+                  ? `${selectedRound.roundNumber}라운드 루비 진행도`
+                  : undefined
+              }
+              aria-valuemin={roundProgress.rubyTarget > 0 ? 0 : undefined}
+              aria-valuemax={
+                roundProgress.rubyTarget > 0
+                  ? roundProgress.rubyTarget
+                  : undefined
+              }
+              aria-valuenow={
+                roundProgress.rubyTarget > 0
+                  ? roundProgress.rubyCount
+                  : undefined
+              }
+            >
+              <div
+                className="h-full rounded-full transition-[width] duration-500"
+                style={{
+                  width: `${roundProgress.progressPercent}%`,
+                  backgroundImage: RAINBOW_PROGRESS_BACKGROUND,
+                }}
+              />
+            </div>
+          </div>
         </div>
       ) : null}
     </section>
