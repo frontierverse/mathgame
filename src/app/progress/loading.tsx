@@ -63,7 +63,7 @@ export default function ProgressLoading() {
       aria-live="polite"
     >
       <span className="sr-only">진도를 불러오는 중입니다.</span>
-      <div className="mx-auto max-w-[1720px]">
+      <div className="mx-auto w-full max-w-[1440px]">
         <section className="mt-4 rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[0_12px_30px_rgba(111,92,74,0.08)] sm:p-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-3">

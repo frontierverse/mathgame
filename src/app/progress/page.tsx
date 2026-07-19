@@ -20,7 +20,7 @@ export default async function ProgressPage() {
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-[var(--background)] px-4 py-4 text-[var(--foreground)] sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-[1720px]">
+      <div className="mx-auto w-full max-w-[1440px]">
         <section className="mt-4 rounded-3xl border border-[#e7dccb] bg-[#fffdf8] p-5 shadow-[0_12px_30px_rgba(111,92,74,0.08)] sm:p-8">
           {showStaticHeading ? (
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
