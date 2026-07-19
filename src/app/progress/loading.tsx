@@ -26,7 +26,7 @@ function QuizBoardSkeleton({ compact = false }: { compact?: boolean }) {
       </div>
 
       <div className="mt-5 h-[168px] overflow-hidden px-2 py-4 2xl:h-[184px]">
-        <div className="grid w-max grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+        <div className="grid w-max grid-cols-10 gap-2">
           {Array.from({ length: 12 }, (_, index) => (
             <QuizCircleSkeleton key={index} compact={compact} />
           ))}
@@ -36,21 +36,21 @@ function QuizBoardSkeleton({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function SharedQuizQueueSkeleton() {
+function RandomQuizCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-4 sm:p-5">
+    <div className="rounded-[2rem] border border-[var(--border)] bg-[var(--surface-raised)] p-6 sm:p-7">
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <div className={`${PRIMARY_PULSE} h-6 w-28 rounded`} />
-          <div className={`${SECONDARY_PULSE} mt-2 h-3 w-20 rounded`} />
+        <div className="flex items-center gap-4">
+          <span className={`${PRIMARY_PULSE} h-16 w-16 shrink-0 rounded-2xl`} />
+          <div>
+            <div className={`${SECONDARY_PULSE} h-3 w-12 rounded`} />
+            <div className={`${PRIMARY_PULSE} mt-2 h-9 w-32 rounded`} />
+          </div>
         </div>
         <div className={`${SECONDARY_PULSE} h-7 w-12 rounded-full`} />
       </div>
-      <div className="mt-5 grid grid-cols-4 gap-2.5 sm:grid-cols-5 lg:grid-cols-6 2xl:grid-cols-10">
-        {Array.from({ length: 10 }, (_, index) => (
-          <QuizCircleSkeleton key={index} />
-        ))}
-      </div>
+      <div className={`${SECONDARY_PULSE} mt-6 h-4 w-44 rounded`} />
+      <div className={`${PRIMARY_PULSE} mt-5 h-11 w-28 rounded-xl`} />
     </div>
   );
 }
@@ -83,7 +83,7 @@ export default function ProgressLoading() {
           <section className="mt-5" aria-label="퀴즈 진행도 로딩 중">
             <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(300px,390px)]">
               <div className="min-w-0">
-                <SharedQuizQueueSkeleton />
+                <RandomQuizCardSkeleton />
 
                 <div className="mt-10 border-t border-[var(--border)] pt-8">
                   <div className={`${PRIMARY_PULSE} h-7 w-48 rounded`} />

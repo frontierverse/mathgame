@@ -84,6 +84,7 @@ function rewardOptionsForStage(solveCount: number): RewardOption[] {
 type QuizDetailProps = {
   name: string;
   quizIndex: number;
+  questionText?: string;
   counts: number[];
   color: string;
   onAward: (stage: QuizMineralStage) => void;
@@ -94,6 +95,7 @@ type QuizDetailProps = {
 export default function QuizDetail({
   name,
   quizIndex,
+  questionText,
   counts,
   color,
   onAward,
@@ -126,7 +128,7 @@ export default function QuizDetail({
       ) : null}
       <div className="mt-5 flex min-w-0 flex-col gap-4 2xl:flex-row 2xl:items-start 2xl:justify-between">
         <QuizQuestionText
-          text={quizTextForIndex(quizIndex)}
+          text={questionText ?? quizTextForIndex(quizIndex)}
           className="min-w-0 flex-1 text-xl font-bold leading-relaxed text-[#463c56] 2xl:text-2xl"
         />
         {currentMineral && onUndo ? (

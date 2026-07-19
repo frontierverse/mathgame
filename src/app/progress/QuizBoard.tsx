@@ -7,10 +7,7 @@ import { MINERALS } from "./mineralData";
 import {
   EARNABLE_MINERALS,
   getMineralInventory,
-  getRubyCountForDiamondBatch,
-  MAX_DIAMOND_COUNT,
   mineralForCount,
-  RUBIES_PER_DIAMOND,
   unlockedQuizCount,
 } from "./quizProgress";
 import StudentBlob from "./StudentBlob";
@@ -24,7 +21,6 @@ type QuizBoardProps = {
   onOpenQuiz: (studentIndex: number, quizIndex: number) => void;
   onOpenDiamond: (studentIndex: number, diamondIndex: number) => void;
   selectedQuizIndex: number | null;
-  diamondCountLimit?: number;
   quizIndexes?: readonly number[];
   compact?: boolean;
 };
@@ -42,22 +38,25 @@ function QuizBoard({
   onOpenQuiz,
   onOpenDiamond,
   selectedQuizIndex,
-  diamondCountLimit,
   quizIndexes,
   compact = false,
 }: QuizBoardProps) {
   const { totals: mineralCounts, diamondGroups, consumedRubyQuizIndexes } =
-    getMineralInventory(counts, diamondCountLimit);
-  const unlockedCount = unlockedQuizCount(counts, diamondCountLimit);
-  const waitingForTeam =
-    quizIndexes === undefined &&
-    diamondCountLimit !== undefined &&
-    diamondCountLimit < MAX_DIAMOND_COUNT &&
-    getRubyCountForDiamondBatch(counts, diamondCountLimit) === RUBIES_PER_DIAMOND;
+    getMineralInventory(counts);
+  const unlockedCount = unlockedQuizCount(counts);
   const renderedQuizIndexes =
     quizIndexes ?? Array.from({ length: unlockedCount }, (_, quizIndex) => quizIndex);
   const diamondIndexByFirstQuiz = new Map(
-    diamondGroups.map((rubyQuizIndexes, diamondIndex) => [rubyQuizIndexes[0], diamondIndex]),
+    diamondGroups.map(({ diamondIndex, quizIndexes: rubyQuizIndexes }) => [
+      rubyQuizIndexes[0],
+      diamondIndex,
+    ]),
+  );
+  const rubyCountByDiamondIndex = new Map(
+    diamondGroups.map(({ diamondIndex, quizIndexes: rubyQuizIndexes }) => [
+      diamondIndex,
+      rubyQuizIndexes.length,
+    ]),
   );
   const boardItems: QuizBoardItem[] = [];
 
@@ -118,15 +117,9 @@ function QuizBoard({
         </div>
       </div>
 
-      {waitingForTeam ? (
-        <p className="mt-2 inline-flex rounded-full border border-[#e0c9da] bg-[#fff4fa] px-2.5 py-1 text-[11px] font-black text-[#8e5576]">
-          루비 10/10 · 전원 완성까지 다이아 변환 대기
-        </p>
-      ) : null}
-
-      <div className="progress-scroll mt-5 max-h-[168px] overflow-x-hidden overflow-y-auto overscroll-contain px-2 py-4 2xl:max-h-[184px]">
+      <div className="progress-scroll mt-5 max-h-[168px] overflow-x-auto overflow-y-auto overscroll-contain px-2 py-4 2xl:max-h-[184px]">
         <ol
-          className="grid w-max grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"
+          className="grid w-max grid-cols-10 gap-2"
           aria-label={`${studentName.slice(1)}의 퀴즈, ${renderedQuizIndexes.length}개 표시, 다이아몬드 ${displayedDiamondCount}개`}
         >
           {boardItems.map((item) => {
@@ -137,6 +130,7 @@ function QuizBoard({
                     studentColor={studentColor}
                     seed={studentIndex * 10 + item.diamondIndex}
                     diamondIndex={item.diamondIndex}
+                    rubyCount={rubyCountByDiamondIndex.get(item.diamondIndex) ?? 0}
                     compact={compact}
                     onClick={() => onOpenDiamond(studentIndex, item.diamondIndex)}
                   />

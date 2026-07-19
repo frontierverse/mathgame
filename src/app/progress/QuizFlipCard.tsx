@@ -9,6 +9,7 @@ type QuizFlipCardProps = {
   id?: string;
   ariaLabel: string;
   quizIndex: number;
+  answerText?: string | null;
   entered: boolean;
   faceClassName: string;
   children: ReactNode;
@@ -53,6 +54,7 @@ export default function QuizFlipCard({
   id,
   ariaLabel,
   quizIndex,
+  answerText,
   entered,
   faceClassName,
   children,
@@ -61,7 +63,9 @@ export default function QuizFlipCard({
   const frontFlipButtonRef = useRef<HTMLButtonElement>(null);
   const backFlipButtonRef = useRef<HTMLButtonElement>(null);
   const quiz = getQuizForIndex(quizIndex);
-  const answer = quizAnswerForIndex(quizIndex)?.trim() ?? "";
+  const answer = (
+    answerText === undefined ? quizAnswerForIndex(quizIndex) : answerText
+  )?.trim() ?? "";
 
   const flip = (nextShowingAnswer: boolean) => {
     setShowingAnswer(nextShowingAnswer);

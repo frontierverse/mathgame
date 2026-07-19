@@ -10,6 +10,9 @@ type RandomQuizPanelProps = {
   studentName: string;
   studentColor: string;
   quizIndex: number;
+  variantKey: string;
+  questionText: string;
+  answerText: string | null;
   counts: number[];
   onAward: (stage: QuizMineralStage) => void;
   onClose: () => void;
@@ -19,6 +22,9 @@ export default function RandomQuizPanel({
   studentName,
   studentColor,
   quizIndex,
+  variantKey,
+  questionText,
+  answerText,
   counts,
   onAward,
   onClose,
@@ -41,10 +47,11 @@ export default function RandomQuizPanel({
 
   return (
     <QuizFlipCard
-      key={`${studentName}-${quizIndex}`}
+      key={`${studentName}-${quizIndex}-${variantKey}`}
       id="random-quiz-panel"
       ariaLabel={`${givenName} ${quizIndex + 1}번 랜덤 퀴즈`}
       quizIndex={quizIndex}
+      answerText={answerText}
       entered={entered}
       faceClassName="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-[var(--control-border-active)] bg-[var(--surface)] p-6 shadow-[0_16px_40px_rgba(73,53,96,0.16)] sm:p-7"
     >
@@ -70,6 +77,7 @@ export default function RandomQuizPanel({
         <QuizDetail
           name={givenName}
           quizIndex={quizIndex}
+          questionText={questionText}
           counts={counts}
           color={studentColor}
           onAward={onAward}

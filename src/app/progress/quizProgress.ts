@@ -1,7 +1,22 @@
 import { MINERAL_ORDER, type BlobVariant } from "./mineralData";
-import { MAX_QUIZ_COUNT, MAX_SOLVES } from "./quizData";
+import {
+  CURRICULUM_QUIZ_ROUNDS,
+  MAX_QUIZ_COUNT,
+  MAX_SOLVES,
+} from "./quizData";
 
 export type QuizProgress = Record<string, number[]>;
+
+export type DiamondGroup = {
+  diamondIndex: number;
+  quizIndexes: readonly number[];
+};
+
+export const DIAMOND_QUIZ_GROUPS: readonly DiamondGroup[] =
+  CURRICULUM_QUIZ_ROUNDS.map((round, diamondIndex) => ({
+    diamondIndex,
+    quizIndexes: round.quizIndexes,
+  }));
 
 export const mineralForStage = (stage: number): BlobVariant =>
   MINERAL_ORDER[Math.min(stage, MINERAL_ORDER.length - 1)];
@@ -10,28 +25,22 @@ export const mineralForCount = (count: number): BlobVariant | null =>
   count > 0 ? mineralForStage(count - 1) : null;
 
 export const EARNABLE_MINERALS = MINERAL_ORDER.slice(0, MAX_SOLVES);
-export const INITIAL_UNLOCKED_QUIZZES = 10;
-export const RUBIES_PER_DIAMOND = 10;
-export const MAX_DIAMOND_COUNT = Math.floor(MAX_QUIZ_COUNT / RUBIES_PER_DIAMOND);
+export const INITIAL_UNLOCKED_QUIZZES =
+  DIAMOND_QUIZ_GROUPS[0]?.quizIndexes.length ?? 0;
+export const MAX_DIAMOND_COUNT = DIAMOND_QUIZ_GROUPS.length;
 
 export const startedQuizCount = (counts: number[]) =>
   counts.filter((count) => count > 0).length;
 
-export function getRubyCountForDiamondBatch(counts: number[], diamondIndex: number) {
-  if (
-    !Number.isInteger(diamondIndex) ||
-    diamondIndex < 0 ||
-    diamondIndex >= MAX_DIAMOND_COUNT
-  ) {
-    return 0;
-  }
+export function getDiamondQuizIndexes(diamondIndex: number) {
+  if (!Number.isInteger(diamondIndex) || diamondIndex < 0) return [];
+  return DIAMOND_QUIZ_GROUPS[diamondIndex]?.quizIndexes ?? [];
+}
 
-  const groupStart = diamondIndex * RUBIES_PER_DIAMOND;
-  let rubyCount = 0;
-  for (let offset = 0; offset < RUBIES_PER_DIAMOND; offset += 1) {
-    if (mineralForCount(counts[groupStart + offset] ?? 0) === "ruby") rubyCount += 1;
-  }
-  return rubyCount;
+export function getRubyCountForDiamondBatch(counts: number[], diamondIndex: number) {
+  return getDiamondQuizIndexes(diamondIndex).filter(
+    (quizIndex) => mineralForCount(counts[quizIndex] ?? 0) === "ruby",
+  ).length;
 }
 
 export type TeamDiamondProgress = {
@@ -61,35 +70,32 @@ export function getTeamDiamondProgress(
     };
   }
 
-  let diamondCount = 0;
-  while (
-    diamondCount < MAX_DIAMOND_COUNT &&
+  const completedGroups = DIAMOND_QUIZ_GROUPS.filter((group) =>
     participants.every(
       (studentName) =>
-        getRubyCountForDiamondBatch(progress[studentName] ?? [], diamondCount) ===
-        RUBIES_PER_DIAMOND,
-    )
-  ) {
-    diamondCount += 1;
-  }
-
-  const nextDiamondIndex = diamondCount < MAX_DIAMOND_COUNT ? diamondCount : null;
-  const currentRubyCounts =
-    nextDiamondIndex === null
-      ? participants.map(() => RUBIES_PER_DIAMOND)
-      : participants.map((studentName) =>
-          getRubyCountForDiamondBatch(progress[studentName] ?? [], nextDiamondIndex),
-        );
+        getRubyCountForDiamondBatch(progress[studentName] ?? [], group.diamondIndex) ===
+        group.quizIndexes.length,
+    ),
+  );
+  const nextGroup = DIAMOND_QUIZ_GROUPS.find(
+    (group) => !completedGroups.includes(group),
+  );
+  const currentRubyCounts = nextGroup
+    ? participants.map((studentName) =>
+        getRubyCountForDiamondBatch(progress[studentName] ?? [], nextGroup.diamondIndex),
+      )
+    : [];
 
   return {
-    diamondCount,
+    diamondCount: completedGroups.length,
     participantCount,
-    nextDiamondIndex,
-    readyStudentCount: currentRubyCounts.filter(
-      (rubyCount) => rubyCount === RUBIES_PER_DIAMOND,
-    ).length,
+    nextDiamondIndex: nextGroup?.diamondIndex ?? null,
+    readyStudentCount: nextGroup
+      ? currentRubyCounts.filter((rubyCount) => rubyCount === nextGroup.quizIndexes.length)
+          .length
+      : participantCount,
     currentRubyCount: currentRubyCounts.reduce((sum, rubyCount) => sum + rubyCount, 0),
-    currentRubyTarget: participantCount * RUBIES_PER_DIAMOND,
+    currentRubyTarget: nextGroup ? participantCount * nextGroup.quizIndexes.length : 0,
   };
 }
 
@@ -105,8 +111,8 @@ export function getMineralInventory(
   };
   const rubyQuizIndexes: number[] = [];
 
-  counts.forEach((count, quizIndex) => {
-    const mineral = mineralForCount(count);
+  Array.from({ length: MAX_QUIZ_COUNT }, (_, quizIndex) => {
+    const mineral = mineralForCount(counts[quizIndex] ?? 0);
     if (mineral === "ruby") {
       rubyQuizIndexes.push(quizIndex);
       return;
@@ -115,27 +121,18 @@ export function getMineralInventory(
   });
 
   const rubyQuizIndexSet = new Set(rubyQuizIndexes);
-  const diamondGroups: number[][] = [];
+  const diamondGroups = DIAMOND_QUIZ_GROUPS.filter(
+    (group) =>
+      group.diamondIndex < maxDiamondCount &&
+      group.quizIndexes.every((quizIndex) => rubyQuizIndexSet.has(quizIndex)),
+  );
+  const consumedRubyQuizIndexes = new Set(
+    diamondGroups.flatMap(({ quizIndexes }) => quizIndexes),
+  );
 
-  for (
-    let groupStart = 0;
-    groupStart + RUBIES_PER_DIAMOND <= MAX_QUIZ_COUNT;
-    groupStart += RUBIES_PER_DIAMOND
-  ) {
-    if (diamondGroups.length >= maxDiamondCount) break;
-
-    const group = Array.from(
-      { length: RUBIES_PER_DIAMOND },
-      (_, offset) => groupStart + offset,
-    );
-
-    // Diamonds must be earned in fixed order: quizzes 1–10, then 11–20, and so on.
-    if (!group.every((quizIndex) => rubyQuizIndexSet.has(quizIndex))) break;
-    diamondGroups.push(group);
-  }
-  const consumedRubyQuizIndexes = new Set(diamondGroups.flat());
-
-  totals.ruby = rubyQuizIndexes.length - consumedRubyQuizIndexes.size;
+  totals.ruby = rubyQuizIndexes.filter(
+    (quizIndex) => !consumedRubyQuizIndexes.has(quizIndex),
+  ).length;
   totals.diamond = diamondGroups.length;
 
   return {
@@ -154,10 +151,17 @@ export function unlockedQuizCount(
   counts: number[],
   maxDiamondCount = Number.POSITIVE_INFINITY,
 ) {
-  const { diamondGroups } = getMineralInventory(counts, maxDiamondCount);
-  const completedBatches = diamondGroups.length;
-  return Math.min(
-    MAX_QUIZ_COUNT,
-    INITIAL_UNLOCKED_QUIZZES + completedBatches * RUBIES_PER_DIAMOND,
+  const visibleGroups = DIAMOND_QUIZ_GROUPS.filter(
+    ({ diamondIndex }) => diamondIndex < maxDiamondCount,
   );
+  let unlockedCount = 0;
+
+  for (const group of visibleGroups) {
+    unlockedCount += group.quizIndexes.length;
+    if (getRubyCountForDiamondBatch(counts, group.diamondIndex) < group.quizIndexes.length) {
+      break;
+    }
+  }
+
+  return Math.min(MAX_QUIZ_COUNT, unlockedCount);
 }

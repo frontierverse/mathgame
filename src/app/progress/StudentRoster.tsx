@@ -11,8 +11,10 @@ import RandomQuizPanel from "./RandomQuizPanel";
 import RoundSettingsModal from "./RoundSettingsModal";
 import RoundToolbar from "./RoundToolbar";
 import {
+  createRandomQuizVariantSeed,
   CURRICULUM_QUIZ_ROUNDS,
   MAX_SOLVES,
+  resolveQuizContent,
   STUDENT_COLORS,
   type CurriculumQuizRound,
   type QuizMineralStage,
@@ -30,7 +32,6 @@ import {
   type RandomQuizQueueState,
 } from "./randomQuizQueue";
 import { getRoundProgress } from "./roundProgress";
-import SharedQuizQueue from "./SharedQuizQueue";
 import useQuizProgress from "./useQuizProgress";
 import useRoundAssignments from "./useRoundAssignments";
 
@@ -129,6 +130,7 @@ export default function StudentRoster({
   const [openRandomAssignment, setOpenRandomAssignment] = useState<{
     quizIndex: number;
     studentName: string;
+    variantSeed: number | null;
   } | null>(null);
   const [openDiamond, setOpenDiamond] = useState<{
     studentIndex: number;
@@ -212,7 +214,6 @@ export default function StudentRoster({
     randomQueueState,
     selectedRound?.id,
   ]);
-  const pendingQuizIndexes = new Set(Object.keys(validPendingByQuiz).map(Number));
   const sharedQueueReady = progressReady && randomQueueReady && roundAssignmentsReady;
   const selectedRoundProgress = selectedRound
     ? getRoundProgress(selectedRound, currentRoundParticipantNames, progress)
@@ -298,12 +299,30 @@ export default function StudentRoster({
             assignedStudentNameSet.has(studentName),
           ),
         );
+        const variantSeedByQuiz = Object.fromEntries(
+          Object.entries(roundQueue.variantSeedByQuiz).filter(
+            ([quizKey]) => pendingByQuiz[quizKey] !== undefined,
+          ),
+        );
+        const lastVariantSeedByQuiz = { ...roundQueue.lastVariantSeedByQuiz };
+        Object.entries(roundQueue.variantSeedByQuiz).forEach(
+          ([quizKey, variantSeed]) => {
+            if (pendingByQuiz[quizKey] === undefined) {
+              lastVariantSeedByQuiz[quizKey] = variantSeed;
+            }
+          },
+        );
 
         return {
           ...current,
           rounds: {
             ...current.rounds,
-            [roundId]: { ...roundQueue, pendingByQuiz },
+            [roundId]: {
+              ...roundQueue,
+              pendingByQuiz,
+              variantSeedByQuiz,
+              lastVariantSeedByQuiz,
+            },
           },
         };
       });
@@ -384,9 +403,26 @@ export default function StudentRoster({
         return;
       }
 
-      if (!pendingParticipant) {
+      const quizKey = String(quizIndex);
+      const storedVariantSeed = selectedRoundQueue.variantSeedByQuiz[quizKey];
+      const variantSeed =
+        pendingParticipant && storedVariantSeed !== undefined
+          ? storedVariantSeed
+          : createRandomQuizVariantSeed(
+              quizIndex,
+              storedVariantSeed ?? selectedRoundQueue.lastVariantSeedByQuiz[quizKey],
+            );
+
+      if (
+        !pendingParticipant ||
+        (variantSeed !== null && storedVariantSeed !== variantSeed)
+      ) {
         setRandomQueueState((current) => {
           const roundQueue = getRandomQuizRoundQueue(current, selectedRound.id);
+          const variantSeedByQuiz = { ...roundQueue.variantSeedByQuiz };
+          if (variantSeed === null) delete variantSeedByQuiz[quizKey];
+          else variantSeedByQuiz[quizKey] = variantSeed;
+
           return {
             ...current,
             rounds: {
@@ -395,8 +431,9 @@ export default function StudentRoster({
                 ...roundQueue,
                 pendingByQuiz: {
                   ...roundQueue.pendingByQuiz,
-                  [String(quizIndex)]: participant.name,
+                  [quizKey]: participant.name,
                 },
+                variantSeedByQuiz,
               },
             },
           };
@@ -406,7 +443,11 @@ export default function StudentRoster({
       completingRandomQuizRef.current = false;
       setOpenQuizIndex(null);
       setOpenDiamond(null);
-      setOpenRandomAssignment({ quizIndex, studentName: participant.name });
+      setOpenRandomAssignment({
+        quizIndex,
+        studentName: participant.name,
+        variantSeed,
+      });
       setQueueAnnouncement(
         `${quizIndex + 1}번 퀴즈는 ${participant.name.slice(1).trim()} 학생에게 배정됐습니다.`,
       );
@@ -415,23 +456,43 @@ export default function StudentRoster({
       activeQuizIndexes,
       progress,
       randomQuizParticipants,
+      selectedRoundQueue.lastVariantSeedByQuiz,
       selectedRound,
       selectedRoundQueue.lastSolverByQuiz,
+      selectedRoundQueue.variantSeedByQuiz,
       sharedQueueReady,
       validPendingByQuiz,
     ],
   );
 
-  const handleSharedQuizClick = useCallback(
-    (quizIndex: number) => {
-      if (openRandomAssignment?.quizIndex === quizIndex) {
-        closeRandomPanel();
-        return;
-      }
-      openSharedQuiz(quizIndex);
-    },
-    [closeRandomPanel, openRandomAssignment?.quizIndex, openSharedQuiz],
-  );
+  const openNextSharedQuiz = useCallback(() => {
+    if (!sharedQueueReady) return;
+
+    const pendingQuizIndex = randomQuizOrder.find(
+      (quizIndex) => validPendingByQuiz[String(quizIndex)] !== undefined,
+    );
+    const nextQuizIndex =
+      pendingQuizIndex ??
+      randomQuizOrder.find((quizIndex) =>
+        randomQuizParticipants.some(({ name }) =>
+          canStudentSolveQuiz(progress, name, quizIndex),
+        ),
+      );
+
+    if (nextQuizIndex === undefined) {
+      setQueueAnnouncement("현재 퀴즈를 모두 풀었습니다.");
+      return;
+    }
+
+    openSharedQuiz(nextQuizIndex);
+  }, [
+    openSharedQuiz,
+    progress,
+    randomQuizOrder,
+    randomQuizParticipants,
+    sharedQueueReady,
+    validPendingByQuiz,
+  ]);
 
   const completeSharedQuiz = useCallback((targetStage: QuizMineralStage) => {
     if (!selectedRound || !openRandomAssignment || completingRandomQuizRef.current) return;
@@ -448,10 +509,20 @@ export default function StudentRoster({
     setRandomQueueState((current) => {
       const roundQueue = getRandomQuizRoundQueue(current, selectedRound.id);
       const pendingByQuiz = { ...roundQueue.pendingByQuiz };
+      const variantSeedByQuiz = { ...roundQueue.variantSeedByQuiz };
+      const lastVariantSeedByQuiz = { ...roundQueue.lastVariantSeedByQuiz };
       const quizKey = String(quizIndex);
       const reachedRuby = targetStage === MAX_SOLVES;
-      if (reachedRuby) delete pendingByQuiz[quizKey];
-      else pendingByQuiz[quizKey] = studentName;
+      if (reachedRuby) {
+        delete pendingByQuiz[quizKey];
+        const completedVariantSeed = variantSeedByQuiz[quizKey];
+        if (completedVariantSeed !== undefined) {
+          lastVariantSeedByQuiz[quizKey] = completedVariantSeed;
+        }
+        delete variantSeedByQuiz[quizKey];
+      } else {
+        pendingByQuiz[quizKey] = studentName;
+      }
       const currentOrder = reconcileQuizOrder(roundQueue.order, activeQuizIndexes);
 
       return {
@@ -459,8 +530,11 @@ export default function StudentRoster({
         rounds: {
           ...current.rounds,
           [selectedRound.id]: {
+            ...roundQueue,
             order: [...currentOrder.filter((index) => index !== quizIndex), quizIndex],
             pendingByQuiz,
+            variantSeedByQuiz,
+            lastVariantSeedByQuiz,
             lastSolverByQuiz: reachedRuby
               ? { ...roundQueue.lastSolverByQuiz, [quizKey]: studentName }
               : roundQueue.lastSolverByQuiz,
@@ -520,6 +594,12 @@ export default function StudentRoster({
   const randomAssignedCounts = openRandomAssignment
     ? progress[openRandomAssignment.studentName] ?? []
     : [];
+  const randomAssignedContent = openRandomAssignment
+    ? resolveQuizContent(
+        openRandomAssignment.quizIndex,
+        openRandomAssignment.variantSeed,
+      )
+    : null;
   const randomAssignedColor = randomAssignedParticipant
     ? STUDENT_COLORS[randomAssignedParticipant.originalIndex % STUDENT_COLORS.length]
     : STUDENT_COLORS[0];
@@ -527,9 +607,9 @@ export default function StudentRoster({
   const diamondStudentName = diamondStudent?.name ?? null;
   const diamondStudentCounts = diamondStudentName ? progress[diamondStudentName] ?? [] : [];
   const diamondRubyQuizIndexes = openDiamond
-    ? getMineralInventory(diamondStudentCounts).diamondGroups[
-        openDiamond.diamondIndex
-      ] ?? null
+    ? getMineralInventory(diamondStudentCounts).diamondGroups.find(
+        ({ diamondIndex }) => diamondIndex === openDiamond.diamondIndex,
+      )?.quizIndexes ?? null
     : null;
   const diamondStudentColor = openDiamond
     ? STUDENT_COLORS[openDiamond.studentIndex % STUDENT_COLORS.length]
@@ -670,18 +750,66 @@ export default function StudentRoster({
             </p>
           </div>
         ) : (
-          <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(300px,390px)]">
+          <div
+            className={`grid items-start gap-6 ${
+              selectedName && openQuizIndex !== null
+                ? "xl:grid-cols-[minmax(0,1fr)_minmax(300px,390px)]"
+                : ""
+            }`}
+          >
             <div className="min-w-0">
-              <SharedQuizQueue
-                quizOrder={randomQuizOrder}
-                participantNames={currentRoundParticipantNames}
-                progress={progress}
-                pendingQuizIndexes={pendingQuizIndexes}
-                selectedQuizIndex={openRandomAssignment?.quizIndex ?? null}
-                isReady={sharedQueueReady}
-                announcement={queueAnnouncement}
-                onOpenQuiz={handleSharedQuizClick}
-              />
+              {openRandomAssignment &&
+              randomAssignedParticipant &&
+              randomAssignedContent ? (
+                <RandomQuizPanel
+                  key={`${openRandomAssignment.quizIndex}-${openRandomAssignment.studentName}-${randomAssignedContent.variantKey}`}
+                  studentName={openRandomAssignment.studentName}
+                  studentColor={randomAssignedColor}
+                  quizIndex={openRandomAssignment.quizIndex}
+                  variantKey={randomAssignedContent.variantKey}
+                  questionText={randomAssignedContent.question}
+                  answerText={randomAssignedContent.answer}
+                  counts={randomAssignedCounts}
+                  onAward={completeSharedQuiz}
+                  onClose={closeRandomPanel}
+                />
+              ) : (
+                <section
+                  className="rounded-[2rem] border border-[var(--control-border-active)] bg-[var(--surface)] p-6 shadow-[0_16px_40px_rgba(73,53,96,0.10)] sm:p-7"
+                  aria-label="랜덤 퀴즈"
+                  aria-busy={!sharedQueueReady}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] font-black tracking-[0.16em] text-[var(--lesson-accent)]">
+                        QUIZ
+                      </p>
+                      <h2 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[var(--foreground)]">
+                        랜덤 퀴즈
+                      </h2>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-[var(--control-border)] bg-[var(--control-background)] px-3 py-1.5 text-xs font-black tabular-nums text-[var(--control-foreground)]">
+                      {currentRoundParticipantNames.length}명
+                    </span>
+                  </div>
+                  <p className="mt-5 text-sm font-bold text-[var(--muted)]">
+                    {currentRoundParticipantNames.length === 0
+                      ? "참여 학생을 배정해 주세요."
+                      : queueAnnouncement || "다음 퀴즈를 시작하세요."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={openNextSharedQuiz}
+                    disabled={!sharedQueueReady || currentRoundParticipantNames.length === 0}
+                    className="mt-6 rounded-xl bg-[var(--lesson-accent)] px-5 py-3 text-sm font-black text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--lesson-accent)] focus-visible:ring-offset-2"
+                  >
+                    다음 퀴즈
+                  </button>
+                  <p className="sr-only" role="status" aria-live="polite">
+                    {queueAnnouncement}
+                  </p>
+                </section>
+              )}
 
               <div
                 className="mt-10 border-t border-[#e7dccb] pt-8"
@@ -718,37 +846,23 @@ export default function StudentRoster({
               </div>
             </div>
 
-            {openRandomAssignment || (selectedName && openQuizIndex !== null) ? (
+            {selectedName && openQuizIndex !== null ? (
               <div className="order-first min-w-0 xl:order-none xl:col-start-2">
-                {openRandomAssignment && randomAssignedParticipant ? (
-                  <div className="xl:sticky xl:top-4">
-                    <RandomQuizPanel
-                      key={`${openRandomAssignment.quizIndex}-${openRandomAssignment.studentName}`}
-                      studentName={openRandomAssignment.studentName}
-                      studentColor={randomAssignedColor}
-                      quizIndex={openRandomAssignment.quizIndex}
-                      counts={randomAssignedCounts}
-                      onAward={completeSharedQuiz}
-                      onClose={closeRandomPanel}
-                    />
-                  </div>
-                ) : selectedName && openQuizIndex !== null ? (
-                  <div className="xl:sticky xl:top-4">
-                    <QuizPanel
-                      name={selectedName.slice(1)}
-                      quizIndex={openQuizIndex}
-                      counts={selectedCounts}
-                      navigationQuizIndexes={activeQuizIndexes}
-                      color={selectedColor}
-                      onAward={(stage) =>
-                        awardQuizStage(selectedName, openQuizIndex, stage)
-                      }
-                      onUndo={() => undoQuiz(selectedName, openQuizIndex)}
-                      onNavigate={navigateQuiz}
-                      onClose={closePanel}
-                    />
-                  </div>
-                ) : null}
+                <div className="xl:sticky xl:top-4">
+                  <QuizPanel
+                    name={selectedName.slice(1)}
+                    quizIndex={openQuizIndex}
+                    counts={selectedCounts}
+                    navigationQuizIndexes={activeQuizIndexes}
+                    color={selectedColor}
+                    onAward={(stage) =>
+                      awardQuizStage(selectedName, openQuizIndex, stage)
+                    }
+                    onUndo={() => undoQuiz(selectedName, openQuizIndex)}
+                    onNavigate={navigateQuiz}
+                    onClose={closePanel}
+                  />
+                </div>
               </div>
             ) : null}
           </div>

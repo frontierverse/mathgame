@@ -12,10 +12,12 @@ export type RandomQuizRoundQueueState = {
   order: number[];
   pendingByQuiz: Record<string, string>;
   lastSolverByQuiz: Record<string, string>;
+  variantSeedByQuiz: Record<string, number>;
+  lastVariantSeedByQuiz: Record<string, number>;
 };
 
 export type RandomQuizQueueState = {
-  version: 2;
+  version: 3;
   rounds: Record<string, RandomQuizRoundQueueState>;
 };
 
@@ -25,7 +27,7 @@ export type RandomQuizParticipant = {
 };
 
 export const EMPTY_RANDOM_QUIZ_QUEUE_STATE: RandomQuizQueueState = {
-  version: 2,
+  version: 3,
   rounds: {},
 };
 
@@ -33,6 +35,8 @@ export const EMPTY_RANDOM_QUIZ_ROUND_QUEUE_STATE: RandomQuizRoundQueueState = {
   order: [],
   pendingByQuiz: {},
   lastSolverByQuiz: {},
+  variantSeedByQuiz: {},
+  lastVariantSeedByQuiz: {},
 };
 
 function normalizeNameMap(value: unknown) {
@@ -47,6 +51,25 @@ function normalizeNameMap(value: unknown) {
         quizIndex < MAX_QUIZ_COUNT &&
         typeof studentName === "string" &&
         studentName.length > 0
+      );
+    }),
+  );
+}
+
+function normalizeVariantSeedMap(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+
+  return Object.fromEntries(
+    Object.entries(value).filter(([rawQuizIndex, variantSeed]) => {
+      const quizIndex = Number(rawQuizIndex);
+      return (
+        Number.isInteger(quizIndex) &&
+        quizIndex >= 0 &&
+        quizIndex < MAX_QUIZ_COUNT &&
+        typeof variantSeed === "number" &&
+        Number.isInteger(variantSeed) &&
+        variantSeed >= 0 &&
+        variantSeed <= 0xffff_ffff
       );
     }),
   );
@@ -89,11 +112,13 @@ export function normalizeRandomQuizQueueState(value: unknown): RandomQuizQueueSt
       order,
       pendingByQuiz: normalizeNameMap(round.pendingByQuiz),
       lastSolverByQuiz: normalizeNameMap(round.lastSolverByQuiz),
+      variantSeedByQuiz: normalizeVariantSeedMap(round.variantSeedByQuiz),
+      lastVariantSeedByQuiz: normalizeVariantSeedMap(round.lastVariantSeedByQuiz),
     };
   });
 
   return {
-    version: 2,
+    version: 3,
     rounds,
   };
 }

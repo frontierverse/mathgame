@@ -6,6 +6,7 @@ type DiamondRewardButtonProps = {
   studentColor: string;
   seed: number;
   diamondIndex: number;
+  rubyCount: number;
   compact?: boolean;
   onClick: () => void;
 };
@@ -14,6 +15,7 @@ export default function DiamondRewardButton({
   studentColor,
   seed,
   diamondIndex,
+  rubyCount,
   compact = false,
   onClick,
 }: DiamondRewardButtonProps) {
@@ -22,7 +24,7 @@ export default function DiamondRewardButton({
       type="button"
       onClick={onClick}
       aria-haspopup="dialog"
-      aria-label={`다이아몬드 ${diamondIndex + 1}, 사용된 루비 10개 보기`}
+      aria-label={`다이아몬드 ${diamondIndex + 1}, 사용된 루비 ${rubyCount}개 보기`}
       className={`diamond-reward-circle flex items-center justify-center rounded-full border transition duration-200 hover:border-[#ffffff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7ec2f0] focus-visible:ring-offset-1 ${
         compact ? "h-14 w-14" : "h-16 w-16 2xl:h-[72px] 2xl:w-[72px]"
       }`}

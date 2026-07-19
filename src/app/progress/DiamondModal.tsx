@@ -16,7 +16,7 @@ type DiamondModalProps = {
   studentName: string;
   studentColor: string;
   diamondIndex: number;
-  rubyQuizIndexes: number[];
+  rubyQuizIndexes: readonly number[];
   counts: number[];
   onAwardQuiz: (quizIndex: number, stage: QuizMineralStage) => void;
   onUndoQuiz: (quizIndex: number) => void;
@@ -167,7 +167,7 @@ export default function DiamondModal({
               {studentName} · 다이아몬드 {diamondIndex + 1}
             </p>
             <h2 id="diamond-modal-title" className="mt-0.5 text-xl font-black text-[#463c56]">
-              다이아몬드를 만든 루비 10개
+              다이아몬드를 만든 루비 {rubyQuizIndexes.length}개
             </h2>
           </div>
         </div>

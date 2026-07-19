@@ -1,7 +1,11 @@
 import { curriculum } from "../mathLogic";
+import {
+  classifyNumericQuiz,
+  type NumericQuizVariant,
+  type QuizNumberPolicy,
+} from "./numericQuizRuleCompiler";
 
 const QUIZ_STORAGE_CAPACITY = 100;
-export const QUIZZES_PER_ROUND = 10;
 
 export type CurriculumSubunitContext = {
   subunitId: string;
@@ -21,6 +25,7 @@ export type CurriculumQuiz = CurriculumSubunitContext & {
   numberInSubunit: number;
   question: string;
   answer: string | null;
+  numericVariant: NumericQuizVariant;
 };
 
 export type CurriculumQuizSet = CurriculumSubunitContext & {
@@ -39,11 +44,25 @@ export type CurriculumQuizRound = {
   subunitTitle: string;
 };
 
+type QuizQuestionDefinition =
+  | string
+  | {
+      question: string;
+      numberPolicy: QuizNumberPolicy;
+    };
+
 type QuizSetDefinition = {
   subunitId: string;
   startIndex: number;
-  questions: readonly string[];
+  questions: readonly QuizQuestionDefinition[];
 };
+
+function fixedNumberQuestion(question: string, reason: string) {
+  return {
+    question,
+    numberPolicy: { mode: "fixed", reason },
+  } satisfies Exclude<QuizQuestionDefinition, string>;
+}
 
 const subunitContexts = new Map<string, CurriculumSubunitContext>();
 
@@ -71,80 +90,61 @@ const quizSetDefinitions: readonly QuizSetDefinition[] = [
   {
     subunitId: "m1-s1-u1-su1",
     startIndex: 0,
+    // Numeric strings use a registered random rule automatically. Use
+    // fixedNumberQuestion only when the written number is the concept itself.
     questions: [
       "사람들은 왜 숫자를 만들었을까?",
       "곱셈은 왜 만들어졌을까?",
-      "10 + 10 + 10 + 10을 곱셈으로 표현하면?",
-      "2x3을 더하기로 변경하면?",
-      "3x2를 더하기로 변경하면?",
-      "2^4를 곱셈으로 나타내라.",
-      "2^4의 값을 구하라.",
-      "약수의 뜻을 설명하라.",
-      "배수의 뜻을 설명하라.",
-      "24의 약수를 모두 쓰라.",
-      "7의 배수를 작은 수부터 5개 쓰라.",
-      "소수의 뜻을 설명하라.",
-      "합성수의 뜻을 설명하라.",
-      "1이 소수도 합성수도 아닌 이유를 설명하라.",
-      "1부터 20까지의 소수를 모두 쓰라.",
-      "1부터 20까지의 합성수를 모두 쓰라.",
-      "2, 3, 5, 7, 11 중 짝수인 소수를 찾으라.",
-      "가장 작은 소수를 쓰라.",
-      "가장 작은 합성수를 쓰라.",
-      "29가 소수인 이유를 설명하라.",
-      "51이 합성수인 이유를 설명하라.",
-      "57이 합성수인 이유를 설명하라.",
-      "91이 합성수인 이유를 설명하라.",
-      "2의 배수 판별법을 설명하라.",
-      "3의 배수 판별법을 설명하라.",
-      "5의 배수 판별법을 설명하라.",
-      "9의 배수 판별법을 설명하라.",
-      "1부터 100까지의 소수를 찾을 때, 어떤 수들의 배수를 지우면 되는지 설명하라.",
-      "37이 소수인지 판별하라.",
-      "49가 합성수인 이유를 설명하라.",
-      "77이 합성수인 이유를 설명하라.",
+      fixedNumberQuestion("10 + 10 + 10 + 10을 곱셈으로 표현하면?", "제시한 식의 곱셈 표현을 묻는 문항"),
+      fixedNumberQuestion("2x3을 더하기로 변경하면?", "제시한 곱셈식의 덧셈 표현을 묻는 문항"),
+      fixedNumberQuestion("3x2를 더하기로 변경하면?", "제시한 곱셈식의 덧셈 표현을 묻는 문항"),
+      "나누기의 뜻은?",
+      fixedNumberQuestion("9 나누기 3은 3(나눗셈식)의 의미를 예를 들어 말할수있나요?", "제시한 나눗셈식의 의미를 묻는 문항"),
+      fixedNumberQuestion("9 나누기 0은 무엇인가요?", "0으로 나누기를 묻는 개념 문항"),
+      fixedNumberQuestion("0 나누기 11은?", "0을 나누는 계산을 묻는 문항"),
+      "나누어 떨어지다가 무슨 뜻인가요?",
+      "약수의 뜻은 뭔가요?",
+      fixedNumberQuestion("6의 약수는?", "6의 약수를 묻는 문항"),
+      "소수는 무엇인가요?",
+      fixedNumberQuestion("1은 소수인가요?", "1의 소수 여부를 묻는 개념 문항"),
+      "합성수는 무엇인가요?",
+      "3은 소수인가요? 합성수인가요?",
+      "10은 소수인가요? 합성수인가요?",
     ],
   },
   {
     subunitId: "m1-s1-u1-su2",
-    startIndex: 31,
+    startIndex: 17,
     questions: [
-      "소인수분해의 뜻을 설명하라.",
-      "12를 소수의 곱으로 나타내라.",
-      "2 × 2 × 3을 거듭제곱을 사용하여 나타내라.",
-      "18을 소인수분해하라.",
-      "24를 소인수분해하라.",
-      "36을 소인수분해하라.",
-      "45를 소인수분해하라.",
-      "60을 소인수분해하라.",
-      "72를 소인수분해하라.",
-      "84를 소인수분해하라.",
-      "90을 소인수분해하라.",
-      "2 × 2 × 2 × 3을 거듭제곱을 사용하여 나타내라.",
-      "2 × 2 × 3 × 3 × 3을 거듭제곱을 사용하여 나타내라.",
-      "5 × 5 × 7을 거듭제곱을 사용하여 나타내라.",
-      "2^3 × 3을 실제 곱셈으로 나타내라.",
-      "2^3 × 3의 값을 구하라.",
-      "2^2 × 3^2을 실제 곱셈으로 나타내라.",
-      "2^2 × 3^2의 값을 구하라.",
-      "2^2 × 5^2을 실제 곱셈으로 나타내라.",
-      "2^2 × 5^2의 값을 구하라.",
-      "2^3 × 3^2의 값을 구하라.",
-      "2^2 × 3 × 5의 값을 구하라.",
-      "2^4 × 5의 값을 구하라.",
-      "24 = 2 × 12는 올바른 소인수분해인가?",
-      "36 = 2^2 × 3^2은 올바른 소인수분해인가?",
-      "45 = 3 × 15는 올바른 소인수분해인가?",
-      "70 = 2 × 5 × 7은 올바른 소인수분해인가?",
-      "24와 36의 최대공약수를 구하라.",
-      "24와 36의 최소공배수를 구하라.",
-      "100을 소인수분해하라.",
+      "제곱은 왜 사용하나요?",
+      "2의 3제곱을 곱셈식으로 변경해보세요.",
+      "2의 4제곱은 몇인가요?",
+      "6을 소인수분해 해보세요.",
+      "50을 소인수분해 해보세요.",
     ],
   },
 ];
 
-// Add answers here as they are supplied. Quiz numbers use zero-based indexes.
-const quizAnswersByIndex: Readonly<Partial<Record<number, string>>> = {};
+// Answers use zero-based quiz indexes.
+const quizAnswersByIndex: Readonly<Partial<Record<number, string>>> = {
+  0: "개수를 빠르게 세기위해서",
+  1: '"같은 수"들의 덧셈을 빠르게 하기 위해서',
+  2: "10 x 4",
+  3: "2 + 2 + 2 아니면 3 + 3",
+  4: "3 + 3 아니면 2 + 2 + 2",
+  5: "공평하게 주다.",
+  6: "사과 9개를 사람 3명에게 공평하게 줘서 1명당 3개씩 받았다.",
+  7: "풀 수 없다.",
+  8: "0",
+  9: "나눗셈을 했을때 나머지가 0인 경우.",
+  10: "어떤 수를 나누었을때 나누어떨어지는 수",
+  11: "1, 2, 3, 6",
+  12: '1과 자기자신만을 "약수"로 가지는 수',
+  13: "1은 1만 약수로 가지기 때문에 아니다.",
+  14: "1보다 크고 소수가 아닌 수 (약수가 3개 이상인 수)",
+  15: "소수",
+  16: "합성수",
+};
 
 function requireSubunitContext(subunitId: string) {
   const context = subunitContexts.get(subunitId);
@@ -156,8 +156,13 @@ function requireAtomicQuestion(question: string, subunitId: string, questionInde
   const sentenceEndCount = question.match(/[.!?]/g)?.length ?? 0;
   const containsNumberedParts = /\(\d+\)/.test(question);
   const containsBundledInstruction = question.includes("각각");
+  const isTwoChoiceQuestion = /소수인가요\? 합성수인가요\?$/.test(question);
 
-  if (sentenceEndCount !== 1 || containsNumberedParts || containsBundledInstruction) {
+  if (
+    (sentenceEndCount !== 1 && !isTwoChoiceQuestion) ||
+    containsNumberedParts ||
+    containsBundledInstruction
+  ) {
     throw new Error(
       `Quiz must contain one short task: ${subunitId} question ${questionIndex + 1}`,
     );
@@ -167,9 +172,22 @@ function requireAtomicQuestion(question: string, subunitId: string, questionInde
 export const CURRICULUM_QUIZ_SETS: readonly CurriculumQuizSet[] =
   quizSetDefinitions.map((definition) => {
     const context = requireSubunitContext(definition.subunitId);
-    const quizzes = definition.questions.map((question, questionIndex) => {
-      requireAtomicQuestion(question, definition.subunitId, questionIndex);
+    const quizzes = definition.questions.map((questionDefinition, questionIndex) => {
+      const question =
+        typeof questionDefinition === "string"
+          ? questionDefinition
+          : questionDefinition.question;
+      const numberPolicy =
+        typeof questionDefinition === "string"
+          ? ({ mode: "auto" } as const)
+          : questionDefinition.numberPolicy;
       const quizIndex = definition.startIndex + questionIndex;
+      requireAtomicQuestion(question, definition.subunitId, questionIndex);
+      const numericVariant = classifyNumericQuiz(
+        question,
+        numberPolicy,
+        `${definition.subunitId} question ${questionIndex + 1} (quiz index ${quizIndex})`,
+      );
       return {
         ...context,
         id: `${definition.subunitId}-q${questionIndex + 1}`,
@@ -178,6 +196,7 @@ export const CURRICULUM_QUIZ_SETS: readonly CurriculumQuizSet[] =
         numberInSubunit: questionIndex + 1,
         question,
         answer: quizAnswersByIndex[quizIndex] ?? null,
+        numericVariant,
       } satisfies CurriculumQuiz;
     });
 
@@ -230,31 +249,19 @@ export const quizTextForIndex = (quizIndex: number) =>
 export const quizAnswerForIndex = (quizIndex: number) =>
   getQuizForIndex(quizIndex)?.answer ?? null;
 
-function joinUniqueLabels(labels: readonly string[]) {
-  return Array.from(new Set(labels)).join(" · ");
-}
-
-export const CURRICULUM_QUIZ_ROUNDS: readonly CurriculumQuizRound[] = Array.from(
-  { length: Math.ceil(MAX_QUIZ_COUNT / QUIZZES_PER_ROUND) },
-  (_, roundIndex) => {
-    const startIndex = roundIndex * QUIZZES_PER_ROUND;
-    const quizzes = Array.from(
-      { length: Math.min(QUIZZES_PER_ROUND, MAX_QUIZ_COUNT - startIndex) },
-      (__, offset) => quizzesByIndex.get(startIndex + offset),
-    ).filter((quiz): quiz is CurriculumQuiz => quiz !== undefined);
-
-    return {
-      id: `round-${roundIndex + 1}`,
+export const CURRICULUM_QUIZ_ROUNDS: readonly CurriculumQuizRound[] =
+  CURRICULUM_QUIZ_SETS.filter(({ quizzes }) => quizzes.length > 0).map(
+    (quizSet, roundIndex) => ({
+      id: `round-${quizSet.subunitId}`,
       roundNumber: roundIndex + 1,
-      quizzes,
-      quizIndexes: quizzes.map(({ quizIndex }) => quizIndex),
-      gradeLabel: joinUniqueLabels(quizzes.map(({ gradeLabel }) => gradeLabel)),
-      semesterLabel: joinUniqueLabels(quizzes.map(({ semesterLabel }) => semesterLabel)),
-      unitTitle: joinUniqueLabels(quizzes.map(({ unitTitle }) => unitTitle)),
-      subunitTitle: joinUniqueLabels(quizzes.map(({ subunitTitle }) => subunitTitle)),
-    } satisfies CurriculumQuizRound;
-  },
-);
+      quizzes: quizSet.quizzes,
+      quizIndexes: quizSet.quizzes.map(({ quizIndex }) => quizIndex),
+      gradeLabel: quizSet.gradeLabel,
+      semesterLabel: quizSet.semesterLabel,
+      unitTitle: quizSet.unitTitle,
+      subunitTitle: quizSet.subunitTitle,
+    }),
+  );
 
 const quizRoundsById = new Map(
   CURRICULUM_QUIZ_ROUNDS.map((round) => [round.id, round]),
@@ -270,19 +277,21 @@ const LEGACY_QUIZ_INDEX_MAP: readonly (readonly number[])[] = [
   [11, 12, 13],
   [14, 15],
   [16, 17, 18],
-  [19, 20, 21, 22],
-  [23, 24, 25, 26],
-  [27],
-  [31, 32, 33],
-  [34, 35],
-  [36, 37],
-  [38, 39],
-  [40, 41],
-  [42, 43, 44],
-  [45, 46, 47, 48, 49, 50],
-  [51, 52, 53],
-  [35, 37, 54, 55, 56, 57],
-  [35, 36, 58, 59],
+  [19, 20, 21],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
 ];
 
 export function migrateLegacyQuizCounts(legacyCounts: readonly number[]) {

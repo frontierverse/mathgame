@@ -16,7 +16,6 @@ export {
   getQuizSetForSubunit,
   MAX_QUIZ_COUNT,
   migrateLegacyQuizCounts,
-  QUIZZES_PER_ROUND,
   QUIZZES,
   quizAnswerForIndex,
   quizTextForIndex,
@@ -24,6 +23,13 @@ export {
 } from "../shared/curriculumQuizzes";
 
 export type { CurriculumQuizRound } from "../shared/curriculumQuizzes";
+
+export {
+  createRandomQuizVariantSeed,
+  quizHasRandomVariant,
+  resolveQuizContent,
+} from "../shared/randomQuizVariants";
+export type { ResolvedQuizContent } from "../shared/randomQuizVariants";
 
 export const MAX_SOLVES = 3;
 
