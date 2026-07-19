@@ -18,6 +18,7 @@ export {
   migrateLegacyQuizCounts,
   QUIZZES_PER_ROUND,
   QUIZZES,
+  quizAnswerForIndex,
   quizTextForIndex,
   REGISTERED_QUIZ_COUNT,
 } from "../shared/curriculumQuizzes";

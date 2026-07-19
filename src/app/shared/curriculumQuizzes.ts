@@ -20,6 +20,7 @@ export type CurriculumQuiz = CurriculumSubunitContext & {
   globalNumber: number;
   numberInSubunit: number;
   question: string;
+  answer: string | null;
 };
 
 export type CurriculumQuizSet = CurriculumSubunitContext & {
@@ -142,6 +143,9 @@ const quizSetDefinitions: readonly QuizSetDefinition[] = [
   },
 ];
 
+// Add answers here as they are supplied. Quiz numbers use zero-based indexes.
+const quizAnswersByIndex: Readonly<Partial<Record<number, string>>> = {};
+
 function requireSubunitContext(subunitId: string) {
   const context = subunitContexts.get(subunitId);
   if (!context) throw new Error(`Unknown curriculum subunit: ${subunitId}`);
@@ -173,6 +177,7 @@ export const CURRICULUM_QUIZ_SETS: readonly CurriculumQuizSet[] =
         globalNumber: quizIndex + 1,
         numberInSubunit: questionIndex + 1,
         question,
+        answer: quizAnswersByIndex[quizIndex] ?? null,
       } satisfies CurriculumQuiz;
     });
 
@@ -221,6 +226,9 @@ export const getQuizSetForSubunit = (subunitId: string) =>
 
 export const quizTextForIndex = (quizIndex: number) =>
   getQuizForIndex(quizIndex)?.question ?? String(quizIndex + 1);
+
+export const quizAnswerForIndex = (quizIndex: number) =>
+  getQuizForIndex(quizIndex)?.answer ?? null;
 
 function joinUniqueLabels(labels: readonly string[]) {
   return Array.from(new Set(labels)).join(" · ");

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import QuizDetail from "./QuizDetail";
+import QuizFlipCard from "./QuizFlipCard";
 import type { QuizMineralStage } from "./quizData";
 
 type RandomQuizPanelProps = {
@@ -39,24 +40,14 @@ export default function RandomQuizPanel({
   }, [onClose]);
 
   return (
-    <aside
+    <QuizFlipCard
+      key={`${studentName}-${quizIndex}`}
       id="random-quiz-panel"
-      className="relative min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-[var(--control-border-active)] bg-[var(--surface)] p-6 shadow-[0_16px_40px_rgba(73,53,96,0.16)] transition-all duration-300 sm:p-7"
-      aria-label={`${givenName} ${quizIndex + 1}번 랜덤 퀴즈`}
-      style={{
-        opacity: entered ? 1 : 0,
-        transform: entered ? "translateY(0)" : "translateY(12px)",
-      }}
+      ariaLabel={`${givenName} ${quizIndex + 1}번 랜덤 퀴즈`}
+      quizIndex={quizIndex}
+      entered={entered}
+      faceClassName="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-[var(--control-border-active)] bg-[var(--surface)] p-6 shadow-[0_16px_40px_rgba(73,53,96,0.16)] sm:p-7"
     >
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="닫기"
-        className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-lg font-bold text-[var(--muted)] transition hover:bg-[var(--control-background)] hover:text-[var(--foreground)]"
-      >
-        ✕
-      </button>
-
       <div className="flex items-center gap-4 pr-10" role="status" aria-live="polite">
         <span
           aria-hidden="true"
@@ -85,6 +76,6 @@ export default function RandomQuizPanel({
           showIdentity={false}
         />
       </div>
-    </aside>
+    </QuizFlipCard>
   );
 }

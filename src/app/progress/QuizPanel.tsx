@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import QuizDetail from "./QuizDetail";
+import QuizFlipCard from "./QuizFlipCard";
 import type { QuizMineralStage } from "./quizData";
 import { unlockedQuizCount } from "./quizProgress";
 
@@ -75,23 +76,13 @@ export default function QuizPanel({
   }, [counts, diamondCountLimit, navigationQuizIndexes, onClose, onNavigate, quizIndex]);
 
   return (
-    <aside
-      className="relative min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-[#ece1f4] bg-[#fffdf8] p-6 shadow-[0_12px_30px_rgba(111,92,74,0.1)] transition-all duration-300 sm:p-7"
-      aria-label={`${name} ${quizIndex + 1}번 퀴즈`}
-      style={{
-        opacity: entered ? 1 : 0,
-        transform: entered ? "translateY(0)" : "translateY(12px)",
-      }}
+    <QuizFlipCard
+      key={`${name}-${quizIndex}`}
+      ariaLabel={`${name} ${quizIndex + 1}번 퀴즈`}
+      quizIndex={quizIndex}
+      entered={entered}
+      faceClassName="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-[#ece1f4] bg-[#fffdf8] p-6 shadow-[0_12px_30px_rgba(111,92,74,0.1)] sm:p-7"
     >
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="닫기"
-        className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-lg font-bold text-[#8a7f95] transition hover:bg-[#f1ecfb] hover:text-[#5f5470]"
-      >
-        ✕
-      </button>
-
       <QuizDetail
         name={name}
         quizIndex={quizIndex}
@@ -100,6 +91,6 @@ export default function QuizPanel({
         onAward={onAward}
         onUndo={onUndo}
       />
-    </aside>
+    </QuizFlipCard>
   );
 }

@@ -338,13 +338,18 @@ export default function StudentRoster({
   }, []);
   const closeRoundSettings = useCallback(() => setRoundSettingsOpen(false), []);
   const navigateQuiz = useCallback((quizIndex: number) => setOpenQuizIndex(quizIndex), []);
-  const openStudentQuiz = useCallback((studentIndex: number, quizIndex: number) => {
-    setSelectedStudentIndex(studentIndex);
-    setAutoAdvanceAfterQuizIndex(null);
-    setOpenQuizIndex(quizIndex);
-    setOpenRandomAssignment(null);
-    setOpenDiamond(null);
-  }, []);
+  const openStudentQuiz = useCallback(
+    (studentIndex: number, quizIndex: number) => {
+      const shouldClose =
+        selectedStudentIndex === studentIndex && openQuizIndex === quizIndex;
+      setSelectedStudentIndex(studentIndex);
+      setAutoAdvanceAfterQuizIndex(null);
+      setOpenQuizIndex(shouldClose ? null : quizIndex);
+      setOpenRandomAssignment(null);
+      setOpenDiamond(null);
+    },
+    [openQuizIndex, selectedStudentIndex],
+  );
   const openStudentDiamond = useCallback((studentIndex: number, diamondIndex: number) => {
     setSelectedStudentIndex(studentIndex);
     setAutoAdvanceAfterQuizIndex(null);
@@ -415,6 +420,17 @@ export default function StudentRoster({
       sharedQueueReady,
       validPendingByQuiz,
     ],
+  );
+
+  const handleSharedQuizClick = useCallback(
+    (quizIndex: number) => {
+      if (openRandomAssignment?.quizIndex === quizIndex) {
+        closeRandomPanel();
+        return;
+      }
+      openSharedQuiz(quizIndex);
+    },
+    [closeRandomPanel, openRandomAssignment?.quizIndex, openSharedQuiz],
   );
 
   const completeSharedQuiz = useCallback((targetStage: QuizMineralStage) => {
@@ -664,7 +680,7 @@ export default function StudentRoster({
                 selectedQuizIndex={openRandomAssignment?.quizIndex ?? null}
                 isReady={sharedQueueReady}
                 announcement={queueAnnouncement}
-                onOpenQuiz={openSharedQuiz}
+                onOpenQuiz={handleSharedQuizClick}
               />
 
               <div
