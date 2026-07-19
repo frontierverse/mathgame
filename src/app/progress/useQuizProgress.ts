@@ -9,8 +9,9 @@ import {
 } from "./quizData";
 import type { QuizProgress } from "./quizProgress";
 
-const STORAGE_KEY = "math-space-quiz-progress-v8";
+const STORAGE_KEY = "math-space-quiz-progress-v9";
 const RESET_STORAGE_KEYS = [
+  "math-space-quiz-progress-v8",
   "math-space-quiz-progress-v7",
   "math-space-quiz-progress-v6",
   "math-space-quiz-progress-v5",
