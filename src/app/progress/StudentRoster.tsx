@@ -129,9 +129,8 @@ export default function StudentRoster({
     number | null
   >(null);
   const completingRandomQuizRef = useRef(false);
-  const studentNames = useMemo(() => students.map((student) => student.name), [students]);
   const { progress, isReady: progressReady, awardQuizStage, undoQuiz } =
-    useQuizProgress(studentNames);
+    useQuizProgress();
   const {
     overrides: roundAssignmentOverrides,
     isReady: roundAssignmentsReady,

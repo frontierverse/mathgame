@@ -8,9 +8,14 @@ import {
   type QuizMineralStage,
 } from "./quizData";
 import type { QuizProgress } from "./quizProgress";
+import {
+  QUIZ_PROGRESS_CACHE_VERSION,
+  QUIZ_PROGRESS_PROTOCOL,
+} from "../shared/quizProgressProtocol";
 
-const STORAGE_KEY = "math-space-quiz-progress-v9";
+const STORAGE_KEY = `math-space-quiz-progress-${QUIZ_PROGRESS_CACHE_VERSION}`;
 const RESET_STORAGE_KEYS = [
+  "math-space-quiz-progress-v9",
   "math-space-quiz-progress-v8",
   "math-space-quiz-progress-v7",
   "math-space-quiz-progress-v6",
@@ -52,25 +57,16 @@ function saveLocalProgress(progress: QuizProgress) {
   }
 }
 
-function mergeProgress(remote: QuizProgress, local: QuizProgress, students: string[]) {
-  const merged: QuizProgress = { ...remote };
-  students.forEach((studentName) => {
-    const remoteCounts = remote[studentName] ?? [];
-    const localCounts = local[studentName] ?? [];
-    const length = Math.max(remoteCounts.length, localCounts.length);
-    if (length === 0) return;
-    merged[studentName] = Array.from({ length }, (_, index) =>
-      Math.max(remoteCounts[index] ?? 0, localCounts[index] ?? 0),
-    );
-  });
-  return merged;
-}
-
 async function persistQuizProgress(studentName: string, quizIndex: number, solveCount: number) {
   const response = await fetch("/api/quiz-progress", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ studentName, quizIndex, solveCount }),
+    body: JSON.stringify({
+      progressProtocol: QUIZ_PROGRESS_PROTOCOL,
+      studentName,
+      quizIndex,
+      solveCount,
+    }),
   });
   if (!response.ok) throw new Error("Quiz progress persistence failed.");
 
@@ -84,7 +80,11 @@ async function decrementQuizProgress(studentName: string, quizIndex: number) {
   const response = await fetch("/api/quiz-progress", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ studentName, quizIndex }),
+    body: JSON.stringify({
+      progressProtocol: QUIZ_PROGRESS_PROTOCOL,
+      studentName,
+      quizIndex,
+    }),
   });
   if (!response.ok) throw new Error("Quiz progress decrement failed.");
 
@@ -94,7 +94,7 @@ async function decrementQuizProgress(studentName: string, quizIndex: number) {
   return serverCount as number;
 }
 
-export default function useQuizProgress(students: string[]) {
+export default function useQuizProgress() {
   const [progress, setProgress] = useState<QuizProgress>({});
   const [isReady, setIsReady] = useState(false);
   const progressRef = useRef<QuizProgress>({});
@@ -120,21 +120,10 @@ export default function useQuizProgress(students: string[]) {
 
         const data: unknown = await response.json();
         const remote = normalizeProgress((data as { progress?: unknown })?.progress);
-        const merged = mergeProgress(remote, local, students);
         if (!active) return;
-        replaceProgress(merged);
-        saveLocalProgress(merged);
+        replaceProgress(remote);
+        saveLocalProgress(remote);
         setIsReady(true);
-
-        students.forEach((studentName) => {
-          const localCounts = local[studentName] ?? [];
-          const remoteCounts = remote[studentName] ?? [];
-          localCounts.forEach((count, quizIndex) => {
-            if (count > (remoteCounts[quizIndex] ?? 0)) {
-              void persistQuizProgress(studentName, quizIndex, count).catch(() => undefined);
-            }
-          });
-        });
       } catch (error) {
         if (!active || (error instanceof DOMException && error.name === "AbortError")) return;
         replaceProgress(local);
@@ -147,7 +136,7 @@ export default function useQuizProgress(students: string[]) {
       active = false;
       controller.abort();
     };
-  }, [replaceProgress, students]);
+  }, [replaceProgress]);
 
   const awardQuizStage = useCallback(
     (studentName: string, quizIndex: number, targetStage: QuizMineralStage) => {

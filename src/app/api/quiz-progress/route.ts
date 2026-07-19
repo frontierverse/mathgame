@@ -1,6 +1,7 @@
 import { createSupabaseAdminHeaders, getSupabaseAdminConfig } from "../../data/supabaseAdmin";
 import { MAX_QUIZ_COUNT } from "../../progress/quizData";
 import type { QuizProgress } from "../../progress/quizProgress";
+import { QUIZ_PROGRESS_PROTOCOL } from "../../shared/quizProgressProtocol";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +76,11 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body: unknown = await request.json();
+    const progressProtocol = (body as { progressProtocol?: unknown })?.progressProtocol;
+    if (progressProtocol !== QUIZ_PROGRESS_PROTOCOL) {
+      return Response.json({ error: "새로고침이 필요합니다." }, { status: 409 });
+    }
+
     const studentName =
       typeof (body as { studentName?: unknown })?.studentName === "string"
         ? ((body as { studentName: string }).studentName).trim()
@@ -109,6 +115,7 @@ export async function POST(request: Request) {
         p_student_name: studentName,
         p_quiz_index: quizIndex,
         p_solve_count: solveCount,
+        p_progress_protocol: QUIZ_PROGRESS_PROTOCOL,
       }),
       cache: "no-store",
     });
@@ -132,6 +139,11 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const body: unknown = await request.json();
+    const progressProtocol = (body as { progressProtocol?: unknown })?.progressProtocol;
+    if (progressProtocol !== QUIZ_PROGRESS_PROTOCOL) {
+      return Response.json({ error: "새로고침이 필요합니다." }, { status: 409 });
+    }
+
     const studentName =
       typeof (body as { studentName?: unknown })?.studentName === "string"
         ? ((body as { studentName: string }).studentName).trim()
@@ -161,6 +173,7 @@ export async function DELETE(request: Request) {
       body: JSON.stringify({
         p_student_name: studentName,
         p_quiz_index: quizIndex,
+        p_progress_protocol: QUIZ_PROGRESS_PROTOCOL,
       }),
       cache: "no-store",
     });
