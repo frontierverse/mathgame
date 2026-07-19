@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import QuizDetail from "./QuizDetail";
+import type { QuizMineralStage } from "./quizData";
 import { unlockedQuizCount } from "./quizProgress";
 
 type QuizPanelProps = {
@@ -11,7 +12,7 @@ type QuizPanelProps = {
   counts: number[];
   diamondCountLimit?: number;
   color: string;
-  onSolve: () => void;
+  onAward: (stage: QuizMineralStage) => void;
   onUndo: () => void;
   onNavigate: (quizIndex: number) => void;
   onClose: () => void;
@@ -23,7 +24,7 @@ export default function QuizPanel({
   counts,
   diamondCountLimit,
   color,
-  onSolve,
+  onAward,
   onUndo,
   onNavigate,
   onClose,
@@ -80,7 +81,7 @@ export default function QuizPanel({
         quizIndex={quizIndex}
         counts={counts}
         color={color}
-        onSolve={onSolve}
+        onAward={onAward}
         onUndo={onUndo}
       />
     </aside>

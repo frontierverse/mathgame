@@ -1,4 +1,5 @@
-import { parseMathText } from "../shared/mathText";
+import { createElement } from "react";
+import { parseMathText, type MathFormulaToken } from "../shared/mathText";
 
 type QuizQuestionTextProps = {
   text: string;
@@ -45,22 +46,40 @@ function splitNumberedItems(text: string) {
   };
 }
 
-function renderPowers(text: string) {
+function renderFormulaToken(token: MathFormulaToken, index: number) {
+  if (token.type === "number") {
+    return createElement("mn", { key: `number-${index}` }, token.value);
+  }
+
+  if (token.type === "operator") {
+    return createElement("mo", { key: `operator-${index}` }, token.value);
+  }
+
+  return createElement(
+    "msup",
+    { key: `power-${index}` },
+    createElement("mn", null, token.base),
+    createElement("mn", null, token.exponent),
+  );
+}
+
+function renderMathText(text: string) {
   return parseMathText(text).map((segment, index) =>
     segment.type === "text" ? (
       segment.value
     ) : (
-      <span
-        key={`${index}-${segment.source}`}
-        role="math"
-        aria-label={`${segment.base}의 ${segment.exponent}제곱`}
-        className="inline-block whitespace-nowrap tracking-normal"
-      >
-        <span aria-hidden="true">
-          {segment.base}
-          <sup className="ml-[0.04em]">{segment.exponent}</sup>
-        </span>
-      </span>
+      createElement(
+        "math",
+        {
+          key: `${index}-${segment.source}`,
+          display: "inline",
+          role: "math",
+          "aria-label": segment.ariaLabel,
+          className:
+            "mx-[0.08em] inline-block align-[-0.12em] whitespace-nowrap tracking-normal",
+        },
+        createElement("mrow", null, segment.tokens.map(renderFormulaToken)),
+      )
     ),
   );
 }
@@ -74,7 +93,7 @@ export default function QuizQuestionText({
   return (
     <div className={className}>
       {instruction ? (
-        <p className="break-keep">{renderPowers(instruction)}</p>
+        <p className="break-keep">{renderMathText(instruction)}</p>
       ) : null}
 
       {items.length > 0 ? (
@@ -90,7 +109,7 @@ export default function QuizQuestionText({
                 ({item.number})
               </span>
               <span className="min-w-0 break-keep tracking-normal">
-                {renderPowers(item.text)}
+                {renderMathText(item.text)}
               </span>
             </li>
           ))}

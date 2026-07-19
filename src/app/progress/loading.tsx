@@ -36,19 +36,22 @@ function QuizBoardSkeleton({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function StudentListSkeleton() {
+function SharedQuizQueueSkeleton() {
   return (
-    <aside className="rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-3.5">
-      <div className="grid grid-cols-2 gap-2.5">
-        {Array.from({ length: 6 }, (_, index) => (
-          <div key={index} className="flex h-[72px] items-center gap-3 rounded-xl px-3.5 py-4">
-            <span className={`${PRIMARY_PULSE} h-10 w-10 shrink-0 rounded-xl`} />
-            <span className={`${PRIMARY_PULSE} h-5 flex-1 rounded`} />
-            <span className={`${SECONDARY_PULSE} h-3 w-3 rounded`} />
-          </div>
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <div className={`${PRIMARY_PULSE} h-6 w-28 rounded`} />
+          <div className={`${SECONDARY_PULSE} mt-2 h-3 w-20 rounded`} />
+        </div>
+        <div className={`${SECONDARY_PULSE} h-7 w-12 rounded-full`} />
+      </div>
+      <div className="mt-5 grid grid-cols-4 gap-2.5 sm:grid-cols-5 lg:grid-cols-6 2xl:grid-cols-10">
+        {Array.from({ length: 10 }, (_, index) => (
+          <QuizCircleSkeleton key={index} />
         ))}
       </div>
-    </aside>
+    </div>
   );
 }
 
@@ -80,14 +83,11 @@ export default function ProgressLoading() {
           <section className="mt-5" aria-label="퀴즈 진행도 로딩 중">
             <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(300px,390px)]">
               <div className="min-w-0">
-                <div className="grid items-start gap-4 lg:grid-cols-[minmax(300px,400px)_minmax(516px,1fr)] 2xl:grid-cols-[minmax(360px,480px)_minmax(596px,1fr)]">
-                  <StudentListSkeleton />
-                  <QuizBoardSkeleton />
-                </div>
+                <SharedQuizQueueSkeleton />
 
                 <div className="mt-10 border-t border-[var(--border)] pt-8">
                   <div className={`${PRIMARY_PULSE} h-7 w-48 rounded`} />
-                  <div className="mt-5 grid min-w-0 grid-cols-2 gap-x-12 gap-y-6">
+                  <div className="mt-5 grid min-w-0 grid-cols-1 gap-x-12 gap-y-6 2xl:grid-cols-2">
                     {Array.from({ length: 4 }, (_, index) => (
                       <div key={index} className="min-w-0 border-b border-[var(--border)] pb-6">
                         <QuizBoardSkeleton compact />

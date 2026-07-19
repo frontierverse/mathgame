@@ -1,18 +1,40 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import DiamondModal from "./DiamondModal";
 import MineralIcon from "./MineralIcon";
 import MineralEvolutionLegend from "./MineralEvolutionLegend";
 import QuizBoard from "./QuizBoard";
 import QuizPanel from "./QuizPanel";
-import { STUDENT_COLORS } from "./quizData";
-import { getMineralInventory, getTeamDiamondProgress } from "./quizProgress";
-import StudentList from "./StudentList";
+import RandomQuizPanel from "./RandomQuizPanel";
+import {
+  MAX_QUIZ_COUNT,
+  MAX_SOLVES,
+  STUDENT_COLORS,
+  type QuizMineralStage,
+} from "./quizData";
+import {
+  getMineralInventory,
+  getTeamDiamondProgress,
+  RUBIES_PER_DIAMOND,
+} from "./quizProgress";
+import {
+  canStudentSolveQuiz,
+  EMPTY_RANDOM_QUIZ_QUEUE_STATE,
+  normalizeRandomQuizQueueState,
+  pickRandomQuizParticipant,
+  RANDOM_QUIZ_QUEUE_STORAGE_KEY,
+  reconcileQuizOrder,
+  RESET_RANDOM_QUIZ_QUEUE_STORAGE_KEYS,
+  type RandomQuizQueueState,
+} from "./randomQuizQueue";
+import SharedQuizQueue from "./SharedQuizQueue";
 import useQuizProgress from "./useQuizProgress";
 
 const EMPTY_HIDDEN_STUDENT_NAMES: readonly string[] = [];
+const RAINBOW_PROGRESS_BACKGROUND =
+  "linear-gradient(90deg, #ff375f 0%, #ff9f0a 16%, #ffd60a 31%, #30d158 47%, #64d2ff 63%, #0a84ff 78%, #5e5ce6 90%, #bf5af2 100%)";
 
 type Student = { name: string; age: number | null };
 
@@ -48,13 +70,17 @@ export default function StudentRoster({
   const visibleStudentEntries = showAllStudents
     ? allStudentEntries
     : defaultStudentEntries;
-  const visibleStudents = useMemo(
-    () => visibleStudentEntries.map(({ student }) => student),
-    [visibleStudentEntries],
-  );
+  const teamStudentEntries = useMemo(() => {
+    const seenStudentNames = new Set<string>();
+    return defaultStudentEntries.filter(({ student }) => {
+      if (seenStudentNames.has(student.name)) return false;
+      seenStudentNames.add(student.name);
+      return true;
+    });
+  }, [defaultStudentEntries]);
   const teamStudentNames = useMemo(
-    () => defaultStudentEntries.map(({ student }) => student.name),
-    [defaultStudentEntries],
+    () => teamStudentEntries.map(({ student }) => student.name),
+    [teamStudentEntries],
   );
   const teamStudentNameSet = useMemo(
     () => new Set(teamStudentNames),
@@ -67,16 +93,68 @@ export default function StudentRoster({
       0,
   );
   const [openQuizIndex, setOpenQuizIndex] = useState<number | null>(null);
+  const [openRandomAssignment, setOpenRandomAssignment] = useState<{
+    quizIndex: number;
+    studentName: string;
+  } | null>(null);
   const [openDiamond, setOpenDiamond] = useState<{
     studentIndex: number;
     diamondIndex: number;
   } | null>(null);
+  const [randomQueueState, setRandomQueueState] = useState<RandomQuizQueueState>(
+    EMPTY_RANDOM_QUIZ_QUEUE_STATE,
+  );
+  const [randomQueueReady, setRandomQueueReady] = useState(false);
+  const [queueAnnouncement, setQueueAnnouncement] = useState("");
+  const [autoAdvanceAfterQuizIndex, setAutoAdvanceAfterQuizIndex] = useState<
+    number | null
+  >(null);
+  const completingRandomQuizRef = useRef(false);
   const studentNames = useMemo(() => students.map((student) => student.name), [students]);
-  const { progress, solveQuiz, undoQuiz } = useQuizProgress(studentNames);
+  const { progress, isReady: progressReady, awardQuizStage, undoQuiz } =
+    useQuizProgress(studentNames);
   const teamDiamondProgress = useMemo(
     () => getTeamDiamondProgress(progress, teamStudentNames),
     [progress, teamStudentNames],
   );
+  const randomQuizParticipants = useMemo(
+    () =>
+      teamStudentEntries.map(({ student, originalIndex }) => ({
+        name: student.name,
+        originalIndex,
+      })),
+    [teamStudentEntries],
+  );
+  const activeQuizIndexes = useMemo(() => {
+    const batchStart = teamDiamondProgress.diamondCount * RUBIES_PER_DIAMOND;
+    const batchEnd = Math.min(MAX_QUIZ_COUNT, batchStart + RUBIES_PER_DIAMOND);
+    return Array.from({ length: Math.max(0, batchEnd - batchStart) }, (_, index) =>
+      batchStart + index,
+    );
+  }, [teamDiamondProgress.diamondCount]);
+  const randomQuizOrder = useMemo(
+    () => reconcileQuizOrder(randomQueueState.order, activeQuizIndexes),
+    [activeQuizIndexes, randomQueueState.order],
+  );
+  const validPendingByQuiz = useMemo(() => {
+    const pending: Record<string, string> = {};
+    activeQuizIndexes.forEach((quizIndex) => {
+      const studentName = randomQueueState.pendingByQuiz[String(quizIndex)];
+      if (
+        studentName &&
+        teamStudentNameSet.has(studentName) &&
+        canStudentSolveQuiz(progress, studentName, quizIndex)
+      ) {
+        pending[String(quizIndex)] = studentName;
+      }
+    });
+    return pending;
+  }, [activeQuizIndexes, progress, randomQueueState.pendingByQuiz, teamStudentNameSet]);
+  const pendingQuizIndexes = useMemo(
+    () => new Set(Object.keys(validPendingByQuiz).map(Number)),
+    [validPendingByQuiz],
+  );
+  const sharedQueueReady = progressReady && randomQueueReady;
   const teamProgressPercent =
     teamDiamondProgress.currentRubyTarget === 0
       ? 0
@@ -86,11 +164,41 @@ export default function StudentRoster({
             100,
         );
 
-  const selectStudent = useCallback((index: number) => {
-    setSelectedStudentIndex(index);
-    setOpenQuizIndex(null);
-    setOpenDiamond(null);
+  useEffect(() => {
+    let cancelled = false;
+    const frame = requestAnimationFrame(() => {
+      if (cancelled) return;
+      try {
+        RESET_RANDOM_QUIZ_QUEUE_STORAGE_KEYS.forEach((storageKey) =>
+          window.localStorage.removeItem(storageKey),
+        );
+        const savedState = window.localStorage.getItem(RANDOM_QUIZ_QUEUE_STORAGE_KEY);
+        if (savedState) {
+          setRandomQueueState(normalizeRandomQuizQueueState(JSON.parse(savedState)));
+        }
+      } catch {
+        // A fresh in-memory queue is still usable when local storage is unavailable.
+      }
+      setRandomQueueReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!randomQueueReady) return;
+    try {
+      window.localStorage.setItem(
+        RANDOM_QUIZ_QUEUE_STORAGE_KEY,
+        JSON.stringify(randomQueueState),
+      );
+    } catch {
+      // The current browser session keeps working without persistence.
+    }
+  }, [randomQueueReady, randomQueueState]);
 
   const toggleShowAllStudents = useCallback(() => {
     const nextShowAllStudents = !showAllStudents;
@@ -108,68 +216,174 @@ export default function StudentRoster({
         : (nextStudentEntries[0]?.originalIndex ?? 0),
     );
     setOpenQuizIndex(null);
+    setOpenRandomAssignment(null);
+    setAutoAdvanceAfterQuizIndex(null);
     setOpenDiamond(null);
   }, [allStudentEntries, defaultStudentEntries, selectedStudentIndex, showAllStudents]);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.altKey || event.ctrlKey || event.metaKey) return;
-      const target = event.target;
-      if (
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement ||
-        target instanceof HTMLSelectElement ||
-        (target instanceof HTMLElement && target.isContentEditable)
-      ) {
-        return;
-      }
-
-      const visibleStudentIndex = Number(event.key) - 1;
-      const studentEntry = visibleStudentEntries[visibleStudentIndex];
-      if (!Number.isInteger(visibleStudentIndex) || !studentEntry) return;
-
-      event.preventDefault();
-      selectStudent(studentEntry.originalIndex);
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectStudent, visibleStudentEntries]);
-
-  const selectVisibleStudent = useCallback(
-    (visibleStudentIndex: number) => {
-      const studentEntry = visibleStudentEntries[visibleStudentIndex];
-      if (studentEntry) selectStudent(studentEntry.originalIndex);
-    },
-    [selectStudent, visibleStudentEntries],
-  );
-
   const closePanel = useCallback(() => setOpenQuizIndex(null), []);
+  const closeRandomPanel = useCallback(() => {
+    setAutoAdvanceAfterQuizIndex(null);
+    setOpenRandomAssignment(null);
+    completingRandomQuizRef.current = false;
+  }, []);
   const closeDiamond = useCallback(() => setOpenDiamond(null), []);
   const navigateQuiz = useCallback((quizIndex: number) => setOpenQuizIndex(quizIndex), []);
   const openStudentQuiz = useCallback((studentIndex: number, quizIndex: number) => {
     setSelectedStudentIndex(studentIndex);
+    setAutoAdvanceAfterQuizIndex(null);
     setOpenQuizIndex(quizIndex);
+    setOpenRandomAssignment(null);
     setOpenDiamond(null);
   }, []);
   const openStudentDiamond = useCallback((studentIndex: number, diamondIndex: number) => {
     setSelectedStudentIndex(studentIndex);
+    setAutoAdvanceAfterQuizIndex(null);
     setOpenQuizIndex(null);
+    setOpenRandomAssignment(null);
     setOpenDiamond({ studentIndex, diamondIndex });
   }, []);
 
-  const selectedStudent = students[selectedStudentIndex] ?? null;
-  const selectedVisibleStudentIndex = visibleStudentEntries.findIndex(
-    ({ originalIndex }) => originalIndex === selectedStudentIndex,
+  const openSharedQuiz = useCallback(
+    (quizIndex: number) => {
+      if (!sharedQueueReady || !activeQuizIndexes.includes(quizIndex)) return;
+
+      const pendingStudentName = validPendingByQuiz[String(quizIndex)];
+      const pendingParticipant = randomQuizParticipants.find(
+        ({ name }) =>
+          name === pendingStudentName && canStudentSolveQuiz(progress, name, quizIndex),
+      );
+      const participant =
+        pendingParticipant ??
+        pickRandomQuizParticipant({
+          quizIndex,
+          participants: randomQuizParticipants,
+          progress,
+          pendingByQuiz: validPendingByQuiz,
+          lastSolverName: randomQueueState.lastSolverByQuiz[String(quizIndex)],
+        });
+
+      if (!participant) {
+        setQueueAnnouncement(`${quizIndex + 1}번 퀴즈는 모두 완료했습니다.`);
+        return;
+      }
+
+      if (!pendingParticipant) {
+        setRandomQueueState((current) => ({
+          ...current,
+          pendingByQuiz: {
+            ...current.pendingByQuiz,
+            [String(quizIndex)]: participant.name,
+          },
+        }));
+      }
+
+      completingRandomQuizRef.current = false;
+      setOpenQuizIndex(null);
+      setOpenDiamond(null);
+      setOpenRandomAssignment({ quizIndex, studentName: participant.name });
+      setQueueAnnouncement(
+        `${quizIndex + 1}번 퀴즈는 ${participant.name.slice(1).trim()} 학생에게 배정됐습니다.`,
+      );
+    },
+    [
+      activeQuizIndexes,
+      progress,
+      randomQuizParticipants,
+      randomQueueState.lastSolverByQuiz,
+      sharedQueueReady,
+      validPendingByQuiz,
+    ],
   );
+
+  const completeSharedQuiz = useCallback((targetStage: QuizMineralStage) => {
+    if (!openRandomAssignment || completingRandomQuizRef.current) return;
+
+    const { quizIndex, studentName } = openRandomAssignment;
+    if (!canStudentSolveQuiz(progress, studentName, quizIndex)) return;
+
+    completingRandomQuizRef.current = true;
+    if (!awardQuizStage(studentName, quizIndex, targetStage)) {
+      completingRandomQuizRef.current = false;
+      return;
+    }
+
+    setRandomQueueState((current) => {
+      const pendingByQuiz = { ...current.pendingByQuiz };
+      const quizKey = String(quizIndex);
+      const reachedRuby = targetStage === MAX_SOLVES;
+      if (reachedRuby) delete pendingByQuiz[quizKey];
+      else pendingByQuiz[quizKey] = studentName;
+      const currentOrder = reconcileQuizOrder(current.order, activeQuizIndexes);
+
+      return {
+        version: 1,
+        order: [...currentOrder.filter((index) => index !== quizIndex), quizIndex],
+        pendingByQuiz,
+        lastSolverByQuiz: reachedRuby
+          ? { ...current.lastSolverByQuiz, [quizKey]: studentName }
+          : current.lastSolverByQuiz,
+      };
+    });
+    setAutoAdvanceAfterQuizIndex(quizIndex);
+    const rewardLabel =
+      targetStage === 1 ? "돌" : targetStage === 2 ? "수정" : "루비";
+    setQueueAnnouncement(
+      `${quizIndex + 1}번 퀴즈에서 ${rewardLabel}을 획득했습니다. 다음 퀴즈를 추첨합니다.`,
+    );
+  }, [activeQuizIndexes, awardQuizStage, openRandomAssignment, progress]);
+
+  useEffect(() => {
+    if (autoAdvanceAfterQuizIndex === null || !sharedQueueReady) return;
+
+    const timer = window.setTimeout(() => {
+      const nextQuizIndex = randomQuizOrder.find((quizIndex) =>
+        randomQuizParticipants.some(({ name }) =>
+          canStudentSolveQuiz(progress, name, quizIndex),
+        ),
+      );
+
+      setAutoAdvanceAfterQuizIndex(null);
+      setOpenRandomAssignment(null);
+
+      if (nextQuizIndex === undefined) {
+        completingRandomQuizRef.current = false;
+        setQueueAnnouncement(
+          `${autoAdvanceAfterQuizIndex + 1}번 퀴즈를 완료했습니다. 현재 퀴즈를 모두 풀었습니다.`,
+        );
+        return;
+      }
+
+      openSharedQuiz(nextQuizIndex);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    autoAdvanceAfterQuizIndex,
+    openSharedQuiz,
+    progress,
+    randomQuizOrder,
+    randomQuizParticipants,
+    sharedQueueReady,
+  ]);
+
+  const selectedStudent = students[selectedStudentIndex] ?? null;
   const selectedName = selectedStudent?.name ?? null;
-  const selectedAge = selectedStudent?.age ?? null;
   const selectedCounts = selectedName ? progress[selectedName] ?? [] : [];
   const selectedColor = STUDENT_COLORS[selectedStudentIndex % STUDENT_COLORS.length];
   const selectedDiamondCountLimit =
     selectedName && teamStudentNameSet.has(selectedName)
       ? teamDiamondProgress.diamondCount
       : undefined;
+  const randomAssignedParticipant = openRandomAssignment
+    ? randomQuizParticipants.find(({ name }) => name === openRandomAssignment.studentName) ?? null
+    : null;
+  const randomAssignedCounts = openRandomAssignment
+    ? progress[openRandomAssignment.studentName] ?? []
+    : [];
+  const randomAssignedColor = randomAssignedParticipant
+    ? STUDENT_COLORS[randomAssignedParticipant.originalIndex % STUDENT_COLORS.length]
+    : STUDENT_COLORS[0];
   const diamondStudent = openDiamond ? students[openDiamond.studentIndex] ?? null : null;
   const diamondStudentName = diamondStudent?.name ?? null;
   const diamondStudentCounts = diamondStudentName ? progress[diamondStudentName] ?? [] : [];
@@ -185,11 +399,11 @@ export default function StudentRoster({
   const diamondStudentColor = openDiamond
     ? STUDENT_COLORS[openDiamond.studentIndex % STUDENT_COLORS.length]
     : STUDENT_COLORS[0];
-  const solveDiamondQuiz = useCallback(
-    (quizIndex: number) => {
-      if (diamondStudentName) solveQuiz(diamondStudentName, quizIndex);
+  const awardDiamondQuiz = useCallback(
+    (quizIndex: number, stage: QuizMineralStage) => {
+      if (diamondStudentName) awardQuizStage(diamondStudentName, quizIndex, stage);
     },
-    [diamondStudentName, solveQuiz],
+    [awardQuizStage, diamondStudentName],
   );
   const undoDiamondQuiz = useCallback(
     (quizIndex: number) => {
@@ -269,8 +483,11 @@ export default function StudentRoster({
               aria-valuenow={teamDiamondProgress.currentRubyCount}
             >
               <div
-                className="h-full rounded-full bg-[#8068c5] transition-[width] duration-500"
-                style={{ width: `${teamProgressPercent}%` }}
+                className="h-full rounded-full transition-[width] duration-500"
+                style={{
+                  width: `${teamProgressPercent}%`,
+                  backgroundImage: RAINBOW_PROGRESS_BACKGROUND,
+                }}
               />
             </div>
             <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">
@@ -290,36 +507,23 @@ export default function StudentRoster({
         ) : (
           <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(300px,390px)]">
             <div className="min-w-0">
-              <div className="grid items-start gap-4 lg:grid-cols-[minmax(300px,400px)_minmax(516px,1fr)] 2xl:grid-cols-[minmax(360px,480px)_minmax(596px,1fr)]">
-                <StudentList
-                  students={visibleStudents}
-                  selectedIndex={selectedVisibleStudentIndex}
-                  progress={progress}
-                  onSelect={selectVisibleStudent}
-                />
-
-                {selectedName ? (
-                  <QuizBoard
-                    key={selectedName}
-                    studentName={selectedName}
-                    studentAge={selectedAge}
-                    studentIndex={selectedStudentIndex}
-                    studentColor={selectedColor}
-                    counts={selectedCounts}
-                    diamondCountLimit={selectedDiamondCountLimit}
-                    onOpenQuiz={openStudentQuiz}
-                    onOpenDiamond={openStudentDiamond}
-                    selectedQuizIndex={openQuizIndex}
-                  />
-                ) : null}
-              </div>
+              <SharedQuizQueue
+                quizOrder={randomQuizOrder}
+                participantNames={teamStudentNames}
+                progress={progress}
+                pendingQuizIndexes={pendingQuizIndexes}
+                selectedQuizIndex={openRandomAssignment?.quizIndex ?? null}
+                isReady={sharedQueueReady}
+                announcement={queueAnnouncement}
+                onOpenQuiz={openSharedQuiz}
+              />
 
               <div
                 className="mt-10 border-t border-[#e7dccb] pt-8"
                 aria-label="전체 진도 체크리스트"
               >
                 <h2 className="text-xl font-bold text-[#51475c]">전체 진도 체크리스트</h2>
-                <div className="mt-5 grid min-w-0 grid-cols-2 gap-x-12 gap-y-6">
+                <div className="mt-5 grid min-w-0 grid-cols-1 gap-x-12 gap-y-6 2xl:grid-cols-2">
                   {visibleStudentEntries.map(({ student, originalIndex }) => {
                     const counts = progress[student.name] ?? [];
                     const color = STUDENT_COLORS[originalIndex % STUDENT_COLORS.length];
@@ -353,9 +557,21 @@ export default function StudentRoster({
               </div>
             </div>
 
-            {selectedName ? (
+            {openRandomAssignment || (selectedName && openQuizIndex !== null) ? (
               <div className="order-first min-w-0 xl:order-none xl:col-start-2">
-                {openQuizIndex !== null ? (
+                {openRandomAssignment && randomAssignedParticipant ? (
+                  <div className="xl:sticky xl:top-4">
+                    <RandomQuizPanel
+                      key={`${openRandomAssignment.quizIndex}-${openRandomAssignment.studentName}`}
+                      studentName={openRandomAssignment.studentName}
+                      studentColor={randomAssignedColor}
+                      quizIndex={openRandomAssignment.quizIndex}
+                      counts={randomAssignedCounts}
+                      onAward={completeSharedQuiz}
+                      onClose={closeRandomPanel}
+                    />
+                  </div>
+                ) : selectedName && openQuizIndex !== null ? (
                   <div className="xl:sticky xl:top-4">
                     <QuizPanel
                       name={selectedName.slice(1)}
@@ -363,7 +579,9 @@ export default function StudentRoster({
                       counts={selectedCounts}
                       diamondCountLimit={selectedDiamondCountLimit}
                       color={selectedColor}
-                      onSolve={() => solveQuiz(selectedName, openQuizIndex)}
+                      onAward={(stage) =>
+                        awardQuizStage(selectedName, openQuizIndex, stage)
+                      }
                       onUndo={() => undoQuiz(selectedName, openQuizIndex)}
                       onNavigate={navigateQuiz}
                       onClose={closePanel}
@@ -383,7 +601,7 @@ export default function StudentRoster({
           diamondIndex={openDiamond.diamondIndex}
           rubyQuizIndexes={diamondRubyQuizIndexes}
           counts={diamondStudentCounts}
-          onSolveQuiz={solveDiamondQuiz}
+          onAwardQuiz={awardDiamondQuiz}
           onUndoQuiz={undoDiamondQuiz}
           onClose={closeDiamond}
         />

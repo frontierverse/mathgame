@@ -9,7 +9,7 @@ import {
 import { createPortal } from "react-dom";
 
 import QuizDetail from "./QuizDetail";
-import { quizTextForIndex } from "./quizData";
+import { quizTextForIndex, type QuizMineralStage } from "./quizData";
 import StudentBlob from "./StudentBlob";
 
 type DiamondModalProps = {
@@ -18,7 +18,7 @@ type DiamondModalProps = {
   diamondIndex: number;
   rubyQuizIndexes: number[];
   counts: number[];
-  onSolveQuiz: (quizIndex: number) => void;
+  onAwardQuiz: (quizIndex: number, stage: QuizMineralStage) => void;
   onUndoQuiz: (quizIndex: number) => void;
   onClose: () => void;
 };
@@ -29,7 +29,7 @@ export default function DiamondModal({
   diamondIndex,
   rubyQuizIndexes,
   counts,
-  onSolveQuiz,
+  onAwardQuiz,
   onUndoQuiz,
   onClose,
 }: DiamondModalProps) {
@@ -229,7 +229,7 @@ export default function DiamondModal({
                 quizIndex={selectedQuizIndex}
                 counts={counts}
                 color={studentColor}
-                onSolve={() => onSolveQuiz(selectedQuizIndex)}
+                onAward={(stage) => onAwardQuiz(selectedQuizIndex, stage)}
                 onUndo={() => onUndoQuiz(selectedQuizIndex)}
               />
             ) : null}

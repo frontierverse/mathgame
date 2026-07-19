@@ -2,11 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { MAX_QUIZ_COUNT, MAX_SOLVES, migrateLegacyQuizCounts } from "./quizData";
+import {
+  MAX_QUIZ_COUNT,
+  MAX_SOLVES,
+  type QuizMineralStage,
+} from "./quizData";
 import type { QuizProgress } from "./quizProgress";
 
-const STORAGE_KEY = "math-space-quiz-progress-v5";
-const LEGACY_STORAGE_KEY = "math-space-quiz-progress-v4";
+const STORAGE_KEY = "math-space-quiz-progress-v7";
+const RESET_STORAGE_KEYS = [
+  "math-space-quiz-progress-v6",
+  "math-space-quiz-progress-v5",
+  "math-space-quiz-progress-v4",
+] as const;
 
 function normalizeProgress(value: unknown): QuizProgress {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -26,18 +34,9 @@ function normalizeProgress(value: unknown): QuizProgress {
 function loadLocalProgress() {
   if (typeof window === "undefined") return {};
   try {
+    RESET_STORAGE_KEYS.forEach((storageKey) => window.localStorage.removeItem(storageKey));
     const savedProgress = window.localStorage.getItem(STORAGE_KEY);
-    if (savedProgress !== null) return normalizeProgress(JSON.parse(savedProgress));
-
-    const legacyProgress = normalizeProgress(
-      JSON.parse(window.localStorage.getItem(LEGACY_STORAGE_KEY) ?? "{}"),
-    );
-    return Object.fromEntries(
-      Object.entries(legacyProgress).map(([studentName, counts]) => [
-        studentName,
-        migrateLegacyQuizCounts(counts),
-      ]),
-    );
+    return savedProgress === null ? {} : normalizeProgress(JSON.parse(savedProgress));
   } catch {
     return {};
   }
@@ -95,6 +94,7 @@ async function decrementQuizProgress(studentName: string, quizIndex: number) {
 
 export default function useQuizProgress(students: string[]) {
   const [progress, setProgress] = useState<QuizProgress>({});
+  const [isReady, setIsReady] = useState(false);
   const progressRef = useRef<QuizProgress>({});
   const mutationVersionsRef = useRef<Record<string, number>>({});
 
@@ -122,6 +122,7 @@ export default function useQuizProgress(students: string[]) {
         if (!active) return;
         replaceProgress(merged);
         saveLocalProgress(merged);
+        setIsReady(true);
 
         students.forEach((studentName) => {
           const localCounts = local[studentName] ?? [];
@@ -135,6 +136,7 @@ export default function useQuizProgress(students: string[]) {
       } catch (error) {
         if (!active || (error instanceof DOMException && error.name === "AbortError")) return;
         replaceProgress(local);
+        setIsReady(true);
       }
     };
 
@@ -145,16 +147,23 @@ export default function useQuizProgress(students: string[]) {
     };
   }, [replaceProgress, students]);
 
-  const solveQuiz = useCallback(
-    (studentName: string, quizIndex: number) => {
-      if (!Number.isInteger(quizIndex) || quizIndex < 0 || quizIndex >= MAX_QUIZ_COUNT) return;
+  const awardQuizStage = useCallback(
+    (studentName: string, quizIndex: number, targetStage: QuizMineralStage) => {
+      if (!Number.isInteger(quizIndex) || quizIndex < 0 || quizIndex >= MAX_QUIZ_COUNT) {
+        return false;
+      }
 
       const current = progressRef.current;
       const counts = [...(current[studentName] ?? [])];
       while (counts.length <= quizIndex) counts.push(0);
-      if (counts[quizIndex] >= MAX_SOLVES) return;
+      const currentStage = counts[quizIndex] ?? 0;
+      const validTransition =
+        (currentStage === 0 && (targetStage === 1 || targetStage === MAX_SOLVES)) ||
+        (currentStage === 1 && targetStage === 2) ||
+        (currentStage === 2 && targetStage === MAX_SOLVES);
+      if (!validTransition) return false;
 
-      counts[quizIndex] += 1;
+      counts[quizIndex] = targetStage;
       const next = { ...current, [studentName]: counts };
       replaceProgress(next);
       saveLocalProgress(next);
@@ -174,6 +183,8 @@ export default function useQuizProgress(students: string[]) {
           saveLocalProgress(reconciled);
         })
         .catch(() => undefined);
+
+      return true;
     },
     [replaceProgress],
   );
@@ -211,5 +222,5 @@ export default function useQuizProgress(students: string[]) {
     [replaceProgress],
   );
 
-  return { progress, solveQuiz, undoQuiz };
+  return { progress, isReady, awardQuizStage, undoQuiz };
 }

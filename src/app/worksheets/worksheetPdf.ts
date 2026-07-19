@@ -6,7 +6,7 @@ import path from "node:path";
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 
 import type { CurriculumQuizSet } from "../shared/curriculumQuizzes";
-import { parseMathText } from "../shared/mathText";
+import { parseMathText, type MathFormulaToken } from "../shared/mathText";
 import { getWorksheetAnswerLineCount } from "./worksheetLayout";
 
 const PAGE_WIDTH = 595.28;
@@ -20,6 +20,7 @@ const QUESTION_LINE_HEIGHT = 16;
 const ANSWER_LINE_HEIGHT = 20;
 const EXPONENT_FONT_SCALE = 0.62;
 const EXPONENT_RISE_SCALE = 0.48;
+const OPERATOR_GAP_SCALE = 0.12;
 
 const INK = rgb(0.09, 0.09, 0.11);
 const PURPLE = rgb(0.38, 0.34, 0.47);
@@ -36,11 +37,31 @@ function measureMathText(text: string, font: PDFFont, fontSize: number) {
     if (segment.type === "text") {
       return width + font.widthOfTextAtSize(segment.value, fontSize);
     }
-    return (
-      width +
-      font.widthOfTextAtSize(segment.base, fontSize) +
-      font.widthOfTextAtSize(segment.exponent, fontSize * EXPONENT_FONT_SCALE)
-    );
+    return width + measureFormula(segment.tokens, font, fontSize);
+  }, 0);
+}
+
+function isTightOperator(operator: string) {
+  return operator === "(" || operator === ")";
+}
+
+function measureFormula(tokens: readonly MathFormulaToken[], font: PDFFont, fontSize: number) {
+  const operatorGap = fontSize * OPERATOR_GAP_SCALE;
+
+  return tokens.reduce((width, token) => {
+    if (token.type === "number") {
+      return width + font.widthOfTextAtSize(token.value, fontSize);
+    }
+    if (token.type === "power") {
+      return (
+        width +
+        font.widthOfTextAtSize(token.base, fontSize) +
+        font.widthOfTextAtSize(token.exponent, fontSize * EXPONENT_FONT_SCALE)
+      );
+    }
+
+    const gap = isTightOperator(token.value) ? 0 : operatorGap * 2;
+    return width + gap + font.widthOfTextAtSize(token.value, fontSize);
   }, 0);
 }
 
@@ -67,24 +88,52 @@ function drawMathText(
       return;
     }
 
-    page.drawText(segment.base, {
-      x: cursorX,
-      y,
-      size: fontSize,
-      font,
-      color: INK,
-    });
-    cursorX += font.widthOfTextAtSize(segment.base, fontSize);
+    segment.tokens.forEach((token) => {
+      if (token.type === "number") {
+        page.drawText(token.value, {
+          x: cursorX,
+          y,
+          size: fontSize,
+          font,
+          color: INK,
+        });
+        cursorX += font.widthOfTextAtSize(token.value, fontSize);
+        return;
+      }
 
-    const exponentSize = fontSize * EXPONENT_FONT_SCALE;
-    page.drawText(segment.exponent, {
-      x: cursorX,
-      y: y + fontSize * EXPONENT_RISE_SCALE,
-      size: exponentSize,
-      font,
-      color: INK,
+      if (token.type === "power") {
+        page.drawText(token.base, {
+          x: cursorX,
+          y,
+          size: fontSize,
+          font,
+          color: INK,
+        });
+        cursorX += font.widthOfTextAtSize(token.base, fontSize);
+
+        const exponentSize = fontSize * EXPONENT_FONT_SCALE;
+        page.drawText(token.exponent, {
+          x: cursorX,
+          y: y + fontSize * EXPONENT_RISE_SCALE,
+          size: exponentSize,
+          font,
+          color: INK,
+        });
+        cursorX += font.widthOfTextAtSize(token.exponent, exponentSize);
+        return;
+      }
+
+      const operatorGap = isTightOperator(token.value) ? 0 : fontSize * OPERATOR_GAP_SCALE;
+      cursorX += operatorGap;
+      page.drawText(token.value, {
+        x: cursorX,
+        y,
+        size: fontSize,
+        font,
+        color: INK,
+      });
+      cursorX += font.widthOfTextAtSize(token.value, fontSize) + operatorGap;
     });
-    cursorX += font.widthOfTextAtSize(segment.exponent, exponentSize);
   });
 }
 

@@ -20,3 +20,5 @@ export {
 } from "../shared/curriculumQuizzes";
 
 export const MAX_SOLVES = 3;
+
+export type QuizMineralStage = 1 | 2 | 3;
