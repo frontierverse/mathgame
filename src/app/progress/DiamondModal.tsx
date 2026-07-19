@@ -8,13 +8,12 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import MineralObject from "./MineralObject";
 import QuizDetail from "./QuizDetail";
 import { quizTextForIndex, type QuizMineralStage } from "./quizData";
-import StudentBlob from "./StudentBlob";
 
 type DiamondModalProps = {
   studentName: string;
-  studentColor: string;
   diamondIndex: number;
   rubyQuizIndexes: readonly number[];
   counts: number[];
@@ -25,7 +24,6 @@ type DiamondModalProps = {
 
 export default function DiamondModal({
   studentName,
-  studentColor,
   diamondIndex,
   rubyQuizIndexes,
   counts,
@@ -153,12 +151,8 @@ export default function DiamondModal({
 
         <div className="flex items-center gap-3 pr-10">
           <span className="diamond-reward-circle flex h-16 w-16 shrink-0 items-center justify-center rounded-full">
-            <StudentBlob
+            <MineralObject
               variant="diamond"
-              color={studentColor}
-              seed={diamondIndex}
-              renderMode="thumbnail"
-              thumbnailMotion
               className="h-12 w-12"
             />
           </span>
@@ -205,12 +199,8 @@ export default function DiamondModal({
                       : "border-[#eed4db] bg-[#fff7f8]"
                   }`}
                 >
-                  <StudentBlob
+                  <MineralObject
                     variant="ruby"
-                    color={studentColor}
-                    seed={diamondIndex * 10 + rubyIndex}
-                    renderMode="thumbnail"
-                    thumbnailMotion
                     className="h-12 w-12"
                   />
                   <span className="text-xs font-black tabular-nums">{quizIndex + 1}번</span>
@@ -228,7 +218,6 @@ export default function DiamondModal({
                 name={studentName}
                 quizIndex={selectedQuizIndex}
                 counts={counts}
-                color={studentColor}
                 onAward={(stage) => onAwardQuiz(selectedQuizIndex, stage)}
                 onUndo={() => onUndoQuiz(selectedQuizIndex)}
               />

@@ -10,7 +10,6 @@ type QuizModalProps = {
   name: string;
   quizIndex: number;
   counts: number[];
-  color: string;
   onAward: (stage: QuizMineralStage) => void;
   onUndo: () => void;
   onNavigate: (quizIndex: number) => void;
@@ -21,7 +20,6 @@ export default function QuizModal({
   name,
   quizIndex,
   counts,
-  color,
   onAward,
   onUndo,
   onNavigate,
@@ -99,7 +97,6 @@ export default function QuizModal({
           name={name}
           quizIndex={quizIndex}
           counts={counts}
-          color={color}
           onAward={onAward}
           onUndo={onUndo}
         />

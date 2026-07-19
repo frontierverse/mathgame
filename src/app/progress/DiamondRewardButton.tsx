@@ -1,10 +1,8 @@
 "use client";
 
-import StudentBlob from "./StudentBlob";
+import MineralObject from "./MineralObject";
 
 type DiamondRewardButtonProps = {
-  studentColor: string;
-  seed: number;
   diamondIndex: number;
   rubyCount: number;
   compact?: boolean;
@@ -12,8 +10,6 @@ type DiamondRewardButtonProps = {
 };
 
 export default function DiamondRewardButton({
-  studentColor,
-  seed,
   diamondIndex,
   rubyCount,
   compact = false,
@@ -29,12 +25,8 @@ export default function DiamondRewardButton({
         compact ? "h-14 w-14" : "h-16 w-16 2xl:h-[72px] 2xl:w-[72px]"
       }`}
     >
-      <StudentBlob
+      <MineralObject
         variant="diamond"
-        color={studentColor}
-        seed={seed}
-        renderMode="thumbnail"
-        thumbnailMotion
         className={compact ? "h-12 w-12" : "h-14 w-14 2xl:h-16 2xl:w-16"}
       />
     </button>

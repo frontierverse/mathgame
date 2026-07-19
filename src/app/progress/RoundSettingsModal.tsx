@@ -3,10 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import {
-  STUDENT_COLORS,
-  type CurriculumQuizRound,
-} from "./quizData";
+import { type CurriculumQuizRound } from "./quizData";
 import type { QuizProgress } from "./quizProgress";
 import {
   isRoundComplete,
@@ -329,10 +326,6 @@ export default function RoundSettingsModal({
                     <div className="grid gap-2 sm:grid-cols-2">
                       {studentOptions.map((student) => {
                         const checked = activeAssignedNameSet.has(student.name);
-                        const color =
-                          STUDENT_COLORS[
-                            student.originalIndex % STUDENT_COLORS.length
-                          ];
 
                         return (
                           <label
@@ -348,11 +341,6 @@ export default function RoundSettingsModal({
                               checked={checked}
                               onChange={() => toggleStudent(student.name)}
                               className="h-5 w-5 shrink-0 accent-[#8f78c9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--lesson-accent)]"
-                            />
-                            <span
-                              aria-hidden="true"
-                              className="h-8 w-8 shrink-0 rounded-full border border-black/5 shadow-sm"
-                              style={{ backgroundColor: color }}
                             />
                             <span className="min-w-0 flex-1 truncate text-sm font-black text-[var(--foreground)]">
                               {displayName(student.name)}

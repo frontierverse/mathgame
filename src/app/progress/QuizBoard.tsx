@@ -3,6 +3,7 @@
 import { memo } from "react";
 
 import DiamondRewardButton from "./DiamondRewardButton";
+import MineralObject from "./MineralObject";
 import { MINERALS } from "./mineralData";
 import {
   EARNABLE_MINERALS,
@@ -10,13 +11,11 @@ import {
   mineralForCount,
   unlockedQuizCount,
 } from "./quizProgress";
-import StudentBlob from "./StudentBlob";
 
 type QuizBoardProps = {
   studentName: string;
   studentAge: number | null;
   studentIndex: number;
-  studentColor: string;
   counts: number[];
   onOpenQuiz: (studentIndex: number, quizIndex: number) => void;
   onOpenDiamond: (studentIndex: number, diamondIndex: number) => void;
@@ -33,7 +32,6 @@ function QuizBoard({
   studentName,
   studentAge,
   studentIndex,
-  studentColor,
   counts,
   onOpenQuiz,
   onOpenDiamond,
@@ -84,17 +82,14 @@ function QuizBoard({
           )}
         </h3>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-x-2.5 gap-y-1">
-          {EARNABLE_MINERALS.map((mineral, index) => (
+          {EARNABLE_MINERALS.map((mineral) => (
             <span
               key={mineral}
               className="flex items-center gap-1 text-sm font-bold tabular-nums text-[#766b7d]"
               aria-label={`${MINERALS[mineral].label} ${mineralCounts[mineral]}개`}
             >
-              <StudentBlob
+              <MineralObject
                 variant={mineral}
-                color={studentColor}
-                seed={index}
-                renderMode="thumbnail"
                 className="h-7 w-7"
               />
               {mineralCounts[mineral]}
@@ -104,12 +99,8 @@ function QuizBoard({
             className="flex items-center gap-1 text-sm font-bold tabular-nums text-[#766b7d]"
             aria-label={`다이아몬드 ${mineralCounts.diamond}개`}
           >
-            <StudentBlob
+            <MineralObject
               variant="diamond"
-              color={studentColor}
-              seed={3}
-              renderMode="thumbnail"
-              thumbnailMotion={mineralCounts.diamond > 0}
               className={`h-7 w-7 ${mineralCounts.diamond > 0 ? "" : "opacity-40 grayscale"}`}
             />
             {mineralCounts.diamond}
@@ -127,8 +118,6 @@ function QuizBoard({
               return (
                 <li key={`diamond-${item.diamondIndex}`}>
                   <DiamondRewardButton
-                    studentColor={studentColor}
-                    seed={studentIndex * 10 + item.diamondIndex}
                     diamondIndex={item.diamondIndex}
                     rubyCount={rubyCountByDiamondIndex.get(item.diamondIndex) ?? 0}
                     compact={compact}
@@ -160,12 +149,8 @@ function QuizBoard({
                   } ${selected ? "border-[#8f78c9] ring-2 ring-inset ring-[#b5a3f0]" : ""}`}
                 >
                   {mineral ? (
-                    <StudentBlob
+                    <MineralObject
                       variant={mineral}
-                      color={studentColor}
-                      seed={studentIndex * 100 + quizIndex}
-                      renderMode="thumbnail"
-                      thumbnailMotion
                       className={compact ? "h-12 w-12" : "h-14 w-14 2xl:h-16 2xl:w-16"}
                     />
                   ) : (

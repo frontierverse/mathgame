@@ -10,8 +10,8 @@ import {
   type QuizMineralStage,
 } from "./quizData";
 import { mineralForCount, mineralForStage } from "./quizProgress";
+import MineralObject from "./MineralObject";
 import QuizQuestionText from "./QuizQuestionText";
-import StudentBlob from "./StudentBlob";
 
 type RewardMineral = Exclude<BlobVariant, "diamond">;
 
@@ -86,7 +86,6 @@ type QuizDetailProps = {
   quizIndex: number;
   questionText?: string;
   counts: number[];
-  color: string;
   onAward: (stage: QuizMineralStage) => void;
   onUndo?: () => void;
   showIdentity?: boolean;
@@ -97,7 +96,6 @@ export default function QuizDetail({
   quizIndex,
   questionText,
   counts,
-  color,
   onAward,
   onUndo,
   showIdentity = true,
@@ -139,12 +137,8 @@ export default function QuizDetail({
             aria-label={`${MINERALS[currentMineral].label} 한 단계 취소`}
             title="클릭하면 한 단계 취소"
           >
-            <StudentBlob
+            <MineralObject
               variant={currentMineral}
-              color={color}
-              seed={quizIndex}
-              renderMode="thumbnail"
-              thumbnailMotion
               className="h-16 w-16"
             />
           </button>
@@ -153,12 +147,8 @@ export default function QuizDetail({
             className="flex h-20 w-20 shrink-0 self-end items-center justify-center rounded-full border border-[#e7dcf3] bg-[#f7f2ff]"
             aria-label={MINERALS[currentMineral].label}
           >
-            <StudentBlob
+            <MineralObject
               variant={currentMineral}
-              color={color}
-              seed={quizIndex}
-              renderMode="thumbnail"
-              thumbnailMotion
               className="h-16 w-16"
             />
           </span>
@@ -182,12 +172,8 @@ export default function QuizDetail({
       <div className="mt-4">
         {maxed ? (
           <div className="flex flex-wrap items-center justify-center gap-2 rounded-xl bg-[#eef9f0] px-4 py-3 text-center text-sm font-bold text-[#3f8a5b]">
-            <StudentBlob
+            <MineralObject
               variant={mineralForStage(MAX_SOLVES - 1)}
-              color={color}
-              seed={quizIndex}
-              renderMode="thumbnail"
-              thumbnailMotion
               className="h-8 w-8"
             />
             최고 단계 · {MINERALS[mineralForStage(MAX_SOLVES - 1)].label} 완성!
@@ -215,12 +201,8 @@ export default function QuizDetail({
                     {statusSymbol}
                   </span>
                 ) : null}
-                <StudentBlob
+                <MineralObject
                   variant={variant}
-                  color={color}
-                  seed={quizIndex}
-                  renderMode="thumbnail"
-                  thumbnailMotion
                   className="h-16 w-16 shrink-0"
                 />
                 <span className="text-sm">{MINERALS[variant].label}</span>

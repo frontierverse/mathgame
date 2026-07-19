@@ -13,7 +13,6 @@ type QuizPanelProps = {
   counts: number[];
   diamondCountLimit?: number;
   navigationQuizIndexes?: readonly number[];
-  color: string;
   onAward: (stage: QuizMineralStage) => void;
   onUndo: () => void;
   onNavigate: (quizIndex: number) => void;
@@ -26,7 +25,6 @@ export default function QuizPanel({
   counts,
   diamondCountLimit,
   navigationQuizIndexes,
-  color,
   onAward,
   onUndo,
   onNavigate,
@@ -87,7 +85,6 @@ export default function QuizPanel({
         name={name}
         quizIndex={quizIndex}
         counts={counts}
-        color={color}
         onAward={onAward}
         onUndo={onUndo}
       />

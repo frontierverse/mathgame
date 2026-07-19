@@ -14,7 +14,6 @@ import {
   CURRICULUM_QUIZ_ROUNDS,
   MAX_SOLVES,
   resolveQuizContent,
-  STUDENT_COLORS,
   type QuizMineralStage,
 } from "./quizData";
 import { getMineralInventory } from "./quizProgress";
@@ -569,7 +568,6 @@ export default function StudentRoster({
   const selectedStudent = students[selectedStudentIndex] ?? null;
   const selectedName = selectedStudent?.name ?? null;
   const selectedCounts = selectedName ? progress[selectedName] ?? [] : [];
-  const selectedColor = STUDENT_COLORS[selectedStudentIndex % STUDENT_COLORS.length];
   const randomAssignedParticipant = openRandomAssignment
     ? randomQuizParticipants.find(({ name }) => name === openRandomAssignment.studentName) ?? null
     : null;
@@ -580,11 +578,8 @@ export default function StudentRoster({
     ? resolveQuizContent(
         openRandomAssignment.quizIndex,
         openRandomAssignment.variantSeed,
-      )
+    )
     : null;
-  const randomAssignedColor = randomAssignedParticipant
-    ? STUDENT_COLORS[randomAssignedParticipant.originalIndex % STUDENT_COLORS.length]
-    : STUDENT_COLORS[0];
   const diamondStudent = openDiamond ? students[openDiamond.studentIndex] ?? null : null;
   const diamondStudentName = diamondStudent?.name ?? null;
   const diamondStudentCounts = diamondStudentName ? progress[diamondStudentName] ?? [] : [];
@@ -593,9 +588,6 @@ export default function StudentRoster({
         ({ diamondIndex }) => diamondIndex === openDiamond.diamondIndex,
       )?.quizIndexes ?? null
     : null;
-  const diamondStudentColor = openDiamond
-    ? STUDENT_COLORS[openDiamond.studentIndex % STUDENT_COLORS.length]
-    : STUDENT_COLORS[0];
   const awardDiamondQuiz = useCallback(
     (quizIndex: number, stage: QuizMineralStage) => {
       if (diamondStudentName) awardQuizStage(diamondStudentName, quizIndex, stage);
@@ -670,7 +662,6 @@ export default function StudentRoster({
                 <RandomQuizPanel
                   key={`${openRandomAssignment.quizIndex}-${openRandomAssignment.studentName}-${randomAssignedContent.variantKey}`}
                   studentName={openRandomAssignment.studentName}
-                  studentColor={randomAssignedColor}
                   quizIndex={openRandomAssignment.quizIndex}
                   variantKey={randomAssignedContent.variantKey}
                   questionText={randomAssignedContent.question}
@@ -725,7 +716,6 @@ export default function StudentRoster({
                 <div className="mt-5 grid min-w-0 grid-cols-1 gap-x-12 gap-y-6 2xl:grid-cols-2">
                   {visibleStudentEntries.map(({ student, originalIndex }) => {
                     const counts = progress[student.name] ?? [];
-                    const color = STUDENT_COLORS[originalIndex % STUDENT_COLORS.length];
                     const isSelected = originalIndex === selectedStudentIndex;
 
                     return (
@@ -737,7 +727,6 @@ export default function StudentRoster({
                           studentName={student.name}
                           studentAge={student.age}
                           studentIndex={originalIndex}
-                          studentColor={color}
                           counts={counts}
                           quizIndexes={activeQuizIndexes}
                           onOpenQuiz={openStudentQuiz}
@@ -760,7 +749,6 @@ export default function StudentRoster({
                     quizIndex={openQuizIndex}
                     counts={selectedCounts}
                     navigationQuizIndexes={activeQuizIndexes}
-                    color={selectedColor}
                     onAward={(stage) =>
                       awardQuizStage(selectedName, openQuizIndex, stage)
                     }
@@ -790,7 +778,6 @@ export default function StudentRoster({
       {openDiamond && diamondStudentName && diamondRubyQuizIndexes ? (
         <DiamondModal
           studentName={diamondStudentName.slice(1)}
-          studentColor={diamondStudentColor}
           diamondIndex={openDiamond.diamondIndex}
           rubyQuizIndexes={diamondRubyQuizIndexes}
           counts={diamondStudentCounts}
