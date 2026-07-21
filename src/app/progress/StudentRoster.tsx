@@ -11,6 +11,7 @@ import RoundToolbar from "./RoundToolbar";
 import {
   createRandomQuizVariantSeed,
   CURRICULUM_QUIZ_ROUNDS,
+  getQuizForIndex,
   MAX_SOLVES,
   resolveQuizContent,
   type CurriculumQuizRound,
@@ -31,6 +32,7 @@ import {
   type RandomQuizQueueState,
 } from "./randomQuizQueue";
 import useQuizProgress from "./useQuizProgress";
+import useQuizAttemptRecorder from "./useQuizAttemptRecorder";
 import useRoundAssignments from "./useRoundAssignments";
 
 const EMPTY_HIDDEN_STUDENT_NAMES: readonly string[] = [];
@@ -122,9 +124,14 @@ export default function StudentRoster({
   );
   const [openQuizIndex, setOpenQuizIndex] = useState<number | null>(null);
   const [openRandomAssignment, setOpenRandomAssignment] = useState<{
+    attemptId: string;
     quizIndex: number;
+    quizId: string;
     studentName: string;
     variantSeed: number | null;
+    questionText: string;
+    startedAt: string;
+    startedAtPerformanceMs: number;
   } | null>(null);
   const [openDiamond, setOpenDiamond] = useState<{
     studentIndex: number;
@@ -139,6 +146,7 @@ export default function StudentRoster({
     number | null
   >(null);
   const completingRandomQuizRef = useRef(false);
+  const recordQuizAttempt = useQuizAttemptRecorder();
   const {
     progress,
     isReady: progressReady,
@@ -227,6 +235,19 @@ export default function StudentRoster({
     selectedRound?.id,
   ]);
   const sharedQueueReady = progressReady && randomQueueReady && roundAssignmentsReady;
+  const hasRemainingSharedQuiz = useMemo(
+    () =>
+      activeQuizIndexes.some((quizIndex) =>
+        randomQuizParticipants.some(({ name }) =>
+          canStudentSolveQuiz(progress, name, quizIndex),
+        ),
+      ),
+    [activeQuizIndexes, progress, randomQuizParticipants],
+  );
+  const selectedRoundComplete =
+    sharedQueueReady &&
+    currentRoundParticipantNames.length > 0 &&
+    !hasRemainingSharedQuiz;
 
   useEffect(() => {
     let cancelled = false;
@@ -296,6 +317,7 @@ export default function StudentRoster({
     setOpenRandomAssignment(null);
     setAutoAdvanceAfterQuizIndex(null);
     setOpenDiamond(null);
+    setQueueAnnouncement("");
   }, [allStudentEntries, defaultStudentEntries, selectedStudentIndex, showAllStudents]);
 
   const selectRound = useCallback((roundId: string) => {
@@ -305,6 +327,7 @@ export default function StudentRoster({
     setOpenRandomAssignment(null);
     setAutoAdvanceAfterQuizIndex(null);
     setOpenDiamond(null);
+    setQueueAnnouncement("");
     completingRandomQuizRef.current = false;
   }, []);
 
@@ -356,6 +379,7 @@ export default function StudentRoster({
       ) {
         setOpenRandomAssignment(null);
         setAutoAdvanceAfterQuizIndex(null);
+        setQueueAnnouncement("");
         completingRandomQuizRef.current = false;
       }
     },
@@ -388,6 +412,7 @@ export default function StudentRoster({
   const closeRandomPanel = useCallback(() => {
     setAutoAdvanceAfterQuizIndex(null);
     setOpenRandomAssignment(null);
+    setQueueAnnouncement("");
     completingRandomQuizRef.current = false;
   }, []);
   const closeDiamond = useCallback(() => setOpenDiamond(null), []);
@@ -396,6 +421,7 @@ export default function StudentRoster({
     setOpenRandomAssignment(null);
     setAutoAdvanceAfterQuizIndex(null);
     setOpenDiamond(null);
+    setQueueAnnouncement("");
     completingRandomQuizRef.current = false;
     setRoundSettingsOpen(true);
   }, []);
@@ -410,6 +436,7 @@ export default function StudentRoster({
       setOpenQuizIndex(shouldClose ? null : quizIndex);
       setOpenRandomAssignment(null);
       setOpenDiamond(null);
+      setQueueAnnouncement("");
     },
     [openQuizIndex, selectedStudentIndex],
   );
@@ -419,6 +446,7 @@ export default function StudentRoster({
     setOpenQuizIndex(null);
     setOpenRandomAssignment(null);
     setOpenDiamond({ studentIndex, diamondIndex });
+    setQueueAnnouncement("");
   }, []);
 
   const openSharedQuiz = useCallback(
@@ -457,6 +485,10 @@ export default function StudentRoster({
               storedVariantSeed ?? selectedRoundQueue.lastVariantSeedByQuiz[quizKey],
             );
 
+      const quiz = getQuizForIndex(quizIndex);
+      if (!quiz) return;
+      const resolvedQuiz = resolveQuizContent(quizIndex, variantSeed);
+
       if (
         !pendingParticipant ||
         (variantSeed !== null && storedVariantSeed !== variantSeed)
@@ -488,9 +520,14 @@ export default function StudentRoster({
       setOpenQuizIndex(null);
       setOpenDiamond(null);
       setOpenRandomAssignment({
+        attemptId: globalThis.crypto.randomUUID(),
         quizIndex,
+        quizId: quiz.id,
         studentName: participant.name,
         variantSeed,
+        questionText: resolvedQuiz.question,
+        startedAt: new Date().toISOString(),
+        startedAtPerformanceMs: performance.now(),
       });
       setQueueAnnouncement(
         `${quizIndex + 1}번 퀴즈는 ${participant.name.slice(1).trim()} 학생에게 배정됐습니다.`,
@@ -541,7 +578,18 @@ export default function StudentRoster({
   const completeSharedQuiz = useCallback((targetStage: QuizMineralStage) => {
     if (!selectedRound || !openRandomAssignment || completingRandomQuizRef.current) return;
 
-    const { quizIndex, studentName } = openRandomAssignment;
+    const answeredAt = new Date().toISOString();
+    const answeredAtPerformanceMs = performance.now();
+    const {
+      attemptId,
+      quizId,
+      quizIndex,
+      questionText,
+      startedAt,
+      startedAtPerformanceMs,
+      studentName,
+      variantSeed,
+    } = openRandomAssignment;
     if (!canStudentSolveQuiz(progress, studentName, quizIndex)) return;
     const currentStage = progress[studentName]?.[quizIndex] ?? 0;
 
@@ -550,6 +598,24 @@ export default function StudentRoster({
       completingRandomQuizRef.current = false;
       return;
     }
+
+    recordQuizAttempt({
+      id: attemptId,
+      studentName,
+      quizId,
+      quizIndex,
+      roundId: selectedRound.id,
+      variantSeed,
+      questionText,
+      stageBefore: currentStage,
+      stageAfter: targetStage,
+      durationMs: Math.max(
+        0,
+        Math.round(answeredAtPerformanceMs - startedAtPerformanceMs),
+      ),
+      startedAt,
+      answeredAt,
+    });
 
     setRandomQueueState((current) => {
       const roundQueue = getRandomQuizRoundQueue(current, selectedRound.id);
@@ -594,7 +660,14 @@ export default function StudentRoster({
     setQueueAnnouncement(
       `${quizIndex + 1}번 퀴즈에서 ${rewardLabel}${objectParticleFor(rewardLabel)} 획득했습니다. 다음 퀴즈를 추첨합니다.`,
     );
-  }, [activeQuizIndexes, awardQuizStage, openRandomAssignment, progress, selectedRound]);
+  }, [
+    activeQuizIndexes,
+    awardQuizStage,
+    openRandomAssignment,
+    progress,
+    recordQuizAttempt,
+    selectedRound,
+  ]);
 
   useEffect(() => {
     if (autoAdvanceAfterQuizIndex === null || !sharedQueueReady) return;
@@ -733,7 +806,7 @@ export default function StudentRoster({
                 randomAssignedParticipant &&
                 randomAssignedContent ? (
                   <QuizPanel
-                    key={`${openRandomAssignment.quizIndex}-${openRandomAssignment.studentName}-${randomAssignedContent.variantKey}`}
+                    key={openRandomAssignment.attemptId}
                     id="random-quiz-panel"
                     ariaLabel={`${
                       openRandomAssignment.studentName.slice(1).trim() ||
@@ -744,7 +817,7 @@ export default function StudentRoster({
                       openRandomAssignment.studentName
                     }
                     quizIndex={openRandomAssignment.quizIndex}
-                    questionText={randomAssignedContent.question}
+                    questionText={openRandomAssignment.questionText}
                     answerText={randomAssignedContent.answer}
                     counts={randomAssignedCounts}
                     onAward={completeSharedQuiz}
@@ -770,17 +843,29 @@ export default function StudentRoster({
                       </span>
                     </div>
                     <p className="mt-5 text-sm font-bold text-[var(--muted)]">
-                      {currentRoundParticipantNames.length === 0
-                        ? "참여 학생을 배정해 주세요."
-                        : queueAnnouncement || "다음 퀴즈를 시작하세요."}
+                      {!sharedQueueReady
+                        ? "확인 중…"
+                        : currentRoundParticipantNames.length === 0
+                          ? "참여 학생을 배정해 주세요."
+                          : selectedRoundComplete
+                            ? "라운드를 완료했습니다."
+                            : queueAnnouncement || "라운드를 시작하세요."}
                     </p>
                     <button
                       type="button"
                       onClick={openNextSharedQuiz}
-                      disabled={!sharedQueueReady || currentRoundParticipantNames.length === 0}
-                      className="mt-6 rounded-xl bg-[var(--lesson-accent)] px-5 py-3 text-sm font-black text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--lesson-accent)] focus-visible:ring-offset-2"
+                      disabled={
+                        !sharedQueueReady ||
+                        currentRoundParticipantNames.length === 0 ||
+                        selectedRoundComplete
+                      }
+                      className="round-start-action mt-6 rounded-xl px-5 py-3 text-sm font-black transition hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f9b69] focus-visible:ring-offset-2"
                     >
-                      다음 퀴즈
+                      {!sharedQueueReady
+                        ? "준비 중"
+                        : selectedRoundComplete
+                          ? "라운드 완료"
+                          : "라운드 시작"}
                     </button>
                     <p className="sr-only" role="status" aria-live="polite">
                       {queueAnnouncement}

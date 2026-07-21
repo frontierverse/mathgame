@@ -147,6 +147,14 @@
   --lesson-marker-border: #c8bbc8;
   --lesson-marker-active: #6d559e;
   --lesson-marker-complete-background: #eee8fa;
+  --statistics-series-1: #6245b5;
+  --statistics-series-2: #006b8f;
+  --statistics-series-3: #a02f52;
+  --statistics-series-4: #00715a;
+  --statistics-series-5: #995400;
+  --statistics-series-6: #4f5fa8;
+  --statistics-series-7: #8b3ea9;
+  --statistics-series-8: #356b7d;
 }
 
 @theme inline {
@@ -166,6 +174,45 @@ body {
 
 button {
   cursor: pointer;
+}
+
+.round-start-action {
+  border: 1px solid #1d6041;
+  background-color: #23734f;
+  color: #ffffff;
+  box-shadow: 0 4px 0 #154830;
+}
+
+.round-start-action:hover {
+  background-color: #1d6041;
+}
+
+.round-start-action:disabled,
+.round-start-action:disabled:hover {
+  border-color: #b8b8b8;
+  background-color: #d4d4d4;
+  color: #686868;
+  box-shadow: none;
+  transform: none;
+}
+
+.theme-dark .round-start-action {
+  border-color: #52c78e;
+  background-color: #23734f;
+  color: #ffffff;
+  box-shadow: 0 4px 0 #123d2a;
+}
+
+.theme-dark .round-start-action:hover {
+  background-color: #2b8159;
+}
+
+.theme-dark .round-start-action:disabled,
+.theme-dark .round-start-action:disabled:hover {
+  border-color: #4a4a4a;
+  background-color: #303030;
+  color: #8f8f8f;
+  box-shadow: none;
 }
 
 .app-logo-mark {
@@ -244,6 +291,14 @@ button {
   --lesson-marker-border: #4a4a4a;
   --lesson-marker-active: #f5f5f5;
   --lesson-marker-complete-background: #2a2a2a;
+  --statistics-series-1: #c2b4ff;
+  --statistics-series-2: #67d5ff;
+  --statistics-series-3: #ff9db8;
+  --statistics-series-4: #69dfb8;
+  --statistics-series-5: #ffc76e;
+  --statistics-series-6: #aebcff;
+  --statistics-series-7: #e7a4ff;
+  --statistics-series-8: #93d2e8;
 }
 
 .theme-light {
@@ -375,6 +430,30 @@ button {
   border-color: #3f7654;
   background-color: #173b28;
   color: #d9fbe4;
+}
+
+.quiz-result-yar {
+  border-color: #8bc8a3;
+  background-color: #e5f7eb;
+  color: #1d693c;
+}
+
+.quiz-result-shagal {
+  border-color: #e2a5b1;
+  background-color: #fff0f3;
+  color: #8a2438;
+}
+
+.theme-dark .quiz-result-badge.quiz-result-yar {
+  border-color: #55b879;
+  background-color: #133d28;
+  color: #d5ffe1;
+}
+
+.theme-dark .quiz-result-badge.quiz-result-shagal {
+  border-color: #d15b73;
+  background-color: #4a1420;
+  color: #ffe0e6;
 }
 
 .theme-dark :is(

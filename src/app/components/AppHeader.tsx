@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/", label: "학습하기" },
   { href: "/progress", label: "진도 체크" },
   { href: "/worksheets", label: "학습지" },
+  { href: "/statistics", label: "통계" },
 ] as const;
 
 function isCurrentPath(pathname: string, href: (typeof NAV_ITEMS)[number]["href"]) {
@@ -44,7 +45,7 @@ export default function AppHeader() {
 
         <nav
           aria-label="주요 메뉴"
-          className="col-span-2 row-start-2 grid grid-cols-3 gap-2 sm:ml-auto sm:flex"
+          className="col-span-2 row-start-2 grid grid-cols-4 gap-2 sm:ml-auto sm:flex"
         >
           {NAV_ITEMS.map(({ href, label }) => {
             const isCurrent = isCurrentPath(pathname, href);
