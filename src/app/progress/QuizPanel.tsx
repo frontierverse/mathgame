@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import QuizCountdown from "./QuizCountdown";
 import QuizDetail from "./QuizDetail";
 import QuizFlipCard from "./QuizFlipCard";
 import type { QuizMineralStage } from "./quizData";
@@ -17,6 +18,9 @@ type QuizPanelProps = {
   counts: number[];
   diamondCountLimit?: number;
   navigationQuizIndexes?: readonly number[];
+  timeLimitSeconds?: number;
+  startedAtPerformanceMs?: number;
+  onTimeUp?: () => void;
   onAward: (stage: QuizMineralStage) => void;
   onUndo?: () => void;
   onNavigate?: (quizIndex: number) => void;
@@ -33,12 +37,17 @@ export default function QuizPanel({
   counts,
   diamondCountLimit,
   navigationQuizIndexes,
+  timeLimitSeconds,
+  startedAtPerformanceMs,
+  onTimeUp,
   onAward,
   onUndo,
   onNavigate,
   onClose,
 }: QuizPanelProps) {
   const [entered, setEntered] = useState(false);
+  const showTimer =
+    timeLimitSeconds !== undefined && startedAtPerformanceMs !== undefined;
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setEntered(true));
@@ -90,13 +99,30 @@ export default function QuizPanel({
       quizIndex={quizIndex}
       answerText={answerText}
       entered={entered}
+      cornerAccessory={
+        showTimer ? (
+          <QuizCountdown
+            durationSeconds={timeLimitSeconds}
+            startedAtPerformanceMs={startedAtPerformanceMs}
+            onExpire={onTimeUp}
+          />
+        ) : undefined
+      }
       faceClassName="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-[var(--control-border-active)] bg-[var(--surface)] p-6 shadow-[0_16px_40px_rgba(73,53,96,0.16)] sm:p-7"
     >
-      <div className="min-w-0 pr-10" role="status" aria-live="polite">
-        <p className="text-[11px] font-black tracking-[0.16em] text-[var(--lesson-accent)]">
+      <div
+        className="min-w-0 pr-10"
+        role="status"
+        aria-live="polite"
+      >
+        <p
+          className={`${showTimer ? "pr-20" : ""} text-[11px] font-black tracking-[0.16em] text-[var(--lesson-accent)]`}
+        >
           QUIZ {quizIndex + 1}
         </p>
-        <h2 className="mt-1 truncate text-3xl font-black tracking-[-0.04em] text-[var(--foreground)]">
+        <h2
+          className={`${showTimer ? "mt-4" : "mt-1"} truncate text-3xl font-black tracking-[-0.04em] text-[var(--foreground)]`}
+        >
           {name}
         </h2>
       </div>

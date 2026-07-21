@@ -12,6 +12,7 @@ type QuizFlipCardProps = {
   answerText?: string | null;
   entered: boolean;
   faceClassName: string;
+  cornerAccessory?: ReactNode;
   children: ReactNode;
 };
 
@@ -57,6 +58,7 @@ export default function QuizFlipCard({
   answerText,
   entered,
   faceClassName,
+  cornerAccessory,
   children,
 }: QuizFlipCardProps) {
   const [showingAnswer, setShowingAnswer] = useState(false);
@@ -85,7 +87,7 @@ export default function QuizFlipCard({
   return (
     <aside
       id={id}
-      className="min-w-0 max-w-full [perspective:1200px]"
+      className="relative min-w-0 max-w-full [perspective:1200px]"
       aria-label={`${ariaLabel}${showingAnswer ? " 정답" : ""}`}
       style={{
         opacity: entered ? 1 : 0,
@@ -93,6 +95,9 @@ export default function QuizFlipCard({
         transition: "opacity 300ms, transform 300ms",
       }}
     >
+      {cornerAccessory ? (
+        <span className="absolute right-16 top-4 z-20">{cornerAccessory}</span>
+      ) : null}
       <div
         className="grid transition-transform duration-500 ease-[cubic-bezier(0.22,0.72,0.24,1)] motion-reduce:transition-none"
         style={{
@@ -127,11 +132,15 @@ export default function QuizFlipCard({
           />
 
           <div className="flex min-h-[360px] flex-col">
-            <p className="pr-10 text-[11px] font-black tracking-[0.16em] text-[var(--lesson-accent)]">
+            <p
+              className={`${cornerAccessory ? "pr-28" : "pr-10"} text-[11px] font-black tracking-[0.16em] text-[var(--lesson-accent)]`}
+            >
               QUIZ {quizIndex + 1}
             </p>
             {quiz ? (
-              <p className="mt-1 pr-10 text-xs font-bold text-[var(--muted)]">
+              <p
+                className={`${cornerAccessory ? "mt-4" : "mt-1"} pr-10 text-xs font-bold text-[var(--muted)]`}
+              >
                 {quiz.gradeLabel} · {quiz.semesterLabel} · {quiz.unitTitle} ·{" "}
                 {quiz.subunitTitle}
               </p>

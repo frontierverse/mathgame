@@ -19,6 +19,12 @@ import {
 } from "./quizData";
 import { getMineralInventory } from "./quizProgress";
 import {
+  DEFAULT_QUIZ_TIME_LIMIT_SECONDS,
+  readStoredQuizTimeLimitSeconds,
+  storeQuizTimeLimitSeconds,
+  timeoutStageFor,
+} from "./quizTimer";
+import {
   canStudentSolveQuiz,
   clearRandomQuizRoundQueue,
   EMPTY_RANDOM_QUIZ_QUEUE_STATE,
@@ -40,6 +46,19 @@ const EMPTY_QUIZ_INDEXES: readonly number[] = [];
 const ROUND_IDS = CURRICULUM_QUIZ_ROUNDS.map(({ id }) => id);
 const ROUND_THREE_ID = "round-m1-s1-u1-su3";
 type Student = { name: string; age: number | null };
+type DirectQuizAttempt = {
+  attemptId: string;
+  studentName: string;
+  quizIndex: number;
+  quizId: string;
+  roundId: string;
+  questionText: string;
+  startedAt: string;
+  startedAtPerformanceMs: number;
+  timeLimitSeconds: number;
+  resetGeneration: number;
+  studentResetGeneration: number;
+};
 
 function objectParticleFor(word: string) {
   const lastCharCode = word.charCodeAt(word.length - 1) - 0xac00;
@@ -116,6 +135,10 @@ export default function StudentRoster({
     () => CURRICULUM_QUIZ_ROUNDS[0]?.id ?? "round-1",
   );
   const [roundSettingsOpen, setRoundSettingsOpen] = useState(false);
+  const [quizTimeLimitSeconds, setQuizTimeLimitSeconds] = useState(
+    DEFAULT_QUIZ_TIME_LIMIT_SECONDS,
+  );
+  const [quizTimeLimitReady, setQuizTimeLimitReady] = useState(false);
   const [selectedStudentIndex, setSelectedStudentIndex] = useState(
     () =>
       defaultStudentEntries[0]?.originalIndex ??
@@ -123,6 +146,8 @@ export default function StudentRoster({
       0,
   );
   const [openQuizIndex, setOpenQuizIndex] = useState<number | null>(null);
+  const [openDirectAttempt, setOpenDirectAttempt] =
+    useState<DirectQuizAttempt | null>(null);
   const [openRandomAssignment, setOpenRandomAssignment] = useState<{
     attemptId: string;
     quizIndex: number;
@@ -132,6 +157,9 @@ export default function StudentRoster({
     questionText: string;
     startedAt: string;
     startedAtPerformanceMs: number;
+    timeLimitSeconds: number;
+    resetGeneration: number;
+    studentResetGeneration: number;
   } | null>(null);
   const [openDiamond, setOpenDiamond] = useState<{
     studentIndex: number;
@@ -146,9 +174,12 @@ export default function StudentRoster({
     number | null
   >(null);
   const completingRandomQuizRef = useRef(false);
-  const recordQuizAttempt = useQuizAttemptRecorder();
+  const completingSelectedQuizRef = useRef(false);
+  const { recordQuizAttempt, withQuizAttemptReset } = useQuizAttemptRecorder();
   const {
     progress,
+    resetGenerations,
+    studentResetGenerations,
     isReady: progressReady,
     awardQuizStage,
     undoQuiz,
@@ -234,7 +265,11 @@ export default function StudentRoster({
     randomQueueState,
     selectedRound?.id,
   ]);
-  const sharedQueueReady = progressReady && randomQueueReady && roundAssignmentsReady;
+  const sharedQueueReady =
+    progressReady &&
+    randomQueueReady &&
+    roundAssignmentsReady &&
+    quizTimeLimitReady;
   const hasRemainingSharedQuiz = useMemo(
     () =>
       activeQuizIndexes.some((quizIndex) =>
@@ -248,6 +283,20 @@ export default function StudentRoster({
     sharedQueueReady &&
     currentRoundParticipantNames.length > 0 &&
     !hasRemainingSharedQuiz;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setQuizTimeLimitSeconds(readStoredQuizTimeLimitSeconds());
+      setQuizTimeLimitReady(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!quizTimeLimitReady) return;
+    storeQuizTimeLimitSeconds(quizTimeLimitSeconds);
+  }, [quizTimeLimitReady, quizTimeLimitSeconds]);
 
   useEffect(() => {
     let cancelled = false;
@@ -298,6 +347,78 @@ export default function StudentRoster({
     }
   }, [randomQueueReady, randomQueueState]);
 
+  const createDirectQuizAttempt = useCallback(
+    (studentName: string, quizIndex: number): DirectQuizAttempt | null => {
+      if (!progressReady || !quizTimeLimitReady) return null;
+
+      const quiz = getQuizForIndex(quizIndex);
+      const round = CURRICULUM_QUIZ_ROUNDS.find(({ quizIndexes }) =>
+        quizIndexes.includes(quizIndex),
+      );
+      if (!quiz || !round) return null;
+
+      return {
+        attemptId: globalThis.crypto.randomUUID(),
+        studentName,
+        quizIndex,
+        quizId: quiz.id,
+        roundId: round.id,
+        questionText: quiz.question,
+        startedAt: new Date().toISOString(),
+        startedAtPerformanceMs: performance.now(),
+        timeLimitSeconds: quizTimeLimitSeconds,
+        resetGeneration: resetGenerations[quizIndex] ?? 0,
+        studentResetGeneration:
+          studentResetGenerations[studentName]?.[quizIndex] ?? 0,
+      };
+    },
+    [
+      progressReady,
+      quizTimeLimitReady,
+      quizTimeLimitSeconds,
+      resetGenerations,
+      studentResetGenerations,
+    ],
+  );
+
+  useEffect(() => {
+    const directAttemptIsStale =
+      openDirectAttempt &&
+      ((resetGenerations[openDirectAttempt.quizIndex] ?? 0) !==
+        openDirectAttempt.resetGeneration ||
+        (studentResetGenerations[openDirectAttempt.studentName]?.[
+          openDirectAttempt.quizIndex
+        ] ?? 0) !== openDirectAttempt.studentResetGeneration);
+    const randomAssignmentIsStale =
+      openRandomAssignment &&
+      ((resetGenerations[openRandomAssignment.quizIndex] ?? 0) !==
+        openRandomAssignment.resetGeneration ||
+        (studentResetGenerations[openRandomAssignment.studentName]?.[
+          openRandomAssignment.quizIndex
+        ] ?? 0) !== openRandomAssignment.studentResetGeneration);
+    if (!directAttemptIsStale && !randomAssignmentIsStale) return;
+
+    const timer = window.setTimeout(() => {
+      if (directAttemptIsStale) {
+        setOpenQuizIndex(null);
+        setOpenDirectAttempt(null);
+        completingSelectedQuizRef.current = false;
+      }
+      if (randomAssignmentIsStale) {
+        setAutoAdvanceAfterQuizIndex(null);
+        setOpenRandomAssignment(null);
+        completingRandomQuizRef.current = false;
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    openDirectAttempt,
+    openRandomAssignment,
+    resetGenerations,
+    studentResetGenerations,
+  ]);
+
   const toggleShowAllStudents = useCallback(() => {
     const nextShowAllStudents = !showAllStudents;
     const nextStudentEntries = nextShowAllStudents
@@ -314,21 +435,25 @@ export default function StudentRoster({
         : (nextStudentEntries[0]?.originalIndex ?? 0),
     );
     setOpenQuizIndex(null);
+    setOpenDirectAttempt(null);
     setOpenRandomAssignment(null);
     setAutoAdvanceAfterQuizIndex(null);
     setOpenDiamond(null);
     setQueueAnnouncement("");
+    completingSelectedQuizRef.current = false;
   }, [allStudentEntries, defaultStudentEntries, selectedStudentIndex, showAllStudents]);
 
   const selectRound = useCallback((roundId: string) => {
     if (!CURRICULUM_QUIZ_ROUNDS.some(({ id }) => id === roundId)) return;
     setSelectedRoundId(roundId);
     setOpenQuizIndex(null);
+    setOpenDirectAttempt(null);
     setOpenRandomAssignment(null);
     setAutoAdvanceAfterQuizIndex(null);
     setOpenDiamond(null);
     setQueueAnnouncement("");
     completingRandomQuizRef.current = false;
+    completingSelectedQuizRef.current = false;
   }, []);
 
   const changeRoundAssignment = useCallback(
@@ -386,9 +511,29 @@ export default function StudentRoster({
     [openRandomAssignment, saveRoundAssignment, selectedRoundId],
   );
 
+  const undoQuizWithLinkedAttempts = useCallback(
+    async (studentName: string, quizIndex: number) => {
+      const currentCount = progress[studentName]?.[quizIndex] ?? 0;
+      if (currentCount <= 0) return;
+
+      await withQuizAttemptReset(
+        { studentName, quizIndexes: [quizIndex] },
+        async () => {
+          if (!(await undoQuiz(studentName, quizIndex))) {
+            throw new Error("Quiz progress undo failed.");
+          }
+        },
+      );
+    },
+    [progress, undoQuiz, withQuizAttemptReset],
+  );
+
   const resetRoundProgress = useCallback(
     async (round: CurriculumQuizRound) => {
-      await resetQuizRound(round);
+      await withQuizAttemptReset(
+        { roundId: round.id, quizIndexes: round.quizIndexes },
+        () => resetQuizRound(round),
+      );
       setRandomQueueState((current) => {
         if (!(round.id in current.rounds)) return current;
         const nextRounds = { ...current.rounds };
@@ -396,8 +541,16 @@ export default function StudentRoster({
         return { ...current, rounds: nextRounds };
       });
 
-      if (selectedRoundId === round.id) {
+      if (
+        openQuizIndex !== null &&
+        round.quizIndexes.includes(openQuizIndex)
+      ) {
         setOpenQuizIndex(null);
+        setOpenDirectAttempt(null);
+        completingSelectedQuizRef.current = false;
+      }
+
+      if (selectedRoundId === round.id) {
         setOpenRandomAssignment(null);
         setAutoAdvanceAfterQuizIndex(null);
         setOpenDiamond(null);
@@ -405,10 +558,14 @@ export default function StudentRoster({
         completingRandomQuizRef.current = false;
       }
     },
-    [resetQuizRound, selectedRoundId],
+    [openQuizIndex, resetQuizRound, selectedRoundId, withQuizAttemptReset],
   );
 
-  const closePanel = useCallback(() => setOpenQuizIndex(null), []);
+  const closePanel = useCallback(() => {
+    setOpenQuizIndex(null);
+    setOpenDirectAttempt(null);
+    completingSelectedQuizRef.current = false;
+  }, []);
   const closeRandomPanel = useCallback(() => {
     setAutoAdvanceAfterQuizIndex(null);
     setOpenRandomAssignment(null);
@@ -418,35 +575,90 @@ export default function StudentRoster({
   const closeDiamond = useCallback(() => setOpenDiamond(null), []);
   const openRoundSettings = useCallback(() => {
     setOpenQuizIndex(null);
+    setOpenDirectAttempt(null);
     setOpenRandomAssignment(null);
     setAutoAdvanceAfterQuizIndex(null);
     setOpenDiamond(null);
     setQueueAnnouncement("");
     completingRandomQuizRef.current = false;
+    completingSelectedQuizRef.current = false;
     setRoundSettingsOpen(true);
   }, []);
   const closeRoundSettings = useCallback(() => setRoundSettingsOpen(false), []);
-  const navigateQuiz = useCallback((quizIndex: number) => setOpenQuizIndex(quizIndex), []);
+  const navigateQuiz = useCallback(
+    (quizIndex: number) => {
+      if (
+        quizIndex === openQuizIndex ||
+        !progressReady ||
+        !quizTimeLimitReady
+      ) {
+        return;
+      }
+
+      const studentName = students[selectedStudentIndex]?.name;
+      const solveCount = studentName
+        ? (progress[studentName]?.[quizIndex] ?? 0)
+        : MAX_SOLVES;
+      setOpenQuizIndex(quizIndex);
+      setOpenDirectAttempt(
+        studentName && solveCount < MAX_SOLVES
+          ? createDirectQuizAttempt(studentName, quizIndex)
+          : null,
+      );
+      completingSelectedQuizRef.current = false;
+    },
+    [
+      createDirectQuizAttempt,
+      openQuizIndex,
+      progress,
+      progressReady,
+      quizTimeLimitReady,
+      selectedStudentIndex,
+      students,
+    ],
+  );
   const openStudentQuiz = useCallback(
     (studentIndex: number, quizIndex: number) => {
       const shouldClose =
         selectedStudentIndex === studentIndex && openQuizIndex === quizIndex;
+      if (!shouldClose && (!progressReady || !quizTimeLimitReady)) return;
+
+      const studentName = students[studentIndex]?.name;
+      const solveCount = studentName
+        ? (progress[studentName]?.[quizIndex] ?? 0)
+        : MAX_SOLVES;
       setSelectedStudentIndex(studentIndex);
       setAutoAdvanceAfterQuizIndex(null);
       setOpenQuizIndex(shouldClose ? null : quizIndex);
+      setOpenDirectAttempt(
+        !shouldClose && studentName && solveCount < MAX_SOLVES
+          ? createDirectQuizAttempt(studentName, quizIndex)
+          : null,
+      );
       setOpenRandomAssignment(null);
       setOpenDiamond(null);
       setQueueAnnouncement("");
+      completingSelectedQuizRef.current = false;
     },
-    [openQuizIndex, selectedStudentIndex],
+    [
+      createDirectQuizAttempt,
+      openQuizIndex,
+      progress,
+      progressReady,
+      quizTimeLimitReady,
+      selectedStudentIndex,
+      students,
+    ],
   );
   const openStudentDiamond = useCallback((studentIndex: number, diamondIndex: number) => {
     setSelectedStudentIndex(studentIndex);
     setAutoAdvanceAfterQuizIndex(null);
     setOpenQuizIndex(null);
+    setOpenDirectAttempt(null);
     setOpenRandomAssignment(null);
     setOpenDiamond({ studentIndex, diamondIndex });
     setQueueAnnouncement("");
+    completingSelectedQuizRef.current = false;
   }, []);
 
   const openSharedQuiz = useCallback(
@@ -518,6 +730,8 @@ export default function StudentRoster({
 
       completingRandomQuizRef.current = false;
       setOpenQuizIndex(null);
+      setOpenDirectAttempt(null);
+      completingSelectedQuizRef.current = false;
       setOpenDiamond(null);
       setOpenRandomAssignment({
         attemptId: globalThis.crypto.randomUUID(),
@@ -528,6 +742,10 @@ export default function StudentRoster({
         questionText: resolvedQuiz.question,
         startedAt: new Date().toISOString(),
         startedAtPerformanceMs: performance.now(),
+        timeLimitSeconds: quizTimeLimitSeconds,
+        resetGeneration: resetGenerations[quizIndex] ?? 0,
+        studentResetGeneration:
+          studentResetGenerations[participant.name]?.[quizIndex] ?? 0,
       });
       setQueueAnnouncement(
         `${quizIndex + 1}번 퀴즈는 ${participant.name.slice(1).trim()} 학생에게 배정됐습니다.`,
@@ -537,10 +755,13 @@ export default function StudentRoster({
       activeQuizIndexes,
       progress,
       randomQuizParticipants,
+      resetGenerations,
+      studentResetGenerations,
       selectedRoundQueue.lastVariantSeedByQuiz,
       selectedRound,
       selectedRoundQueue.lastSolverByQuiz,
       selectedRoundQueue.variantSeedByQuiz,
+      quizTimeLimitSeconds,
       sharedQueueReady,
       validPendingByQuiz,
     ],
@@ -575,7 +796,10 @@ export default function StudentRoster({
     validPendingByQuiz,
   ]);
 
-  const completeSharedQuiz = useCallback((targetStage: QuizMineralStage) => {
+  const completeSharedQuiz = useCallback((
+    requestedStage: QuizMineralStage,
+    completionReason: "answer" | "timeout" = "answer",
+  ) => {
     if (!selectedRound || !openRandomAssignment || completingRandomQuizRef.current) return;
 
     const answeredAt = new Date().toISOString();
@@ -588,18 +812,25 @@ export default function StudentRoster({
       startedAt,
       startedAtPerformanceMs,
       studentName,
+      timeLimitSeconds,
       variantSeed,
+      resetGeneration,
+      studentResetGeneration,
     } = openRandomAssignment;
     if (!canStudentSolveQuiz(progress, studentName, quizIndex)) return;
     const currentStage = progress[studentName]?.[quizIndex] ?? 0;
+    const elapsedMs = Math.max(
+      0,
+      answeredAtPerformanceMs - startedAtPerformanceMs,
+    );
+    const timedOut =
+      completionReason === "timeout" || elapsedMs >= timeLimitSeconds * 1000;
+    const targetStage = timedOut
+      ? timeoutStageFor(currentStage)
+      : requestedStage;
 
     completingRandomQuizRef.current = true;
-    if (!awardQuizStage(studentName, quizIndex, targetStage)) {
-      completingRandomQuizRef.current = false;
-      return;
-    }
-
-    recordQuizAttempt({
+    const recorded = recordQuizAttempt({
       id: attemptId,
       studentName,
       quizId,
@@ -609,13 +840,32 @@ export default function StudentRoster({
       questionText,
       stageBefore: currentStage,
       stageAfter: targetStage,
-      durationMs: Math.max(
-        0,
-        Math.round(answeredAtPerformanceMs - startedAtPerformanceMs),
-      ),
+      durationMs: timedOut
+        ? timeLimitSeconds * 1000
+        : Math.min(timeLimitSeconds * 1000, Math.round(elapsedMs)),
       startedAt,
       answeredAt,
+      completionMode: "random",
+      completionReason: timedOut ? "timeout" : "answer",
+      timeLimitSeconds,
+      resetGeneration,
+      studentResetGeneration,
     });
+    if (!recorded) {
+      setAutoAdvanceAfterQuizIndex(null);
+      setOpenRandomAssignment(null);
+      setQueueAnnouncement("");
+      completingRandomQuizRef.current = false;
+      return;
+    }
+
+    if (!awardQuizStage(studentName, quizIndex, targetStage, { persist: false })) {
+      setAutoAdvanceAfterQuizIndex(null);
+      setOpenRandomAssignment(null);
+      setQueueAnnouncement("");
+      completingRandomQuizRef.current = false;
+      return;
+    }
 
     setRandomQueueState((current) => {
       const roundQueue = getRandomQuizRoundQueue(current, selectedRound.id);
@@ -653,10 +903,23 @@ export default function StudentRoster({
         },
       };
     });
-    setAutoAdvanceAfterQuizIndex(quizIndex);
     const answeredCorrectly =
-      targetStage === MAX_SOLVES || (currentStage > 0 && targetStage > currentStage);
+      !timedOut &&
+      (targetStage === MAX_SOLVES ||
+        (currentStage > 0 && targetStage > currentStage));
     const rewardLabel = answeredCorrectly ? "야르" : "샤갈";
+
+    if (timedOut) {
+      setAutoAdvanceAfterQuizIndex(null);
+      setOpenRandomAssignment(null);
+      completingRandomQuizRef.current = false;
+      setQueueAnnouncement(
+        `${quizIndex + 1}번 퀴즈 시간이 끝났습니다. ${rewardLabel}${objectParticleFor(rewardLabel)} 획득했습니다.`,
+      );
+      return;
+    }
+
+    setAutoAdvanceAfterQuizIndex(quizIndex);
     setQueueAnnouncement(
       `${quizIndex + 1}번 퀴즈에서 ${rewardLabel}${objectParticleFor(rewardLabel)} 획득했습니다. 다음 퀴즈를 추첨합니다.`,
     );
@@ -668,6 +931,10 @@ export default function StudentRoster({
     recordQuizAttempt,
     selectedRound,
   ]);
+
+  const timeoutSharedQuiz = useCallback(() => {
+    completeSharedQuiz(1, "timeout");
+  }, [completeSharedQuiz]);
 
   useEffect(() => {
     if (autoAdvanceAfterQuizIndex === null || !sharedQueueReady) return;
@@ -706,6 +973,129 @@ export default function StudentRoster({
   const selectedStudent = students[selectedStudentIndex] ?? null;
   const selectedName = selectedStudent?.name ?? null;
   const selectedCounts = selectedName ? progress[selectedName] ?? [] : [];
+  const selectedSolveCount =
+    openQuizIndex === null ? MAX_SOLVES : (selectedCounts[openQuizIndex] ?? 0);
+  const selectedQuizTimerActive =
+    openQuizIndex !== null &&
+    openDirectAttempt?.quizIndex === openQuizIndex &&
+    selectedSolveCount < MAX_SOLVES;
+  const completeSelectedQuiz = useCallback((
+    requestedStage: QuizMineralStage,
+    completionReason: "answer" | "timeout" = "answer",
+  ) => {
+    if (
+      openQuizIndex === null ||
+      !openDirectAttempt ||
+      openDirectAttempt.quizIndex !== openQuizIndex ||
+      completingSelectedQuizRef.current
+    ) {
+      return;
+    }
+
+    const {
+      attemptId,
+      studentName,
+      quizId,
+      quizIndex,
+      roundId,
+      questionText,
+      startedAt,
+      startedAtPerformanceMs,
+      timeLimitSeconds,
+      resetGeneration,
+      studentResetGeneration,
+    } = openDirectAttempt;
+    const answeredAt = new Date().toISOString();
+    const elapsedMs = Math.max(0, performance.now() - startedAtPerformanceMs);
+    const currentStage = progress[studentName]?.[quizIndex] ?? 0;
+    const timedOut =
+      completionReason === "timeout" ||
+      elapsedMs >= timeLimitSeconds * 1000;
+    const targetStage = timedOut
+      ? timeoutStageFor(currentStage)
+      : requestedStage;
+
+    completingSelectedQuizRef.current = true;
+    const recorded = recordQuizAttempt({
+      id: attemptId,
+      studentName,
+      quizId,
+      quizIndex,
+      roundId,
+      variantSeed: null,
+      questionText,
+      stageBefore: currentStage,
+      stageAfter: targetStage,
+      durationMs: timedOut
+        ? timeLimitSeconds * 1000
+        : Math.min(timeLimitSeconds * 1000, Math.round(elapsedMs)),
+      startedAt,
+      answeredAt,
+      completionMode: "direct",
+      completionReason: timedOut ? "timeout" : "answer",
+      timeLimitSeconds,
+      resetGeneration,
+      studentResetGeneration,
+    });
+    if (!recorded) {
+      setOpenQuizIndex(null);
+      setOpenDirectAttempt(null);
+      setQueueAnnouncement("");
+      completingSelectedQuizRef.current = false;
+      return;
+    }
+
+    const awarded = awardQuizStage(studentName, quizIndex, targetStage, {
+      persist: false,
+    });
+    if (!awarded) {
+      setOpenQuizIndex(null);
+      setOpenDirectAttempt(null);
+      setQueueAnnouncement("");
+      completingSelectedQuizRef.current = false;
+      return;
+    }
+
+    if (timedOut) {
+      setQueueAnnouncement(
+        `${quizIndex + 1}번 퀴즈 시간이 끝났습니다. 오답으로 기록했습니다.`,
+      );
+      setOpenQuizIndex(null);
+      setOpenDirectAttempt(null);
+      completingSelectedQuizRef.current = false;
+      return;
+    }
+
+    setOpenDirectAttempt(
+      targetStage < MAX_SOLVES
+        ? createDirectQuizAttempt(studentName, quizIndex)
+        : null,
+    );
+    completingSelectedQuizRef.current = false;
+  }, [
+    awardQuizStage,
+    createDirectQuizAttempt,
+    openDirectAttempt,
+    openQuizIndex,
+    progress,
+    recordQuizAttempt,
+  ]);
+  const timeoutSelectedQuiz = useCallback(() => {
+    completeSelectedQuiz(1, "timeout");
+  }, [completeSelectedQuiz]);
+  const undoSelectedQuiz = useCallback(() => {
+    if (!selectedName || openQuizIndex === null) return;
+    void undoQuizWithLinkedAttempts(selectedName, openQuizIndex).catch(
+      () => undefined,
+    );
+    setOpenQuizIndex(null);
+    setOpenDirectAttempt(null);
+    completingSelectedQuizRef.current = false;
+  }, [
+    openQuizIndex,
+    selectedName,
+    undoQuizWithLinkedAttempts,
+  ]);
   const randomAssignedParticipant = openRandomAssignment
     ? randomQuizParticipants.find(({ name }) => name === openRandomAssignment.studentName) ?? null
     : null;
@@ -734,9 +1124,13 @@ export default function StudentRoster({
   );
   const undoDiamondQuiz = useCallback(
     (quizIndex: number) => {
-      if (diamondStudentName) undoQuiz(diamondStudentName, quizIndex);
+      if (diamondStudentName) {
+        void undoQuizWithLinkedAttempts(diamondStudentName, quizIndex).catch(
+          () => undefined,
+        );
+      }
     },
-    [diamondStudentName, undoQuiz],
+    [diamondStudentName, undoQuizWithLinkedAttempts],
   );
 
   return (
@@ -791,14 +1185,27 @@ export default function StudentRoster({
               <div className="min-w-0">
                 {selectedName && openQuizIndex !== null ? (
                   <QuizPanel
+                    key={
+                      openDirectAttempt?.attemptId ??
+                      `${selectedName}-${openQuizIndex}-complete`
+                    }
                     name={selectedName.slice(1).trim() || selectedName}
                     quizIndex={openQuizIndex}
                     counts={selectedCounts}
                     navigationQuizIndexes={cumulativeQuizIndexes}
-                    onAward={(stage) =>
-                      awardQuizStage(selectedName, openQuizIndex, stage)
+                    timeLimitSeconds={
+                      selectedQuizTimerActive
+                        ? openDirectAttempt.timeLimitSeconds
+                        : undefined
                     }
-                    onUndo={() => undoQuiz(selectedName, openQuizIndex)}
+                    startedAtPerformanceMs={
+                      selectedQuizTimerActive
+                        ? openDirectAttempt.startedAtPerformanceMs
+                        : undefined
+                    }
+                    onTimeUp={timeoutSelectedQuiz}
+                    onAward={completeSelectedQuiz}
+                    onUndo={undoSelectedQuiz}
                     onNavigate={navigateQuiz}
                     onClose={closePanel}
                   />
@@ -820,6 +1227,11 @@ export default function StudentRoster({
                     questionText={openRandomAssignment.questionText}
                     answerText={randomAssignedContent.answer}
                     counts={randomAssignedCounts}
+                    timeLimitSeconds={openRandomAssignment.timeLimitSeconds}
+                    startedAtPerformanceMs={
+                      openRandomAssignment.startedAtPerformanceMs
+                    }
+                    onTimeUp={timeoutSharedQuiz}
                     onAward={completeSharedQuiz}
                     onClose={closeRandomPanel}
                   />
@@ -867,9 +1279,6 @@ export default function StudentRoster({
                           ? "라운드 완료"
                           : "라운드 시작"}
                     </button>
-                    <p className="sr-only" role="status" aria-live="polite">
-                      {queueAnnouncement}
-                    </p>
                   </section>
                 )}
               </div>
@@ -908,6 +1317,9 @@ export default function StudentRoster({
             </div>
           </div>
         )}
+        <p className="sr-only" role="status" aria-live="polite">
+          {queueAnnouncement}
+        </p>
       </section>
 
       <RoundSettingsModal
@@ -918,6 +1330,8 @@ export default function StudentRoster({
         students={roundSettingsStudents}
         progress={progress}
         failedRoundIds={failedRoundIds}
+        quizTimeLimitSeconds={quizTimeLimitSeconds}
+        onChangeQuizTimeLimitSeconds={setQuizTimeLimitSeconds}
         onSelectRound={selectRound}
         onChangeAssignment={changeRoundAssignment}
         onResetRound={resetRoundProgress}

@@ -33,7 +33,7 @@ export class QuizAttemptListError extends Error {
   }
 }
 
-function parseAttempt(row: unknown): QuizSolveAttempt | null {
+export function parseQuizSolveAttempt(row: unknown): QuizSolveAttempt | null {
   if (!row || typeof row !== "object" || Array.isArray(row)) return null;
   const attempt = row as AttemptRow;
   const variantSeed = attempt.variantSeed;
@@ -97,7 +97,7 @@ export async function getQuizSolveAttempts() {
     }
 
     rows.forEach((row) => {
-      const attempt = parseAttempt(row);
+      const attempt = parseQuizSolveAttempt(row);
       if (attempt) attempts.push(attempt);
     });
     if (rows.length < PAGE_SIZE) return attempts;

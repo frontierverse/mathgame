@@ -1,18 +1,22 @@
-import type { QuizSolveAttempt } from "../data/quizAttempts";
+import type { QuizStatisticsRecord } from "./quizStatistics";
 
 type StudentSolveTimeChartProps = {
-  attempts: readonly QuizSolveAttempt[];
+  records: readonly QuizStatisticsRecord[];
 };
 
 type Aggregate = {
-  count: number;
+  legacyCount: number;
+  measuredCount: number;
+  recordCount: number;
   totalDurationMs: number;
 };
 
 type ChartPoint = {
-  attemptCount: number;
   averageSeconds: number;
+  legacyCount: number;
+  measuredCount: number;
   quizIndex: number;
+  recordCount: number;
   x: number;
   y: number;
 };
@@ -31,7 +35,7 @@ const PLOT_BOTTOM = 298;
 const PLOT_LEFT = 66;
 const PLOT_RIGHT = 24;
 const MIN_PLOT_WIDTH = 720;
-const QUIZ_GAP = 72;
+const QUIZ_GAP = 64;
 
 const SERIES_COLORS = [
   "var(--statistics-series-1)",
@@ -79,18 +83,30 @@ function formatAverageSeconds(value: number) {
 }
 
 function buildLinePath(points: readonly (ChartPoint | null)[]) {
-  return points
-    .filter((point): point is ChartPoint => point !== null)
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
-    .join(" ");
+  let path = "";
+  let hasOpenSegment = false;
+
+  points.forEach((point) => {
+    if (!point) {
+      hasOpenSegment = false;
+      return;
+    }
+
+    path += `${path ? " " : ""}${hasOpenSegment ? "L" : "M"} ${point.x} ${point.y}`;
+    hasOpenSegment = true;
+  });
+
+  return path;
 }
 
 function PointMark({
+  legacy = false,
   shapeIndex,
   title,
   x,
   y,
 }: {
+  legacy?: boolean;
   shapeIndex: number;
   title?: string;
   x: number;
@@ -102,6 +118,16 @@ function PointMark({
   return (
     <g transform={`translate(${x} ${y})`}>
       {title ? <title>{title}</title> : null}
+      {legacy ? (
+        <circle
+          r="7"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          strokeDasharray="2 2"
+          opacity="0.85"
+        />
+      ) : null}
       {shape === 0 ? (
         <circle r="4.5" fill={fill} stroke="currentColor" strokeWidth="2.25" />
       ) : shape === 1 ? (
@@ -169,31 +195,35 @@ function PointMark({
 }
 
 export default function StudentSolveTimeChart({
-  attempts,
+  records,
 }: StudentSolveTimeChartProps) {
   const aggregatesByStudent = new Map<string, Map<number, Aggregate>>();
   const quizIndexSet = new Set<number>();
 
-  attempts.forEach((attempt) => {
+  records.forEach((record) => {
     if (
-      !Number.isInteger(attempt.quizIndex) ||
-      !Number.isFinite(attempt.durationMs) ||
-      attempt.durationMs < 0
+      !Number.isInteger(record.quizIndex) ||
+      !Number.isFinite(record.durationMs) ||
+      record.durationMs < 0
     ) {
       return;
     }
 
-    quizIndexSet.add(attempt.quizIndex);
+    quizIndexSet.add(record.quizIndex);
     const studentAggregates =
-      aggregatesByStudent.get(attempt.studentName) ?? new Map<number, Aggregate>();
-    const aggregate = studentAggregates.get(attempt.quizIndex) ?? {
-      count: 0,
+      aggregatesByStudent.get(record.studentName) ?? new Map<number, Aggregate>();
+    const aggregate = studentAggregates.get(record.quizIndex) ?? {
+      legacyCount: 0,
+      measuredCount: 0,
+      recordCount: 0,
       totalDurationMs: 0,
     };
-    aggregate.count += 1;
-    aggregate.totalDurationMs += attempt.durationMs;
-    studentAggregates.set(attempt.quizIndex, aggregate);
-    aggregatesByStudent.set(attempt.studentName, studentAggregates);
+    aggregate.recordCount += 1;
+    aggregate.totalDurationMs += record.durationMs;
+    if (record.timingSource === "legacy") aggregate.legacyCount += 1;
+    else aggregate.measuredCount += 1;
+    studentAggregates.set(record.quizIndex, aggregate);
+    aggregatesByStudent.set(record.studentName, studentAggregates);
   });
 
   const quizIndices = Array.from(quizIndexSet).sort((a, b) => a - b);
@@ -204,8 +234,8 @@ export default function StudentSolveTimeChart({
   if (quizIndices.length === 0 || studentNames.length === 0) return null;
 
   const averages = Array.from(aggregatesByStudent.values()).flatMap((byQuiz) =>
-    Array.from(byQuiz.values(), ({ count, totalDurationMs }) =>
-      totalDurationMs / count / 1000,
+    Array.from(byQuiz.values(), ({ recordCount, totalDurationMs }) =>
+      totalDurationMs / recordCount / 1000,
     ),
   );
   const maximumSeconds = Math.max(...averages);
@@ -237,11 +267,14 @@ export default function StudentSolveTimeChart({
         const aggregate = byQuiz?.get(quizIndex);
         if (!aggregate) return null;
 
-        const averageSeconds = aggregate.totalDurationMs / aggregate.count / 1000;
+        const averageSeconds =
+          aggregate.totalDurationMs / aggregate.recordCount / 1000;
         return {
-          attemptCount: aggregate.count,
           averageSeconds,
+          legacyCount: aggregate.legacyCount,
+          measuredCount: aggregate.measuredCount,
           quizIndex,
+          recordCount: aggregate.recordCount,
           x: xForPosition(quizPosition),
           y: yForSeconds(averageSeconds),
         };
@@ -282,6 +315,9 @@ export default function StudentSolveTimeChart({
             {student.displayName}
           </span>
         ))}
+        <span className="text-xs font-bold text-[var(--muted)]">
+          점선 = 미측정(0초)
+        </span>
       </div>
 
       <div className="mt-3 overflow-x-auto pb-2">
@@ -405,10 +441,15 @@ export default function StudentSolveTimeChart({
                 point ? (
                   <PointMark
                     key={point.quizIndex}
+                    legacy={point.legacyCount === point.recordCount}
                     shapeIndex={student.shapeIndex}
                     x={point.x}
                     y={point.y}
-                    title={`${student.displayName}: ${point.quizIndex + 1}번, 평균 ${formatAverageSeconds(point.averageSeconds)}초, ${point.attemptCount}회`}
+                    title={
+                      point.measuredCount === 0
+                        ? `${student.displayName}: ${point.quizIndex + 1}번, 0초 · 미측정`
+                        : `${student.displayName}: ${point.quizIndex + 1}번, 평균 ${formatAverageSeconds(point.averageSeconds)}초, 측정 ${point.measuredCount}회`
+                    }
                   />
                 ) : null,
               )}

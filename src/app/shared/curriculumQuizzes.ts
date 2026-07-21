@@ -243,6 +243,42 @@ const quizSetDefinitions: readonly QuizSetDefinition[] = [
         "0의 반대되는 수는 무엇인가요?",
         "0의 반대되는 수를 묻는 고정 문항",
       ),
+      fixedNumberQuestion(
+        "-2는 정수인가요?",
+        "음수의 정수 여부를 묻는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "3/4은 정수인가요?",
+        "분수의 정수 여부를 묻는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "-5/2는 유리수인가요?",
+        "음의 분수의 유리수 여부를 묻는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "2와 5/2 중 큰 수는?",
+        "정수와 양의 분수를 비교하는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "-1/2와 -3/4 중 큰 수는?",
+        "두 음의 분수를 비교하는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "-1, 2/3, 0을 작은 수부터 나열하세요.",
+        "정수와 분수의 대소를 나열하는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "|-7/3|은?",
+        "음의 분수의 절댓값을 묻는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "2/5의 반대되는 수는?",
+        "양의 분수의 반대되는 수를 묻는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "-9/4의 반대되는 수는?",
+        "음의 분수의 반대되는 수를 묻는 고정 문항",
+      ),
     ],
   },
 ];
@@ -300,6 +336,15 @@ const quizAnswersByIndex: Readonly<Partial<Record<number, string>>> = {
   48: "-3",
   49: "7",
   50: "0",
+  51: "네.",
+  52: "아니요.",
+  53: "네.",
+  54: "5/2",
+  55: "-1/2",
+  56: "-1 < 0 < 2/3",
+  57: "7/3",
+  58: "-2/5",
+  59: "9/4",
 };
 
 function requireSubunitContext(subunitId: string) {
@@ -411,6 +456,12 @@ for (let quizIndex = 0; quizIndex < MAX_QUIZ_COUNT; quizIndex += 1) {
   }
 }
 
+if (MAX_QUIZ_COUNT % QUIZZES_PER_ROUND !== 0) {
+  throw new Error(
+    `Registered quiz count must be divisible by ${QUIZZES_PER_ROUND}: ${MAX_QUIZ_COUNT}`,
+  );
+}
+
 export const QUIZZES = Array.from(
   { length: MAX_QUIZ_COUNT },
   (_, quizIndex) => quizzesByIndex.get(quizIndex)?.question ?? String(quizIndex + 1),
@@ -469,7 +520,7 @@ const orderedQuizzes = Array.from({ length: MAX_QUIZ_COUNT }, (_, quizIndex) => 
 
 export const CURRICULUM_QUIZ_ROUNDS: readonly CurriculumQuizRound[] =
   Array.from(
-    { length: Math.floor(orderedQuizzes.length / QUIZZES_PER_ROUND) },
+    { length: orderedQuizzes.length / QUIZZES_PER_ROUND },
     (_, roundIndex) => {
       const quizzes = orderedQuizzes.slice(
         roundIndex * QUIZZES_PER_ROUND,

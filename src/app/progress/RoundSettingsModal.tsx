@@ -6,6 +6,12 @@ import { createPortal } from "react-dom";
 import { type CurriculumQuizRound } from "./quizData";
 import type { QuizProgress } from "./quizProgress";
 import {
+  DEFAULT_QUIZ_TIME_LIMIT_SECONDS,
+  MAX_QUIZ_TIME_LIMIT_SECONDS,
+  MIN_QUIZ_TIME_LIMIT_SECONDS,
+  normalizeQuizTimeLimitSeconds,
+} from "./quizTimer";
+import {
   isRoundComplete,
   type RoundAssignments,
 } from "./RoundToolbar";
@@ -22,9 +28,11 @@ type RoundSettingsModalProps = {
   assignments: RoundAssignments;
   students: readonly RoundStudent[];
   progress: QuizProgress;
+  quizTimeLimitSeconds: number;
   failedRoundIds?: ReadonlySet<string>;
   onSelectRound?: (roundId: string) => void;
   onChangeAssignment: (roundId: string, names: string[]) => void;
+  onChangeQuizTimeLimitSeconds: (seconds: number) => void;
   onResetRound: (round: CurriculumQuizRound) => Promise<void>;
   onRetryAssignment?: (roundId: string) => void;
   onClose: () => void;
@@ -69,9 +77,11 @@ export default function RoundSettingsModal({
   assignments,
   students,
   progress,
+  quizTimeLimitSeconds,
   failedRoundIds,
   onSelectRound,
   onChangeAssignment,
+  onChangeQuizTimeLimitSeconds,
   onResetRound,
   onRetryAssignment,
   onClose,
@@ -79,6 +89,9 @@ export default function RoundSettingsModal({
   const [mounted, setMounted] = useState(false);
   const [editingRoundId, setEditingRoundId] = useState(selectedRoundId);
   const [roundResetState, setRoundResetState] = useState<RoundResetState | null>(null);
+  const [quizTimeLimitDraft, setQuizTimeLimitDraft] = useState(() =>
+    String(quizTimeLimitSeconds),
+  );
   const dialogRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -107,6 +120,16 @@ export default function RoundSettingsModal({
     const timer = window.setTimeout(() => setMounted(true), 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const timer = window.setTimeout(
+      () => setQuizTimeLimitDraft(String(quizTimeLimitSeconds)),
+      0,
+    );
+    return () => window.clearTimeout(timer);
+  }, [open, quizTimeLimitSeconds]);
 
   useEffect(() => {
     if (!open) return;
@@ -194,6 +217,31 @@ export default function RoundSettingsModal({
     }
   };
 
+  const changeQuizTimeLimitDraft = (draft: string) => {
+    setQuizTimeLimitDraft(draft);
+    if (!draft.trim()) return;
+
+    const seconds = Number(draft);
+    if (
+      Number.isInteger(seconds) &&
+      seconds >= MIN_QUIZ_TIME_LIMIT_SECONDS &&
+      seconds <= MAX_QUIZ_TIME_LIMIT_SECONDS &&
+      seconds !== quizTimeLimitSeconds
+    ) {
+      onChangeQuizTimeLimitSeconds(seconds);
+    }
+  };
+
+  const commitQuizTimeLimitDraft = () => {
+    const seconds = normalizeQuizTimeLimitSeconds(
+      quizTimeLimitDraft.trim()
+        ? Number(quizTimeLimitDraft)
+        : DEFAULT_QUIZ_TIME_LIMIT_SECONDS,
+    );
+    setQuizTimeLimitDraft(String(seconds));
+    if (seconds !== quizTimeLimitSeconds) onChangeQuizTimeLimitSeconds(seconds);
+  };
+
   if (!mounted || !open) return null;
 
   return createPortal(
@@ -231,6 +279,36 @@ export default function RoundSettingsModal({
             ×
           </button>
         </header>
+
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface-raised)] px-4 py-2.5 sm:px-5">
+          <label
+            htmlFor="quiz-time-limit-seconds"
+            className="text-xs font-black text-[var(--foreground)]"
+          >
+            제한 시간
+          </label>
+          <div className="flex items-center gap-1.5">
+            <input
+              id="quiz-time-limit-seconds"
+              type="number"
+              inputMode="numeric"
+              min={MIN_QUIZ_TIME_LIMIT_SECONDS}
+              max={MAX_QUIZ_TIME_LIMIT_SECONDS}
+              step={1}
+              value={quizTimeLimitDraft}
+              onChange={(event) => changeQuizTimeLimitDraft(event.target.value)}
+              onBlur={commitQuizTimeLimitDraft}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                commitQuizTimeLimitDraft();
+              }}
+              aria-label="퀴즈 제한 시간(초)"
+              className="h-9 w-20 rounded-lg border border-[var(--control-border)] bg-[var(--surface)] px-2 text-right text-sm font-black tabular-nums text-[var(--foreground)] outline-none transition focus:border-[var(--lesson-accent)] focus:ring-2 focus:ring-[var(--lesson-accent)]/20"
+            />
+            <span className="text-xs font-black text-[var(--muted)]">초</span>
+          </div>
+        </div>
 
         <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)] md:grid-rows-1">
           <div className="min-h-0 overflow-y-auto border-b border-[var(--border)] p-3 md:border-b-0 md:border-r sm:p-4">

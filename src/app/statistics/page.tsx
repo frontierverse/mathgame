@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import {
-  getQuizSolveAttempts,
-  type QuizSolveAttempt,
-} from "../data/quizAttempts";
+import type { QuizSolveAttempt } from "../data/quizAttempts";
+import type { QuizProgressEntry } from "../data/quizProgress";
+import { getQuizStatisticsSnapshot } from "../data/quizStatisticsSnapshot";
 import QuizQuestionText from "../progress/QuizQuestionText";
 import {
   getQuizForIndex,
   getQuizRoundById,
 } from "../shared/curriculumQuizzes";
 import AttemptSyncStatus from "./AttemptSyncStatus";
+import {
+  buildQuizStatisticsRecords,
+  type QuizStatisticsRecord,
+} from "./quizStatistics";
 import StudentSolveTimeChart from "./StudentSolveTimeChart";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +23,7 @@ export const metadata: Metadata = {
   description: "학생별 퀴즈 풀이 시간과 결과를 확인합니다.",
 };
 
-const ATTEMPTS_PER_PAGE = 10;
+const RECORDS_PER_PAGE = 10;
 
 type StatisticsPageProps = {
   searchParams: Promise<{
@@ -58,11 +61,11 @@ function formatAnsweredAt(value: string) {
   return Number.isFinite(date.getTime()) ? dateTimeFormatter.format(date) : "-";
 }
 
-function averageDuration(attempts: readonly QuizSolveAttempt[]) {
-  if (attempts.length === 0) return 0;
+function averageDuration(records: readonly QuizStatisticsRecord[]) {
+  if (records.length === 0) return 0;
   return Math.round(
-    attempts.reduce((sum, attempt) => sum + attempt.durationMs, 0) /
-      attempts.length,
+    records.reduce((sum, record) => sum + record.durationMs, 0) /
+      records.length,
   );
 }
 
@@ -86,37 +89,62 @@ export default async function StatisticsPage({
 }: StatisticsPageProps) {
   const requestedPage = readPageNumber((await searchParams).page);
   let attempts: QuizSolveAttempt[] = [];
+  let progressEntries: QuizProgressEntry[] = [];
   let errorMessage: string | null = null;
 
   try {
-    attempts = await getQuizSolveAttempts();
+    const snapshot = await getQuizStatisticsSnapshot();
+    attempts = snapshot.attempts;
+    progressEntries = snapshot.progressEntries;
   } catch {
     errorMessage = "통계를 불러오지 못했습니다.";
   }
 
-  const attemptsByStudent = new Map<string, QuizSolveAttempt[]>();
-  attempts.forEach((attempt) => {
-    const studentAttempts = attemptsByStudent.get(attempt.studentName) ?? [];
-    studentAttempts.push(attempt);
-    attemptsByStudent.set(attempt.studentName, studentAttempts);
+  const records = buildQuizStatisticsRecords(attempts, progressEntries);
+  const recordsByStudent = new Map<string, QuizStatisticsRecord[]>();
+  records.forEach((record) => {
+    const studentRecords = recordsByStudent.get(record.studentName) ?? [];
+    studentRecords.push(record);
+    recordsByStudent.set(record.studentName, studentRecords);
   });
-  const studentSummaries = Array.from(attemptsByStudent, ([studentName, rows]) => ({
-    studentName,
-    attempts: rows,
-    correctCount: rows.filter(({ outcome }) => outcome === "yar").length,
-    averageDurationMs: averageDuration(rows),
-  })).sort((a, b) =>
+
+  const studentSummaries = Array.from(
+    recordsByStudent,
+    ([studentName, rows]) => {
+      const measuredRecords = rows.filter(
+        ({ timingSource }) => timingSource === "measured",
+      );
+      return {
+        studentName,
+        records: rows,
+        measuredCount: measuredRecords.length,
+        legacyCount: rows.length - measuredRecords.length,
+        correctCount: measuredRecords.filter(({ outcome }) => outcome === "yar")
+          .length,
+        averageDurationMs: averageDuration(rows),
+        latestAnsweredAt:
+          measuredRecords.find(({ answeredAt }) => answeredAt !== null)
+            ?.answeredAt ?? null,
+      };
+    },
+  ).sort((a, b) =>
     displayName(a.studentName).localeCompare(displayName(b.studentName), "ko"),
   );
-  const correctCount = attempts.filter(({ outcome }) => outcome === "yar").length;
+  const measuredRecords = records.filter(
+    ({ timingSource }) => timingSource === "measured",
+  );
+  const legacyCount = records.length - measuredRecords.length;
+  const correctCount = measuredRecords.filter(({ outcome }) => outcome === "yar").length;
   const correctPercent =
-    attempts.length === 0 ? 0 : Math.round((correctCount / attempts.length) * 100);
-  const totalPages = Math.max(1, Math.ceil(attempts.length / ATTEMPTS_PER_PAGE));
+    measuredRecords.length === 0
+      ? null
+      : Math.round((correctCount / measuredRecords.length) * 100);
+  const totalPages = Math.max(1, Math.ceil(records.length / RECORDS_PER_PAGE));
   const currentPage = Math.min(requestedPage, totalPages);
-  const attemptStartIndex = (currentPage - 1) * ATTEMPTS_PER_PAGE;
-  const visibleAttempts = attempts.slice(
-    attemptStartIndex,
-    attemptStartIndex + ATTEMPTS_PER_PAGE,
+  const recordStartIndex = (currentPage - 1) * RECORDS_PER_PAGE;
+  const visibleRecords = records.slice(
+    recordStartIndex,
+    recordStartIndex + RECORDS_PER_PAGE,
   );
 
   return (
@@ -133,17 +161,29 @@ export default async function StatisticsPage({
             <p className="mt-6 rounded-2xl border border-[#efbcc2] bg-[#fdedef] px-4 py-3 text-sm font-bold text-[#a5384a]">
               {errorMessage}
             </p>
-          ) : attempts.length === 0 ? (
+          ) : records.length === 0 ? (
             <p className="mt-6 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-raised)] px-4 py-10 text-center text-sm font-bold text-[var(--muted)]">
               아직 기록 없음
             </p>
           ) : (
             <>
               <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <StatCard label="풀이" value={`${attempts.length}회`} />
+                <StatCard
+                  label="풀이"
+                  value={`${records.length}회`}
+                  note={`측정 ${measuredRecords.length} · 미측정 ${legacyCount}`}
+                />
                 <StatCard label="학생" value={`${studentSummaries.length}명`} />
-                <StatCard label="정답" value={`${correctPercent}%`} />
-                <StatCard label="평균" value={formatDuration(averageDuration(attempts))} />
+                <StatCard
+                  label="정답(측정)"
+                  value={correctPercent === null ? "—" : `${correctPercent}%`}
+                  note={`${correctCount}/${measuredRecords.length}`}
+                />
+                <StatCard
+                  label="평균"
+                  value={formatDuration(averageDuration(records))}
+                  note={legacyCount > 0 ? "미측정 0초 포함" : "측정"}
+                />
               </div>
 
               <section className="mt-8" aria-labelledby="student-summary-heading">
@@ -151,12 +191,12 @@ export default async function StatisticsPage({
                   학생별
                 </h2>
                 <div className="mt-3 overflow-x-auto rounded-2xl border border-[var(--border)]">
-                  <table className="w-full min-w-[620px] border-collapse text-left text-sm">
+                  <table className="w-full min-w-[660px] border-collapse text-left text-sm">
                     <thead className="bg-[var(--surface-raised)] text-xs text-[var(--muted)]">
                       <tr>
                         <th scope="col" className="px-4 py-3 font-black">학생</th>
                         <th scope="col" className="px-4 py-3 font-black">풀이</th>
-                        <th scope="col" className="px-4 py-3 font-black">정답</th>
+                        <th scope="col" className="px-4 py-3 font-black">정답(측정)</th>
                         <th scope="col" className="px-4 py-3 font-black">평균</th>
                         <th scope="col" className="px-4 py-3 font-black">최근</th>
                       </tr>
@@ -171,16 +211,23 @@ export default async function StatisticsPage({
                             {displayName(summary.studentName)}
                           </th>
                           <td className="px-4 py-3 tabular-nums text-[var(--muted)]">
-                            {summary.attempts.length}회
+                            <span className="block">{summary.records.length}회</span>
+                            {summary.legacyCount > 0 ? (
+                              <span className="mt-0.5 block text-[11px] font-bold">
+                                미측정 {summary.legacyCount}
+                              </span>
+                            ) : null}
                           </td>
                           <td className="px-4 py-3 tabular-nums text-[var(--muted)]">
-                            {summary.correctCount}/{summary.attempts.length}
+                            {summary.measuredCount > 0
+                              ? `${summary.correctCount}/${summary.measuredCount}`
+                              : "—"}
                           </td>
                           <td className="px-4 py-3 font-black tabular-nums">
                             {formatDuration(summary.averageDurationMs)}
                           </td>
                           <td className="px-4 py-3 tabular-nums text-[var(--muted)]">
-                            {formatAnsweredAt(summary.attempts[0]?.answeredAt ?? "")}
+                            {formatAnsweredAt(summary.latestAnsweredAt ?? "")}
                           </td>
                         </tr>
                       ))}
@@ -189,7 +236,7 @@ export default async function StatisticsPage({
                 </div>
               </section>
 
-              <StudentSolveTimeChart attempts={attempts} />
+              <StudentSolveTimeChart records={records} />
 
               <section className="mt-8" aria-labelledby="attempt-list-heading">
                 <div className="flex items-center justify-between gap-3">
@@ -197,8 +244,8 @@ export default async function StatisticsPage({
                     풀이 기록
                   </h2>
                   <span className="text-xs font-bold tabular-nums text-[var(--muted)]">
-                    {attemptStartIndex + 1}–
-                    {Math.min(attemptStartIndex + visibleAttempts.length, attempts.length)} / {attempts.length}
+                    {recordStartIndex + 1}–
+                    {Math.min(recordStartIndex + visibleRecords.length, records.length)} / {records.length}
                   </span>
                 </div>
                 <div className="mt-3 overflow-x-auto rounded-2xl border border-[var(--border)]">
@@ -214,30 +261,42 @@ export default async function StatisticsPage({
                       </tr>
                     </thead>
                     <tbody>
-                      {visibleAttempts.map((attempt) => {
-                        const currentQuiz = getQuizForIndex(attempt.quizIndex);
+                      {visibleRecords.map((record) => {
+                        const attempt = record.attempt;
+                        const currentQuiz = getQuizForIndex(record.quizIndex);
                         const quiz =
-                          currentQuiz?.id === attempt.quizId ? currentQuiz : null;
-                        const correct = attempt.outcome === "yar";
+                          !attempt || currentQuiz?.id === attempt.quizId
+                            ? currentQuiz
+                            : null;
+                        const legacy = record.timingSource === "legacy";
+                        const correct = record.outcome === "yar";
                         return (
-                          <tr key={attempt.id} className="border-t border-[var(--border)] align-top">
+                          <tr key={record.id} className="border-t border-[var(--border)] align-top">
                             <th scope="row" className="whitespace-nowrap px-4 py-3 font-black">
-                              {displayName(attempt.studentName)}
+                              {displayName(record.studentName)}
                             </th>
                             <td className="whitespace-nowrap px-4 py-3">
                               <span className="block font-black tabular-nums">
-                                {attempt.quizIndex + 1}번
+                                {record.quizIndex + 1}번
                               </span>
                               <span className="mt-0.5 block text-[11px] font-bold text-[var(--muted)]">
-                                {roundLabel(attempt.roundId)}
+                                {attempt
+                                  ? roundLabel(attempt.roundId)
+                                  : quiz?.subunitTitle ?? "미측정"}
                               </span>
                             </td>
                             <td className="max-w-xl px-4 py-3">
-                              <QuizQuestionText
-                                text={attempt.questionText}
-                                className="font-bold leading-6"
-                              />
-                              {quiz ? (
+                              {attempt ? (
+                                <QuizQuestionText
+                                  text={attempt.questionText}
+                                  className="font-bold leading-6"
+                                />
+                              ) : (
+                                <span className="font-bold text-[var(--muted)]">
+                                  미측정
+                                </span>
+                              )}
+                              {attempt && quiz ? (
                                 <span className="mt-1 block text-[11px] font-bold text-[var(--muted)]">
                                   {quiz.subunitTitle}
                                 </span>
@@ -245,20 +304,29 @@ export default async function StatisticsPage({
                             </td>
                             <td className="whitespace-nowrap px-4 py-3">
                               <span
-                                className={`quiz-result-badge inline-flex min-w-[4.5rem] justify-center rounded-full border px-3 py-1.5 text-sm font-black ${
-                                  correct
-                                    ? "quiz-result-yar"
-                                    : "quiz-result-shagal"
-                                }`}
+                                className={
+                                  legacy
+                                    ? "inline-flex min-w-[4.5rem] justify-center rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-sm font-black text-[var(--muted)]"
+                                    : `quiz-result-badge inline-flex min-w-[4.5rem] justify-center rounded-full border px-3 py-1.5 text-sm font-black ${
+                                        correct
+                                          ? "quiz-result-yar"
+                                          : "quiz-result-shagal"
+                                      }`
+                                }
                               >
-                                {correct ? "✓ 야르" : "× 샤갈"}
+                                {legacy ? "— 미기록" : correct ? "✓ 야르" : "× 샤갈"}
                               </span>
                             </td>
                             <td className="whitespace-nowrap px-4 py-3 font-black tabular-nums">
-                              {formatDuration(attempt.durationMs)}
+                              <span className="block">{formatDuration(record.durationMs)}</span>
+                              {legacy ? (
+                                <span className="mt-0.5 block text-[11px] text-[var(--muted)]">
+                                  미측정
+                                </span>
+                              ) : null}
                             </td>
                             <td className="whitespace-nowrap px-4 py-3 tabular-nums text-[var(--muted)]">
-                              {formatAnsweredAt(attempt.answeredAt)}
+                              {formatAnsweredAt(record.answeredAt ?? "")}
                             </td>
                           </tr>
                         );
@@ -322,11 +390,24 @@ export default async function StatisticsPage({
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({
+  label,
+  note,
+  value,
+}: {
+  label: string;
+  note?: string;
+  value: string;
+}) {
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-4">
       <p className="text-xs font-black text-[var(--muted)]">{label}</p>
       <p className="mt-1 text-xl font-black tabular-nums">{value}</p>
+      {note ? (
+        <p className="mt-1 text-[11px] font-bold tabular-nums text-[var(--muted)]">
+          {note}
+        </p>
+      ) : null}
     </div>
   );
 }

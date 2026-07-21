@@ -6,8 +6,12 @@ import { CURRICULUM_QUIZ_ROUNDS } from "./quizData";
 
 export type RoundAssignmentOverrides = Record<string, string[]>;
 
-const STORAGE_KEY = "math-space-round-assignment-overrides-v1";
-const PENDING_STORAGE_KEY = "math-space-round-assignment-pending-v1";
+const STORAGE_KEY = "math-space-round-assignment-overrides-v2";
+const PENDING_STORAGE_KEY = "math-space-round-assignment-pending-v2";
+const LEGACY_STORAGE_KEYS = [
+  "math-space-round-assignment-overrides-v1",
+  "math-space-round-assignment-pending-v1",
+] as const;
 const KNOWN_ROUND_IDS = new Set(CURRICULUM_QUIZ_ROUNDS.map((round) => round.id));
 
 function uniqueTrimmedStrings(values: readonly string[]) {
@@ -54,6 +58,9 @@ function loadLocalOverrides(
 ) {
   if (typeof window === "undefined") return {};
   try {
+    LEGACY_STORAGE_KEYS.forEach((storageKey) =>
+      window.localStorage.removeItem(storageKey),
+    );
     const savedOverrides = window.localStorage.getItem(STORAGE_KEY);
     return savedOverrides === null
       ? {}

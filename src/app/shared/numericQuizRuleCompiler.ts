@@ -281,6 +281,37 @@ function productValue(terms: readonly ProductTerm[]) {
   );
 }
 
+function formatPrimeFactorization(value: number) {
+  if (!Number.isInteger(value) || value < 2) return null;
+
+  const terms: ProductTerm[] = [];
+  let remainder = value;
+  for (let divisor = 2; divisor * divisor <= remainder; divisor += 1) {
+    if (remainder % divisor !== 0) continue;
+
+    let exponent = 0;
+    while (remainder % divisor === 0) {
+      remainder /= divisor;
+      exponent += 1;
+    }
+    terms.push({ base: divisor, exponent });
+  }
+  if (remainder > 1) terms.push({ base: remainder, exponent: 1 });
+
+  if (
+    productValue(terms) !== value ||
+    terms.some(({ base }) => !isPrime(base))
+  ) {
+    return null;
+  }
+
+  return `${value} = ${terms
+    .map(({ base, exponent }) =>
+      exponent === 1 ? String(base) : `${base}^${exponent}`,
+    )
+    .join(" x ")}`;
+}
+
 function factorizationPool(originalValue: number) {
   return originalValue <= 45
     ? SMALL_FACTORIZATION_TARGETS
@@ -417,20 +448,36 @@ const RULES: readonly NumericQuizRule[] = [
       if (!/^\d+\^\d+을 곱셈식으로 변경해 보세요\.$/.test(question)) {
         return null;
       }
-      return (random) =>
-        replaceNumberLiterals(question, [
-          randomInteger(random, 2, 8),
-          randomInteger(random, 2, 5),
-        ]);
+      return {
+        factory: (random) =>
+          replaceNumberLiterals(question, [
+            randomInteger(random, 2, 8),
+            randomInteger(random, 2, 5),
+          ]),
+        answerForQuestion: (generatedQuestion) => {
+          const match = generatedQuestion.match(/^(\d+)\^(\d+)/);
+          if (!match) return null;
+          const base = Number(match[1]);
+          const exponent = Number(match[2]);
+          return Array.from({ length: exponent }, () => base).join(" x ");
+        },
+      };
     },
   },
   {
     id: "power-value",
     match(question) {
       if (!/^\d+\^\d+은 몇인가요\?$/.test(question)) return null;
-      return (random) => {
-        const [base, exponent] = randomItem(random, POWER_VALUE_PAIRS);
-        return replaceNumberLiterals(question, [base, exponent]);
+      return {
+        factory: (random) => {
+          const [base, exponent] = randomItem(random, POWER_VALUE_PAIRS);
+          return replaceNumberLiterals(question, [base, exponent]);
+        },
+        answerForQuestion: (generatedQuestion) => {
+          const match = generatedQuestion.match(/^(\d+)\^(\d+)/);
+          if (!match) return null;
+          return String(Number(match[1]) ** Number(match[2]));
+        },
       };
     },
   },
@@ -440,9 +487,15 @@ const RULES: readonly NumericQuizRule[] = [
       const match = question.match(/^(\d+)(을|를) 소인수분해 해보세요\.$/);
       if (!match) return null;
       const originalValue = Number(match[1]);
-      return (random) => {
-        const target = randomItem(random, factorizationPool(originalValue));
-        return question.replace(/^\d+[을를]/, `${target}을`);
+      return {
+        factory: (random) => {
+          const target = randomItem(random, factorizationPool(originalValue));
+          return question.replace(/^\d+[을를]/, `${target}을`);
+        },
+        answerForQuestion: (generatedQuestion) => {
+          const target = Number(generatedQuestion.match(/^\d+/)?.[0]);
+          return formatPrimeFactorization(target);
+        },
       };
     },
   },
@@ -689,6 +742,7 @@ function validateQuestionFactory(
   question: string,
   rule: NumericQuizRule,
   factory: QuestionFactory,
+  answerForQuestion?: AnswerResolver,
   context?: string,
 ) {
   const outputs = new Set<string>();
@@ -723,6 +777,20 @@ function validateQuestionFactory(
       throw new Error(
         `${errorPrefix(context)}Numeric quiz rule ${rule.id} generated text outside its own pattern: ${output}`,
       );
+    }
+
+    if (answerForQuestion) {
+      const answer = answerForQuestion(output);
+      const repeatedAnswer = answerForQuestion(output);
+      if (
+        !answer ||
+        answer !== repeatedAnswer ||
+        /undefined|NaN|Infinity/.test(answer)
+      ) {
+        throw new Error(
+          `${errorPrefix(context)}Numeric quiz rule ${rule.id} generated an invalid answer for: ${output}`,
+        );
+      }
     }
     outputs.add(output);
   });
@@ -778,7 +846,7 @@ export function compileNumericQuizRule(
   }
 
   const [{ rule, factory, answerForQuestion }] = matches;
-  validateQuestionFactory(question, rule, factory, context);
+  validateQuestionFactory(question, rule, factory, answerForQuestion, context);
   return {
     mode: "random",
     ruleId: rule.id,

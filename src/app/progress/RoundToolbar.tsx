@@ -97,8 +97,8 @@ export default function RoundToolbar({
         <button
           type="button"
           onClick={onOpenSettings}
-          aria-label="라운드 학생 배정 설정"
-          title="라운드 설정"
+          aria-label="라운드 및 퀴즈 설정"
+          title="라운드 및 퀴즈 설정"
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[var(--control-border)] bg-[var(--control-background)] text-[var(--control-foreground)] shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--control-border-active)] hover:bg-[var(--control-background-active)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--lesson-accent)] focus-visible:ring-offset-2 active:translate-y-0"
         >
           <svg

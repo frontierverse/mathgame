@@ -4,19 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import useQuizAttemptRecorder, {
-  QUIZ_ATTEMPT_OUTBOX_STORAGE_KEY,
   QUIZ_ATTEMPT_RECENT_STORAGE_KEY,
+  getPendingQuizAttemptCount,
 } from "../progress/useQuizAttemptRecorder";
 
 function pendingAttemptCount() {
-  try {
-    const value: unknown = JSON.parse(
-      window.localStorage.getItem(QUIZ_ATTEMPT_OUTBOX_STORAGE_KEY) ?? "[]",
-    );
-    return Array.isArray(value) ? value.length : 0;
-  } catch {
-    return 0;
-  }
+  return getPendingQuizAttemptCount();
 }
 
 function hasRecentAttempt() {

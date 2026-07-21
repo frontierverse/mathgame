@@ -1,3 +1,2 @@
-export const QUIZ_ATTEMPT_PROTOCOL = 1;
+export const QUIZ_ATTEMPT_PROTOCOL = 2;
 export const MAX_QUIZ_ATTEMPT_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
-
