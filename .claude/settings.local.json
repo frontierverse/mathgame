@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"ProcessId = 5172\")",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name = 'node.exe'\" | Select-Object ProcessId, CreationDate, @{n='Cmd';e={$_.CommandLine.Substring\\(0, [Math]::Min\\(120, $_.CommandLine.Length\\)\\)}} | Format-Table -Wrap)",
+      "mcp__claude-in-chrome__navigate",
+      "mcp__claude-in-chrome__tabs_context_mcp",
+      "Bash(curl -s http://localhost:3000 -o __TRACKED_VAR__/page.html)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(curl -s \"http://localhost:3000/_next/static/chunks/src_app_page_tsx_1gecvfk._.js\")",
+      "Bash(grep -oE 'relation\\\\.addend !== 1n[^\\)]{0,10}|getUnitExpression\\\\\\(relation\\\\.total\\\\\\)')",
+      "Bash(npx tsc *)",
+      "Bash(curl -s http://localhost:3000 -o /dev/null -w \"%{http_code}\\\\n\")",
+      "Bash(npx eslint *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"console.log\\(require\\('three/package.json'\\).version\\)\")",
+      "PowerShell(\\(Get-Content node_modules\\\\three\\\\package.json | ConvertFrom-Json\\).version)",
+      "PowerShell(Test-NetConnection -ComputerName localhost -Port 57942 -InformationLevel Quiet -WarningAction SilentlyContinue)",
+      "PowerShell(Test-NetConnection -ComputerName localhost -Port 3000 -InformationLevel Quiet -WarningAction SilentlyContinue)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri http://localhost:3000 -UseBasicParsing -TimeoutSec 10; $r.StatusCode; if \\($r.Content -match '목차 탐험'\\) { 'MATHGAME OK' } else { 'DIFFERENT APP' } } catch { $_.Exception.Message })",
+      "PowerShell($r = Invoke-WebRequest -Uri http://localhost:3000 -UseBasicParsing -TimeoutSec 60; $r.StatusCode; if \\($r.Content -match 'one-is-prime-quiz-3d|three'\\) { 'BUNDLE REFERENCES PRESENT' } else { 'no direct reference in HTML \\(client chunk\\)' })",
+      "PowerShell($conns = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue; $conns | ForEach-Object { $p = Get-Process -Id $_.OwningProcess; \"$\\($p.Id\\) $\\($p.ProcessName\\) started $\\($p.StartTime\\)\"; try { \\(Get-CimInstance Win32_Process -Filter \"ProcessId=$\\($p.Id\\)\"\\).CommandLine } catch {} } | Select-Object -Unique)",
+      "Bash(timeout 20 npx next dev -p 59999)",
+      "PowerShell(taskkill /PID 6400 /F)",
+      "Bash(npm view *)",
+      "Bash(npm uninstall *)"
+    ]
+  }
+}

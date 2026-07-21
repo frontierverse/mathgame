@@ -161,19 +161,19 @@ export default function DiamondModal({
               {studentName} · 다이아몬드 {diamondIndex + 1}
             </p>
             <h2 id="diamond-modal-title" className="mt-0.5 text-xl font-black text-[#463c56]">
-              다이아몬드를 만든 루비 {rubyQuizIndexes.length}개
+              다이아몬드를 만든 야르 {rubyQuizIndexes.length}개
             </h2>
           </div>
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)]">
           <p id="diamond-ruby-navigation-hint" className="sr-only">
-            좌우 화살표 키로 앞뒤 루비를, 위아래 화살표 키로 같은 열의 루비를 이동할 수 있습니다.
+            좌우 화살표 키로 앞뒤 야르를, 위아래 화살표 키로 같은 열의 야르를 이동할 수 있습니다.
           </p>
           <div
             ref={rubyGridRef}
             role="group"
-            aria-label="다이아몬드를 만든 루비 목록"
+            aria-label="다이아몬드를 만든 야르 목록"
             aria-describedby="diamond-ruby-navigation-hint"
             className="grid grid-cols-2 content-start gap-2.5 sm:grid-cols-5 lg:grid-cols-3 xl:grid-cols-5"
           >

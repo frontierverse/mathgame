@@ -22,9 +22,17 @@ type RoundSettingsModalProps = {
   assignments: RoundAssignments;
   students: readonly RoundStudent[];
   progress: QuizProgress;
+  failedRoundIds?: ReadonlySet<string>;
   onSelectRound?: (roundId: string) => void;
   onChangeAssignment: (roundId: string, names: string[]) => void;
+  onResetRound: (round: CurriculumQuizRound) => Promise<void>;
+  onRetryAssignment?: (roundId: string) => void;
   onClose: () => void;
+};
+
+type RoundResetState = {
+  roundId: string;
+  status: "confirming" | "resetting" | "success" | "error";
 };
 
 const FOCUSABLE_SELECTOR = [
@@ -48,6 +56,12 @@ function roundMeta(round: CurriculumQuizRound) {
   return `${round.gradeLabel} · ${round.semesterLabel} · ${round.unitTitle} · ${round.subunitTitle}`;
 }
 
+function hasRoundProgress(round: CurriculumQuizRound, progress: QuizProgress) {
+  return Object.values(progress).some((counts) =>
+    round.quizIndexes.some((quizIndex) => (counts[quizIndex] ?? 0) > 0),
+  );
+}
+
 export default function RoundSettingsModal({
   open,
   rounds,
@@ -55,12 +69,16 @@ export default function RoundSettingsModal({
   assignments,
   students,
   progress,
+  failedRoundIds,
   onSelectRound,
   onChangeAssignment,
+  onResetRound,
+  onRetryAssignment,
   onClose,
 }: RoundSettingsModalProps) {
   const [mounted, setMounted] = useState(false);
   const [editingRoundId, setEditingRoundId] = useState(selectedRoundId);
+  const [roundResetState, setRoundResetState] = useState<RoundResetState | null>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -77,6 +95,9 @@ export default function RoundSettingsModal({
     rounds.find(({ id }) => id === selectedRoundId) ??
     rounds[0] ??
     null;
+  const activeRoundFailed = activeRound
+    ? (failedRoundIds?.has(activeRound.id) ?? false)
+    : false;
   const activeAssignedNames = activeRound
     ? uniqueNames(assignments[activeRound.id])
     : [];
@@ -96,6 +117,7 @@ export default function RoundSettingsModal({
           ? selectedRoundId
           : (rounds[0]?.id ?? ""),
       );
+      setRoundResetState(null);
     }, 0);
     return () => window.clearTimeout(timer);
   }, [open, rounds, selectedRoundId]);
@@ -162,6 +184,16 @@ export default function RoundSettingsModal({
     onChangeAssignment(activeRound.id, nextNames);
   };
 
+  const confirmRoundReset = async (round: CurriculumQuizRound) => {
+    setRoundResetState({ roundId: round.id, status: "resetting" });
+    try {
+      await onResetRound(round);
+      setRoundResetState({ roundId: round.id, status: "success" });
+    } catch {
+      setRoundResetState({ roundId: round.id, status: "error" });
+    }
+  };
+
   if (!mounted || !open) return null;
 
   return createPortal(
@@ -214,20 +246,30 @@ export default function RoundSettingsModal({
                 const assignedNames = uniqueNames(assignments[round.id]);
                 const complete = isRoundComplete(round, assignedNames, progress);
                 const selected = activeRound?.id === round.id;
+                const failed = failedRoundIds?.has(round.id) ?? false;
+                const roundHasProgress = hasRoundProgress(round, progress);
+                const resetStatus =
+                  roundResetState?.roundId === round.id
+                    ? roundResetState.status
+                    : null;
+                const resetInProgress = roundResetState?.status === "resetting";
 
                 return (
-                  <li key={round.id}>
+                  <li
+                    key={round.id}
+                    className={`overflow-hidden rounded-xl border transition ${
+                      selected
+                        ? "border-[var(--control-border-active)] bg-[var(--control-background-active)] shadow-sm"
+                        : complete
+                          ? "border-[#c6e3ce] bg-[#f2faf4] hover:border-[#9fceb0]"
+                          : "border-[var(--border)] bg-[var(--surface-raised)] hover:border-[var(--control-border-active)]"
+                    }`}
+                  >
                     <button
                       type="button"
                       onClick={() => selectRound(round.id)}
                       aria-pressed={selected}
-                      className={`w-full rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--lesson-accent)] focus-visible:ring-offset-1 ${
-                        selected
-                          ? "border-[var(--control-border-active)] bg-[var(--control-background-active)] shadow-sm"
-                          : complete
-                            ? "border-[#c6e3ce] bg-[#f2faf4] hover:border-[#9fceb0]"
-                            : "border-[var(--border)] bg-[var(--surface-raised)] hover:border-[var(--control-border-active)]"
-                      }`}
+                      className="w-full p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--lesson-accent)]"
                     >
                       <span className="flex items-center justify-between gap-3">
                         <span className="text-sm font-black text-[var(--foreground)]">
@@ -238,8 +280,13 @@ export default function RoundSettingsModal({
                             {assignedNames.length}명
                           </span>
                           {complete ? (
-                            <span className="rounded-full border border-[#b9dec5] bg-[#eaf7ee] px-2 py-0.5 text-[10px] font-black text-[#287245]">
+                            <span className="round-complete-badge rounded-full border border-[#b9dec5] bg-[#eaf7ee] px-2 py-0.5 text-[10px] font-black text-[#287245]">
                               ✓ 완료
+                            </span>
+                          ) : null}
+                          {failed ? (
+                            <span className="rounded-full border border-[#efbcc2] bg-[#fdedef] px-2 py-0.5 text-[10px] font-black text-[#a5384a]">
+                              ⚠ 저장 실패
                             </span>
                           ) : null}
                         </span>
@@ -266,6 +313,66 @@ export default function RoundSettingsModal({
                         )}
                       </span>
                     </button>
+
+                    <div className="flex min-h-11 items-center justify-between gap-2 border-t border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+                      <span
+                        className={`text-[10px] font-black ${
+                          resetStatus === "error"
+                            ? "text-[#a5384a]"
+                            : resetStatus === "success"
+                              ? "text-[#287245]"
+                              : "text-[var(--muted)]"
+                        }`}
+                        role={resetStatus === "error" ? "alert" : "status"}
+                        aria-live="polite"
+                      >
+                        {resetStatus === "confirming"
+                          ? "모든 학생 기록을 지울까요?"
+                          : resetStatus === "resetting"
+                            ? "초기화 중…"
+                            : resetStatus === "success"
+                              ? "초기화 완료"
+                              : resetStatus === "error"
+                                ? "초기화 실패"
+                                : roundHasProgress
+                                  ? "퀴즈 기록 있음"
+                                  : "기록 없음"}
+                      </span>
+
+                      {resetStatus === "confirming" || resetStatus === "error" ? (
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setRoundResetState(null)}
+                            className="rounded-md border border-[var(--control-border)] px-2 py-1 text-[10px] font-black text-[var(--muted)] transition hover:bg-[var(--control-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--lesson-accent)]"
+                          >
+                            취소
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void confirmRoundReset(round)}
+                            className="rounded-md bg-[#a5384a] px-2 py-1 text-[10px] font-black text-white transition hover:bg-[#8f2e3e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a5384a] focus-visible:ring-offset-1"
+                          >
+                            {resetStatus === "error" ? "다시 시도" : "초기화"}
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRoundResetState({
+                              roundId: round.id,
+                              status: "confirming",
+                            })
+                          }
+                          disabled={!roundHasProgress || resetInProgress}
+                          aria-label={`ROUND ${round.roundNumber} 모든 학생 퀴즈 기록 초기화`}
+                          className="shrink-0 rounded-md border border-[#dba8ae] bg-[#fff7f8] px-2 py-1 text-[10px] font-black text-[#a5384a] transition hover:bg-[#fdedef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a5384a] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          기록 초기화
+                        </button>
+                      )}
+                    </div>
                   </li>
                 );
               })}
@@ -292,6 +399,21 @@ export default function RoundSettingsModal({
                       {activeAssignedNames.length}명
                     </span>
                   </div>
+
+                  {activeRoundFailed ? (
+                    <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-[#efbcc2] bg-[#fdedef] px-3 py-2">
+                      <p className="text-[11px] font-black text-[#a5384a]">
+                        저장에 실패했어요. 방금 바꾼 배정이 서버에 반영되지 않았을 수 있어요.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => onRetryAssignment?.(activeRound.id)}
+                        className="shrink-0 rounded-lg border border-[#a5384a]/40 bg-white px-2.5 py-1 text-[11px] font-black text-[#a5384a] transition hover:bg-[#fdedef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a5384a]"
+                      >
+                        다시 시도
+                      </button>
+                    </div>
+                  ) : null}
 
                   <div className="mt-3 flex gap-2">
                     <button

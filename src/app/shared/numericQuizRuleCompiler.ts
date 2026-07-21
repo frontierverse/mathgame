@@ -414,7 +414,7 @@ const RULES: readonly NumericQuizRule[] = [
   {
     id: "power-to-multiplication",
     match(question) {
-      if (!/^\d+의 \d+제곱을 곱셈식으로 변경해보세요\.$/.test(question)) {
+      if (!/^\d+\^\d+을 곱셈식으로 변경해 보세요\.$/.test(question)) {
         return null;
       }
       return (random) =>
@@ -427,7 +427,7 @@ const RULES: readonly NumericQuizRule[] = [
   {
     id: "power-value",
     match(question) {
-      if (!/^\d+의 \d+제곱은 몇인가요\?$/.test(question)) return null;
+      if (!/^\d+\^\d+은 몇인가요\?$/.test(question)) return null;
       return (random) => {
         const [base, exponent] = randomItem(random, POWER_VALUE_PAIRS);
         return replaceNumberLiterals(question, [base, exponent]);

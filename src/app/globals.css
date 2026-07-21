@@ -371,6 +371,12 @@ button {
   color: #fecdd3;
 }
 
+.theme-dark .round-complete-badge {
+  border-color: #3f7654;
+  background-color: #173b28;
+  color: #d9fbe4;
+}
+
 .theme-dark :is(
   [class~="bg-[radial-gradient(circle_at_50%_35%,rgba(197,226,230,0.45),transparent_52%)]"]
 ) {

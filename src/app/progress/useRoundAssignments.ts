@@ -125,10 +125,31 @@ export default function useRoundAssignments(
   );
   const [overrides, setOverrides] = useState<RoundAssignmentOverrides>({});
   const [isReady, setIsReady] = useState(false);
+  const [failedRoundIds, setFailedRoundIds] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
   const overridesRef = useRef<RoundAssignmentOverrides>({});
   const mutationVersionsRef = useRef<Record<string, number>>({});
   const pendingRoundIdsRef = useRef(new Set<string>());
   const persistChainsRef = useRef<Record<string, Promise<void>>>({});
+
+  const markRoundFailed = useCallback((roundId: string) => {
+    setFailedRoundIds((current) => {
+      if (current.has(roundId)) return current;
+      const next = new Set(current);
+      next.add(roundId);
+      return next;
+    });
+  }, []);
+
+  const clearRoundFailure = useCallback((roundId: string) => {
+    setFailedRoundIds((current) => {
+      if (!current.has(roundId)) return current;
+      const next = new Set(current);
+      next.delete(roundId);
+      return next;
+    });
+  }, []);
 
   const replaceOverrides = useCallback((next: RoundAssignmentOverrides) => {
     overridesRef.current = next;
@@ -142,43 +163,55 @@ export default function useRoundAssignments(
       mutationVersion: number,
     ) => {
       const persist = async () => {
-        const assignment = await persistRoundAssignment(
-          roundId,
-          studentNamesForRequest,
-        );
-        if (mutationVersionsRef.current[roundId] !== mutationVersion) return;
+        try {
+          const assignment = await persistRoundAssignment(
+            roundId,
+            studentNamesForRequest,
+          );
+          if (mutationVersionsRef.current[roundId] !== mutationVersion) return;
 
-        const normalizedResponse = normalizeOverrides(
-          assignment && typeof assignment === "object"
-            ? {
-                [roundId]: (assignment as { studentNames?: unknown }).studentNames,
-              }
-            : null,
-          currentRoundIds,
-          currentStudentNames,
-        );
-        if (!Object.hasOwn(normalizedResponse, roundId)) {
-          throw new Error("Invalid round assignment response.");
+          const normalizedResponse = normalizeOverrides(
+            assignment && typeof assignment === "object"
+              ? {
+                  [roundId]: (assignment as { studentNames?: unknown }).studentNames,
+                }
+              : null,
+            currentRoundIds,
+            currentStudentNames,
+          );
+          if (!Object.hasOwn(normalizedResponse, roundId)) {
+            throw new Error("Invalid round assignment response.");
+          }
+
+          const reconciled = {
+            ...overridesRef.current,
+            [roundId]: normalizedResponse[roundId],
+          };
+          pendingRoundIdsRef.current.delete(roundId);
+          replaceOverrides(reconciled);
+          saveLocalOverrides(reconciled);
+          savePendingRoundIds(pendingRoundIdsRef.current);
+          clearRoundFailure(roundId);
+        } catch {
+          // A newer edit already superseded this attempt; its own persist
+          // call owns the failure/success state for this round now.
+          if (mutationVersionsRef.current[roundId] === mutationVersion) {
+            markRoundFailed(roundId);
+          }
         }
-
-        const reconciled = {
-          ...overridesRef.current,
-          [roundId]: normalizedResponse[roundId],
-        };
-        pendingRoundIdsRef.current.delete(roundId);
-        replaceOverrides(reconciled);
-        saveLocalOverrides(reconciled);
-        savePendingRoundIds(pendingRoundIdsRef.current);
       };
 
       const previous = persistChainsRef.current[roundId] ?? Promise.resolve();
-      const queued = previous
-        .catch(() => undefined)
-        .then(persist)
-        .catch(() => undefined);
+      const queued = previous.then(persist, persist);
       persistChainsRef.current[roundId] = queued;
     },
-    [currentRoundIds, currentStudentNames, replaceOverrides],
+    [
+      currentRoundIds,
+      currentStudentNames,
+      clearRoundFailure,
+      markRoundFailed,
+      replaceOverrides,
+    ],
   );
 
   useEffect(() => {
@@ -279,5 +312,26 @@ export default function useRoundAssignments(
     [currentRoundIds, currentStudentNames, enqueuePersist, replaceOverrides],
   );
 
-  return { overrides, isReady, saveRoundAssignment };
+  const retryRoundAssignment = useCallback(
+    (roundId: string) => {
+      const normalizedRoundId = roundId.trim();
+      if (!currentRoundIds.has(normalizedRoundId)) return;
+
+      const studentNamesForRequest = overridesRef.current[normalizedRoundId] ?? [];
+      const mutationVersion = (mutationVersionsRef.current[normalizedRoundId] ?? 0) + 1;
+      mutationVersionsRef.current[normalizedRoundId] = mutationVersion;
+      pendingRoundIdsRef.current.add(normalizedRoundId);
+      savePendingRoundIds(pendingRoundIdsRef.current);
+      enqueuePersist(normalizedRoundId, studentNamesForRequest, mutationVersion);
+    },
+    [currentRoundIds, enqueuePersist],
+  );
+
+  return {
+    overrides,
+    isReady,
+    failedRoundIds,
+    saveRoundAssignment,
+    retryRoundAssignment,
+  };
 }

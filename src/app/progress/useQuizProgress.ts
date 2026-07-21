@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  type CurriculumQuizRound,
   MAX_QUIZ_COUNT,
   MAX_SOLVES,
   type QuizMineralStage,
@@ -94,16 +95,58 @@ async function decrementQuizProgress(studentName: string, quizIndex: number) {
   return serverCount as number;
 }
 
+async function resetQuizRoundProgress(roundId: string) {
+  const response = await fetch("/api/quiz-progress/reset-round", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      progressProtocol: QUIZ_PROGRESS_PROTOCOL,
+      roundId,
+    }),
+  });
+  if (!response.ok) throw new Error("Quiz round reset failed.");
+
+  const data: unknown = await response.json();
+  if ((data as { roundId?: unknown })?.roundId !== roundId) {
+    throw new Error("Quiz round reset response is invalid.");
+  }
+}
+
 export default function useQuizProgress() {
   const [progress, setProgress] = useState<QuizProgress>({});
   const [isReady, setIsReady] = useState(false);
   const progressRef = useRef<QuizProgress>({});
   const mutationVersionsRef = useRef<Record<string, number>>({});
+  const pendingMutationsByQuizRef = useRef<Map<number, Set<Promise<void>>>>(
+    new Map(),
+  );
+  const resetPromisesByRoundRef = useRef<Map<string, Promise<void>>>(new Map());
+  const resettingQuizIndexesRef = useRef<Set<number>>(new Set());
 
   const replaceProgress = useCallback((next: QuizProgress) => {
     progressRef.current = next;
     setProgress(next);
   }, []);
+
+  const trackQuizMutation = useCallback(
+    (quizIndex: number, mutation: Promise<void>) => {
+      const pendingMutations =
+        pendingMutationsByQuizRef.current.get(quizIndex) ?? new Set<Promise<void>>();
+      const trackedMutation = mutation.then(
+        () => undefined,
+        () => undefined,
+      );
+      pendingMutations.add(trackedMutation);
+      pendingMutationsByQuizRef.current.set(quizIndex, pendingMutations);
+      void trackedMutation.then(() => {
+        pendingMutations.delete(trackedMutation);
+        if (pendingMutations.size === 0) {
+          pendingMutationsByQuizRef.current.delete(quizIndex);
+        }
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -143,6 +186,7 @@ export default function useQuizProgress() {
       if (!Number.isInteger(quizIndex) || quizIndex < 0 || quizIndex >= MAX_QUIZ_COUNT) {
         return false;
       }
+      if (resettingQuizIndexesRef.current.has(quizIndex)) return false;
 
       const current = progressRef.current;
       const counts = [...(current[studentName] ?? [])];
@@ -150,8 +194,8 @@ export default function useQuizProgress() {
       const currentStage = counts[quizIndex] ?? 0;
       const validTransition =
         (currentStage === 0 && (targetStage === 1 || targetStage === MAX_SOLVES)) ||
-        (currentStage === 1 && targetStage === 2) ||
-        (currentStage === 2 && targetStage === MAX_SOLVES);
+        (currentStage === 1 && (targetStage === 1 || targetStage === 2)) ||
+        (currentStage === 2 && (targetStage === 2 || targetStage === MAX_SOLVES));
       if (!validTransition) return false;
 
       counts[quizIndex] = targetStage;
@@ -163,26 +207,30 @@ export default function useQuizProgress() {
       const mutationVersion = (mutationVersionsRef.current[mutationKey] ?? 0) + 1;
       mutationVersionsRef.current[mutationKey] = mutationVersion;
 
-      void persistQuizProgress(studentName, quizIndex, counts[quizIndex])
-        .then((serverCount) => {
-          if (mutationVersionsRef.current[mutationKey] !== mutationVersion) return;
-          const latest = progressRef.current;
-          const latestCounts = [...(latest[studentName] ?? [])];
-          latestCounts[quizIndex] = serverCount;
-          const reconciled = { ...latest, [studentName]: latestCounts };
-          replaceProgress(reconciled);
-          saveLocalProgress(reconciled);
-        })
-        .catch(() => undefined);
+      trackQuizMutation(
+        quizIndex,
+        persistQuizProgress(studentName, quizIndex, counts[quizIndex])
+          .then((serverCount) => {
+            if (mutationVersionsRef.current[mutationKey] !== mutationVersion) return;
+            const latest = progressRef.current;
+            const latestCounts = [...(latest[studentName] ?? [])];
+            latestCounts[quizIndex] = serverCount;
+            const reconciled = { ...latest, [studentName]: latestCounts };
+            replaceProgress(reconciled);
+            saveLocalProgress(reconciled);
+          })
+          .catch(() => undefined),
+      );
 
       return true;
     },
-    [replaceProgress],
+    [replaceProgress, trackQuizMutation],
   );
 
   const undoQuiz = useCallback(
     (studentName: string, quizIndex: number) => {
       if (!Number.isInteger(quizIndex) || quizIndex < 0 || quizIndex >= MAX_QUIZ_COUNT) return;
+      if (resettingQuizIndexesRef.current.has(quizIndex)) return;
 
       const current = progressRef.current;
       const counts = [...(current[studentName] ?? [])];
@@ -198,20 +246,86 @@ export default function useQuizProgress() {
       const mutationVersion = (mutationVersionsRef.current[mutationKey] ?? 0) + 1;
       mutationVersionsRef.current[mutationKey] = mutationVersion;
 
-      void decrementQuizProgress(studentName, quizIndex)
-        .then((serverCount) => {
-          if (mutationVersionsRef.current[mutationKey] !== mutationVersion) return;
-          const latest = progressRef.current;
-          const latestCounts = [...(latest[studentName] ?? [])];
-          latestCounts[quizIndex] = serverCount;
-          const reconciled = { ...latest, [studentName]: latestCounts };
-          replaceProgress(reconciled);
-          saveLocalProgress(reconciled);
-        })
-        .catch(() => undefined);
+      trackQuizMutation(
+        quizIndex,
+        decrementQuizProgress(studentName, quizIndex)
+          .then((serverCount) => {
+            if (mutationVersionsRef.current[mutationKey] !== mutationVersion) return;
+            const latest = progressRef.current;
+            const latestCounts = [...(latest[studentName] ?? [])];
+            latestCounts[quizIndex] = serverCount;
+            const reconciled = { ...latest, [studentName]: latestCounts };
+            replaceProgress(reconciled);
+            saveLocalProgress(reconciled);
+          })
+          .catch(() => undefined),
+      );
+    },
+    [replaceProgress, trackQuizMutation],
+  );
+
+  const resetQuizRound = useCallback(
+    (round: CurriculumQuizRound) => {
+      const currentReset = resetPromisesByRoundRef.current.get(round.id);
+      if (currentReset) return currentReset;
+
+      const reset = (async () => {
+        round.quizIndexes.forEach((quizIndex) =>
+          resettingQuizIndexesRef.current.add(quizIndex),
+        );
+        try {
+          const currentBeforeReset = progressRef.current;
+          Object.keys(currentBeforeReset).forEach((studentName) => {
+            round.quizIndexes.forEach((quizIndex) => {
+              const mutationKey = `${studentName}:${quizIndex}`;
+              mutationVersionsRef.current[mutationKey] =
+                (mutationVersionsRef.current[mutationKey] ?? 0) + 1;
+            });
+          });
+
+          const pendingMutations = round.quizIndexes.flatMap((quizIndex) =>
+            Array.from(pendingMutationsByQuizRef.current.get(quizIndex) ?? []),
+          );
+          await Promise.all(pendingMutations);
+          await resetQuizRoundProgress(round.id);
+
+          const current = progressRef.current;
+          const next = Object.fromEntries(
+            Object.entries(current).map(([studentName, counts]) => {
+              const nextCounts = [...counts];
+              round.quizIndexes.forEach((quizIndex) => {
+                if (quizIndex < nextCounts.length) nextCounts[quizIndex] = 0;
+              });
+              return [studentName, nextCounts];
+            }),
+          );
+
+          replaceProgress(next);
+          saveLocalProgress(next);
+        } finally {
+          round.quizIndexes.forEach((quizIndex) =>
+            resettingQuizIndexesRef.current.delete(quizIndex),
+          );
+        }
+      })();
+
+      resetPromisesByRoundRef.current.set(round.id, reset);
+      void reset.then(
+        () => {
+          if (resetPromisesByRoundRef.current.get(round.id) === reset) {
+            resetPromisesByRoundRef.current.delete(round.id);
+          }
+        },
+        () => {
+          if (resetPromisesByRoundRef.current.get(round.id) === reset) {
+            resetPromisesByRoundRef.current.delete(round.id);
+          }
+        },
+      );
+      return reset;
     },
     [replaceProgress],
   );
 
-  return { progress, isReady, awardQuizStage, undoQuiz };
+  return { progress, isReady, awardQuizStage, undoQuiz, resetQuizRound };
 }

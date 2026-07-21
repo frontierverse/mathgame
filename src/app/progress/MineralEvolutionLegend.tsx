@@ -7,7 +7,7 @@ export default function MineralEvolutionLegend() {
   return (
     <div
       className="flex max-w-full items-center gap-1 overflow-x-auto px-3 py-2"
-      aria-label="광물 진화 순서: 돌, 수정, 루비, 다이아몬드"
+      aria-label="광물 진화 순서: 샤갈, 수정, 야르, 다이아몬드"
     >
       {MINERAL_ORDER.map((mineral, index) => (
         <div key={mineral} className="flex shrink-0 items-center gap-1">

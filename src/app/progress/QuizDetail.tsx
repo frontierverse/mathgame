@@ -20,6 +20,7 @@ type RewardOption = {
   stage: QuizMineralStage;
   statusSymbol?: "×" | "✓";
   ariaLabel: string;
+  label?: string;
 };
 
 const REWARD_BUTTON_STYLES: Record<RewardMineral, CSSProperties> = {
@@ -47,13 +48,15 @@ function rewardOptionsForStage(solveCount: number): RewardOption[] {
         variant: "rock",
         stage: 1,
         statusSymbol: "×",
-        ariaLabel: "틀림, 돌 획득, 다음 차례에 다시 풀기",
+        label: "샤갈",
+        ariaLabel: "틀림, 샤갈 획득, 다음 차례에 다시 풀기",
       },
       {
         variant: "ruby",
         stage: 3,
         statusSymbol: "✓",
-        ariaLabel: "정답, 루비 바로 획득, 퀴즈 완료",
+        label: "야르",
+        ariaLabel: "정답, 야르 바로 획득, 퀴즈 완료",
       },
     ];
   }
@@ -61,9 +64,18 @@ function rewardOptionsForStage(solveCount: number): RewardOption[] {
   if (solveCount === 1) {
     return [
       {
+        variant: "rock",
+        stage: 1,
+        statusSymbol: "×",
+        label: "샤갈",
+        ariaLabel: "틀림, 샤갈 유지, 다음 차례에 다시 풀기",
+      },
+      {
         variant: "crystal",
         stage: 2,
-        ariaLabel: "수정 획득, 다음 차례에 한 번 더 풀기",
+        statusSymbol: "✓",
+        label: "야르",
+        ariaLabel: "정답, 수정 모양의 야르 획득, 다음 단계로 이동",
       },
     ];
   }
@@ -71,9 +83,18 @@ function rewardOptionsForStage(solveCount: number): RewardOption[] {
   if (solveCount === 2) {
     return [
       {
+        variant: "crystal",
+        stage: 2,
+        statusSymbol: "×",
+        label: "샤갈",
+        ariaLabel: "틀림, 수정 모양의 샤갈 획득, 다음 차례에 다시 풀기",
+      },
+      {
         variant: "ruby",
         stage: 3,
-        ariaLabel: "루비 획득, 퀴즈 완료",
+        statusSymbol: "✓",
+        label: "야르",
+        ariaLabel: "정답, 야르 획득, 퀴즈 완료",
       },
     ];
   }
@@ -182,7 +203,7 @@ export default function QuizDetail({
           <div
             className={`grid gap-3 ${rewardOptions.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}
           >
-            {rewardOptions.map(({ variant, stage, statusSymbol, ariaLabel }) => (
+            {rewardOptions.map(({ variant, stage, statusSymbol, ariaLabel, label }) => (
               <button
                 key={variant}
                 type="button"
@@ -205,7 +226,7 @@ export default function QuizDetail({
                   variant={variant}
                   className="h-16 w-16 shrink-0"
                 />
-                <span className="text-sm">{MINERALS[variant].label}</span>
+                <span className="text-sm">{label ?? MINERALS[variant].label}</span>
               </button>
             ))}
           </div>

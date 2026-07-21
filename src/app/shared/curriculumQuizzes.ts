@@ -64,6 +64,16 @@ function fixedNumberQuestion(question: string, reason: string) {
   } satisfies Exclude<QuizQuestionDefinition, string>;
 }
 
+const SPELLED_OUT_POWER_PATTERN = /\d+\s*의\s*\d+\s*제곱/;
+
+function requireSymbolicMathNotation(value: string, context: string) {
+  if (SPELLED_OUT_POWER_PATTERN.test(value)) {
+    throw new Error(
+      `${context}: write powers with caret notation such as 2^4, not Korean prose: ${value}`,
+    );
+  }
+}
+
 const subunitContexts = new Map<string, CurriculumSubunitContext>();
 
 curriculum.forEach((grade) => {
@@ -117,8 +127,8 @@ const quizSetDefinitions: readonly QuizSetDefinition[] = [
     startIndex: 17,
     questions: [
       "제곱은 왜 사용하나요?",
-      "2의 3제곱을 곱셈식으로 변경해보세요.",
-      "2의 4제곱은 몇인가요?",
+      "2^3을 곱셈식으로 변경해 보세요.",
+      "2^4은 몇인가요?",
       "6을 소인수분해 해보세요.",
       "50을 소인수분해 해보세요.",
     ],
@@ -215,11 +225,19 @@ export const CURRICULUM_QUIZ_SETS: readonly CurriculumQuizSet[] =
           ? ({ mode: "auto" } as const)
           : questionDefinition.numberPolicy;
       const quizIndex = definition.startIndex + questionIndex;
+      const quizContext =
+        `${definition.subunitId} question ${questionIndex + 1} (quiz index ${quizIndex})`;
+      const answer = quizAnswersByIndex[quizIndex] ?? null;
+
+      requireSymbolicMathNotation(question, `${quizContext} question`);
+      if (answer !== null) {
+        requireSymbolicMathNotation(answer, `${quizContext} answer`);
+      }
       requireAtomicQuestion(question, definition.subunitId, questionIndex);
       const numericVariant = classifyNumericQuiz(
         question,
         numberPolicy,
-        `${definition.subunitId} question ${questionIndex + 1} (quiz index ${quizIndex})`,
+        quizContext,
       );
       return {
         ...context,
@@ -228,7 +246,7 @@ export const CURRICULUM_QUIZ_SETS: readonly CurriculumQuizSet[] =
         globalNumber: quizIndex + 1,
         numberInSubunit: questionIndex + 1,
         question,
-        answer: quizAnswersByIndex[quizIndex] ?? null,
+        answer,
         numericVariant,
       } satisfies CurriculumQuiz;
     });

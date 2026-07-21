@@ -108,15 +108,26 @@ function QuizBoard({
         </div>
       </div>
 
-      <div className="progress-scroll mt-5 max-h-[168px] overflow-x-auto overflow-y-auto overscroll-contain px-2 py-4 2xl:max-h-[184px]">
+      <div
+        className={`mt-5 px-2 py-4 ${
+          compact ? "min-h-[152px]" : "min-h-[168px] 2xl:min-h-[184px]"
+        }`}
+      >
         <ol
-          className="grid w-max grid-cols-10 gap-2"
+          className={`grid w-full gap-2 ${
+            compact
+              ? "grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))]"
+              : "grid-cols-[repeat(auto-fill,minmax(4rem,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))]"
+          }`}
           aria-label={`${studentName.slice(1)}의 퀴즈, ${renderedQuizIndexes.length}개 표시, 다이아몬드 ${displayedDiamondCount}개`}
         >
           {boardItems.map((item) => {
             if (item.type === "diamond") {
               return (
-                <li key={`diamond-${item.diamondIndex}`}>
+                <li
+                  key={`diamond-${item.diamondIndex}`}
+                  className="flex justify-center"
+                >
                   <DiamondRewardButton
                     diamondIndex={item.diamondIndex}
                     rubyCount={rubyCountByDiamondIndex.get(item.diamondIndex) ?? 0}
@@ -132,7 +143,7 @@ function QuizBoard({
             const mineral = mineralForCount(count);
             const selected = quizIndex === selectedQuizIndex;
             return (
-              <li key={quizIndex}>
+              <li key={quizIndex} className="flex justify-center">
                 <button
                   type="button"
                   onClick={() => onOpenQuiz(studentIndex, quizIndex)}

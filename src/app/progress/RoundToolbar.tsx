@@ -133,7 +133,7 @@ export default function RoundToolbar({
               {assignedNames.length}명
             </span>
             {complete ? (
-              <span className="rounded-full border border-[#b9dec5] bg-[#ecf8ef] px-2.5 py-1 text-[#287245]">
+              <span className="round-complete-badge rounded-full border border-[#b9dec5] bg-[#ecf8ef] px-2.5 py-1 text-[#287245]">
                 ✓ 완료
               </span>
             ) : null}
@@ -142,7 +142,7 @@ export default function RoundToolbar({
           <div>
             <div className="flex items-center justify-between gap-4 text-[11px] font-black text-[var(--lesson-text)]">
               <span>
-                루비 {roundProgress.rubyCount}/{roundProgress.rubyTarget}
+                야르 {roundProgress.rubyCount}/{roundProgress.rubyTarget}
               </span>
               <span>
                 {roundProgress.completedStudentCount}/
@@ -155,7 +155,7 @@ export default function RoundToolbar({
               aria-hidden={roundProgress.rubyTarget === 0 || undefined}
               aria-label={
                 roundProgress.rubyTarget > 0
-                  ? `${selectedRound.roundNumber}라운드 루비 진행도`
+                  ? `${selectedRound.roundNumber}라운드 야르 진행도`
                   : undefined
               }
               aria-valuemin={roundProgress.rubyTarget > 0 ? 0 : undefined}

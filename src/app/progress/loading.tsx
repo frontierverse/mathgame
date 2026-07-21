@@ -25,10 +25,22 @@ function QuizBoardSkeleton({ compact = false }: { compact?: boolean }) {
         </div>
       </div>
 
-      <div className="mt-5 h-[168px] overflow-hidden px-2 py-4 2xl:h-[184px]">
-        <div className="grid w-max grid-cols-10 gap-2">
+      <div
+        className={`mt-5 px-2 py-4 ${
+          compact ? "min-h-[152px]" : "min-h-[168px] 2xl:min-h-[184px]"
+        }`}
+      >
+        <div
+          className={`grid w-full gap-2 ${
+            compact
+              ? "grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))]"
+              : "grid-cols-[repeat(auto-fill,minmax(4rem,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))]"
+          }`}
+        >
           {Array.from({ length: 12 }, (_, index) => (
-            <QuizCircleSkeleton key={index} compact={compact} />
+            <span key={index} className="flex justify-center">
+              <QuizCircleSkeleton compact={compact} />
+            </span>
           ))}
         </div>
       </div>

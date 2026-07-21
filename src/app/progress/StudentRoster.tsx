@@ -14,6 +14,7 @@ import {
   CURRICULUM_QUIZ_ROUNDS,
   MAX_SOLVES,
   resolveQuizContent,
+  type CurriculumQuizRound,
   type QuizMineralStage,
 } from "./quizData";
 import { getMineralInventory } from "./quizProgress";
@@ -35,6 +36,13 @@ const EMPTY_HIDDEN_STUDENT_NAMES: readonly string[] = [];
 const EMPTY_QUIZ_INDEXES: readonly number[] = [];
 const ROUND_IDS = CURRICULUM_QUIZ_ROUNDS.map(({ id }) => id);
 type Student = { name: string; age: number | null };
+
+function objectParticleFor(word: string) {
+  const lastCharCode = word.charCodeAt(word.length - 1) - 0xac00;
+  const hasBatchim =
+    lastCharCode < 0 || lastCharCode > 11171 || lastCharCode % 28 !== 0;
+  return hasBatchim ? "을" : "를";
+}
 
 type StudentRosterProps = {
   students: Student[];
@@ -129,12 +137,19 @@ export default function StudentRoster({
     number | null
   >(null);
   const completingRandomQuizRef = useRef(false);
-  const { progress, isReady: progressReady, awardQuizStage, undoQuiz } =
-    useQuizProgress();
+  const {
+    progress,
+    isReady: progressReady,
+    awardQuizStage,
+    undoQuiz,
+    resetQuizRound,
+  } = useQuizProgress();
   const {
     overrides: roundAssignmentOverrides,
     isReady: roundAssignmentsReady,
+    failedRoundIds,
     saveRoundAssignment,
+    retryRoundAssignment,
   } = useRoundAssignments(ROUND_IDS, assignableStudentNames);
   const selectedRound =
     CURRICULUM_QUIZ_ROUNDS.find(({ id }) => id === selectedRoundId) ??
@@ -166,6 +181,18 @@ export default function StudentRoster({
     [assignableStudentEntries, currentRoundParticipantNameSet],
   );
   const activeQuizIndexes = selectedRound?.quizIndexes ?? EMPTY_QUIZ_INDEXES;
+  const selectedRoundIndex = selectedRound
+    ? CURRICULUM_QUIZ_ROUNDS.findIndex(({ id }) => id === selectedRound.id)
+    : -1;
+  const cumulativeQuizIndexes = useMemo(
+    () =>
+      selectedRoundIndex < 0
+        ? EMPTY_QUIZ_INDEXES
+        : CURRICULUM_QUIZ_ROUNDS.slice(0, selectedRoundIndex + 1).flatMap(
+            ({ quizIndexes }) => quizIndexes,
+          ),
+    [selectedRoundIndex],
+  );
   const selectedRoundQueue = selectedRound
     ? getRandomQuizRoundQueue(randomQueueState, selectedRound.id)
     : getRandomQuizRoundQueue(randomQueueState, "");
@@ -318,6 +345,28 @@ export default function StudentRoster({
       }
     },
     [openRandomAssignment, saveRoundAssignment, selectedRoundId],
+  );
+
+  const resetRoundProgress = useCallback(
+    async (round: CurriculumQuizRound) => {
+      await resetQuizRound(round);
+      setRandomQueueState((current) => {
+        if (!(round.id in current.rounds)) return current;
+        const nextRounds = { ...current.rounds };
+        delete nextRounds[round.id];
+        return { ...current, rounds: nextRounds };
+      });
+
+      if (selectedRoundId === round.id) {
+        setOpenQuizIndex(null);
+        setOpenRandomAssignment(null);
+        setAutoAdvanceAfterQuizIndex(null);
+        setOpenDiamond(null);
+        setQueueAnnouncement("");
+        completingRandomQuizRef.current = false;
+      }
+    },
+    [resetQuizRound, selectedRoundId],
   );
 
   const closePanel = useCallback(() => setOpenQuizIndex(null), []);
@@ -479,6 +528,7 @@ export default function StudentRoster({
 
     const { quizIndex, studentName } = openRandomAssignment;
     if (!canStudentSolveQuiz(progress, studentName, quizIndex)) return;
+    const currentStage = progress[studentName]?.[quizIndex] ?? 0;
 
     completingRandomQuizRef.current = true;
     if (!awardQuizStage(studentName, quizIndex, targetStage)) {
@@ -523,10 +573,11 @@ export default function StudentRoster({
       };
     });
     setAutoAdvanceAfterQuizIndex(quizIndex);
-    const rewardLabel =
-      targetStage === 1 ? "돌" : targetStage === 2 ? "수정" : "루비";
+    const answeredCorrectly =
+      targetStage === MAX_SOLVES || (currentStage > 0 && targetStage > currentStage);
+    const rewardLabel = answeredCorrectly ? "야르" : "샤갈";
     setQueueAnnouncement(
-      `${quizIndex + 1}번 퀴즈에서 ${rewardLabel}을 획득했습니다. 다음 퀴즈를 추첨합니다.`,
+      `${quizIndex + 1}번 퀴즈에서 ${rewardLabel}${objectParticleFor(rewardLabel)} 획득했습니다. 다음 퀴즈를 추첨합니다.`,
     );
   }, [activeQuizIndexes, awardQuizStage, openRandomAssignment, progress, selectedRound]);
 
@@ -654,61 +705,63 @@ export default function StudentRoster({
                 : ""
             }`}
           >
-            <div className="min-w-0">
-              {openRandomAssignment &&
-              randomAssignedParticipant &&
-              randomAssignedContent ? (
-                <RandomQuizPanel
-                  key={`${openRandomAssignment.quizIndex}-${openRandomAssignment.studentName}-${randomAssignedContent.variantKey}`}
-                  studentName={openRandomAssignment.studentName}
-                  quizIndex={openRandomAssignment.quizIndex}
-                  variantKey={randomAssignedContent.variantKey}
-                  questionText={randomAssignedContent.question}
-                  answerText={randomAssignedContent.answer}
-                  counts={randomAssignedCounts}
-                  onAward={completeSharedQuiz}
-                  onClose={closeRandomPanel}
-                />
-              ) : (
-                <section
-                  className="rounded-[2rem] border border-[var(--control-border-active)] bg-[var(--surface)] p-6 shadow-[0_16px_40px_rgba(73,53,96,0.10)] sm:p-7"
-                  aria-label="랜덤 퀴즈"
-                  aria-busy={!sharedQueueReady}
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-[11px] font-black tracking-[0.16em] text-[var(--lesson-accent)]">
-                        QUIZ
-                      </p>
-                      <h2 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[var(--foreground)]">
-                        랜덤 퀴즈
-                      </h2>
-                    </div>
-                    <span className="shrink-0 rounded-full border border-[var(--control-border)] bg-[var(--control-background)] px-3 py-1.5 text-xs font-black tabular-nums text-[var(--control-foreground)]">
-                      {currentRoundParticipantNames.length}명
-                    </span>
-                  </div>
-                  <p className="mt-5 text-sm font-bold text-[var(--muted)]">
-                    {currentRoundParticipantNames.length === 0
-                      ? "참여 학생을 배정해 주세요."
-                      : queueAnnouncement || "다음 퀴즈를 시작하세요."}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={openNextSharedQuiz}
-                    disabled={!sharedQueueReady || currentRoundParticipantNames.length === 0}
-                    className="mt-6 rounded-xl bg-[var(--lesson-accent)] px-5 py-3 text-sm font-black text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--lesson-accent)] focus-visible:ring-offset-2"
+            <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
+              <div className="min-w-0">
+                {openRandomAssignment &&
+                randomAssignedParticipant &&
+                randomAssignedContent ? (
+                  <RandomQuizPanel
+                    key={`${openRandomAssignment.quizIndex}-${openRandomAssignment.studentName}-${randomAssignedContent.variantKey}`}
+                    studentName={openRandomAssignment.studentName}
+                    quizIndex={openRandomAssignment.quizIndex}
+                    variantKey={randomAssignedContent.variantKey}
+                    questionText={randomAssignedContent.question}
+                    answerText={randomAssignedContent.answer}
+                    counts={randomAssignedCounts}
+                    onAward={completeSharedQuiz}
+                    onClose={closeRandomPanel}
+                  />
+                ) : (
+                  <section
+                    className="rounded-[2rem] border border-[var(--control-border-active)] bg-[var(--surface)] p-6 shadow-[0_16px_40px_rgba(73,53,96,0.10)] sm:p-7"
+                    aria-label="랜덤 퀴즈"
+                    aria-busy={!sharedQueueReady}
                   >
-                    다음 퀴즈
-                  </button>
-                  <p className="sr-only" role="status" aria-live="polite">
-                    {queueAnnouncement}
-                  </p>
-                </section>
-              )}
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-[11px] font-black tracking-[0.16em] text-[var(--lesson-accent)]">
+                          QUIZ
+                        </p>
+                        <h2 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[var(--foreground)]">
+                          랜덤 퀴즈
+                        </h2>
+                      </div>
+                      <span className="shrink-0 rounded-full border border-[var(--control-border)] bg-[var(--control-background)] px-3 py-1.5 text-xs font-black tabular-nums text-[var(--control-foreground)]">
+                        {currentRoundParticipantNames.length}명
+                      </span>
+                    </div>
+                    <p className="mt-5 text-sm font-bold text-[var(--muted)]">
+                      {currentRoundParticipantNames.length === 0
+                        ? "참여 학생을 배정해 주세요."
+                        : queueAnnouncement || "다음 퀴즈를 시작하세요."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={openNextSharedQuiz}
+                      disabled={!sharedQueueReady || currentRoundParticipantNames.length === 0}
+                      className="mt-6 rounded-xl bg-[var(--lesson-accent)] px-5 py-3 text-sm font-black text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--lesson-accent)] focus-visible:ring-offset-2"
+                    >
+                      다음 퀴즈
+                    </button>
+                    <p className="sr-only" role="status" aria-live="polite">
+                      {queueAnnouncement}
+                    </p>
+                  </section>
+                )}
+              </div>
 
               <div
-                className="mt-10 border-t border-[#e7dccb] pt-8"
+                className="min-w-0 border-t border-[#e7dccb] pt-8 lg:border-t-0 lg:border-l lg:pl-8 lg:pt-0"
                 aria-label="전체 진도 체크리스트"
               >
                 <h2 className="text-xl font-bold text-[#51475c]">전체 진도 체크리스트</h2>
@@ -727,7 +780,7 @@ export default function StudentRoster({
                           studentAge={student.age}
                           studentIndex={originalIndex}
                           counts={counts}
-                          quizIndexes={activeQuizIndexes}
+                          quizIndexes={cumulativeQuizIndexes}
                           onOpenQuiz={openStudentQuiz}
                           onOpenDiamond={openStudentDiamond}
                           selectedQuizIndex={isSelected ? openQuizIndex : null}
@@ -747,7 +800,7 @@ export default function StudentRoster({
                     name={selectedName.slice(1)}
                     quizIndex={openQuizIndex}
                     counts={selectedCounts}
-                    navigationQuizIndexes={activeQuizIndexes}
+                    navigationQuizIndexes={cumulativeQuizIndexes}
                     onAward={(stage) =>
                       awardQuizStage(selectedName, openQuizIndex, stage)
                     }
@@ -769,8 +822,11 @@ export default function StudentRoster({
         assignments={roundAssignments}
         students={roundSettingsStudents}
         progress={progress}
+        failedRoundIds={failedRoundIds}
         onSelectRound={selectRound}
         onChangeAssignment={changeRoundAssignment}
+        onResetRound={resetRoundProgress}
+        onRetryAssignment={retryRoundAssignment}
         onClose={closeRoundSettings}
       />
 
