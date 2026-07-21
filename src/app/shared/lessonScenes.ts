@@ -1,6 +1,7 @@
 export type TriangleAreaStage = 0 | 1 | 2;
 export type CircleAreaStage = 0 | 1 | 2 | 3 | 4 | 5;
 export type PowersStage = 0 | 1;
+export type PrimesStage = 0 | 1 | 2;
 
 const dedicatedSceneLessonIds = new Set([
   "quantity",
@@ -13,6 +14,7 @@ const dedicatedSceneLessonIds = new Set([
   "circle-circumference",
   "circle-area",
   "powers",
+  "primes-composites",
   "powers-two",
 ]);
 

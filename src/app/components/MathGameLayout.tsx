@@ -8,6 +8,7 @@ import type {
   ExpressionPreview,
   Lesson,
   PowersStage,
+  PrimesStage,
   TriangleAreaStage,
 } from "./types";
 
@@ -22,6 +23,7 @@ type MathGameLayoutProps = {
   triangleAreaStage: TriangleAreaStage;
   circleAreaStage: CircleAreaStage;
   powersStage: PowersStage;
+  primesStage: PrimesStage;
   onSelectLesson: (lessonId: string) => void;
   onToggleLessonComplete: (lessonId: string) => void;
   onAddToken: (token: string) => void;
@@ -31,6 +33,7 @@ type MathGameLayoutProps = {
   onTriangleAreaStageChange: (stage: TriangleAreaStage) => void;
   onCircleAreaStageChange: (stage: CircleAreaStage) => void;
   onPowersStageChange: (stage: PowersStage) => void;
+  onPrimesStageChange: (stage: PrimesStage) => void;
 };
 
 export default function MathGameLayout({
@@ -44,6 +47,7 @@ export default function MathGameLayout({
   triangleAreaStage,
   circleAreaStage,
   powersStage,
+  primesStage,
   onSelectLesson,
   onToggleLessonComplete,
   onAddToken,
@@ -53,6 +57,7 @@ export default function MathGameLayout({
   onTriangleAreaStageChange,
   onCircleAreaStageChange,
   onPowersStageChange,
+  onPrimesStageChange,
 }: MathGameLayoutProps) {
   return (
     <main className="learning-page-shell flex h-0 min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--background)] text-[var(--foreground)] lg:overflow-hidden">
@@ -73,9 +78,11 @@ export default function MathGameLayout({
             triangleAreaStage={triangleAreaStage}
             circleAreaStage={circleAreaStage}
             powersStage={powersStage}
+            primesStage={primesStage}
             onTriangleAreaStageChange={onTriangleAreaStageChange}
             onCircleAreaStageChange={onCircleAreaStageChange}
             onPowersStageChange={onPowersStageChange}
+            onPrimesStageChange={onPrimesStageChange}
           />
           <div className="hidden">
             <ExpressionKeypad

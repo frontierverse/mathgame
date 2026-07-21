@@ -25,6 +25,7 @@ export function getDefaultExpression(lessonId: string): ParsedExpression {
     "circle-circumference": { left: 2, operator: "×", right: 5 },
     "circle-area": { left: 5, operator: "×", right: 5 },
     powers: { left: 2, operator: "×", right: 2 },
+    "primes-composites": { left: 3, operator: "×", right: 4 },
     division: { left: 12, operator: "÷", right: 3 },
     parentheses: { left: 4, operator: "+", right: 2 },
     mixed: { left: 8, operator: "÷", right: 2 },

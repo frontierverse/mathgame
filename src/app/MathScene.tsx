@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { getDefaultExpression, parseVisualExpression } from "./scenes/expression";
 import { createSceneHelpers, type AnimatedOrb } from "./scenes/helpers";
 import { buildLessonScene, hasDedicatedLessonScene } from "./scenes/lessonRegistry";
-import type { CircleAreaStage, LessonSceneContext, PowersStage, TriangleAreaStage } from "./scenes/types";
+import type { CircleAreaStage, LessonSceneContext, PowersStage, PrimesStage, TriangleAreaStage } from "./scenes/types";
 import { isDocumentUsingLightTheme, subscribeToTheme } from "./themeClient";
 
 type MathSceneProps = {
@@ -15,6 +15,7 @@ type MathSceneProps = {
   triangleStage?: TriangleAreaStage;
   circleStage?: CircleAreaStage;
   powersStage?: PowersStage;
+  primesStage?: PrimesStage;
 };
 
 const LIGHT_SCENE_PALETTE = {
@@ -59,6 +60,7 @@ export default function MathScene({
   triangleStage = 0,
   circleStage = 0,
   powersStage = 0,
+  primesStage = 0,
 }: MathSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const isLightTheme = useSyncExternalStore(
@@ -144,6 +146,7 @@ export default function MathScene({
       triangleStage,
       circleStage,
       powersStage,
+      primesStage,
       maxVisible,
       helpers,
     };
@@ -234,7 +237,15 @@ export default function MathScene({
       const { width, height } = container.getBoundingClientRect();
       renderer.setSize(width, height);
       camera.aspect = width / Math.max(height, 1);
-      if (
+      if (lessonId === "primes-composites") {
+        const halfVerticalFovTangent = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+        const verticalSpan = primesStage === 0 ? 8.2 : primesStage === 1 ? 8 : 8.6;
+        const horizontalSpan = primesStage === 0 ? 10.6 : primesStage === 1 ? 7.8 : 8.2;
+        const verticalFitDistance = verticalSpan / (2 * halfVerticalFovTangent);
+        const horizontalFitDistance = horizontalSpan / (2 * halfVerticalFovTangent * camera.aspect);
+        cameraDistance = Math.max(verticalFitDistance, horizontalFitDistance);
+        camera.position.copy(cameraTarget).addScaledVector(cameraDirection, cameraDistance);
+      } else if (
         lessonId === "circle-circumference" &&
         (circleStage === 1 || circleStage === 2)
       ) {
@@ -298,7 +309,7 @@ export default function MathScene({
       renderer.dispose();
       if (renderer.domElement.parentElement === container) container.removeChild(renderer.domElement);
     };
-  }, [expression, isLightTheme, lessonId, triangleStage, circleStage, powersStage]);
+  }, [expression, isLightTheme, lessonId, triangleStage, circleStage, powersStage, primesStage]);
 
   return (
     <div
