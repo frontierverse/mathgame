@@ -17,3 +17,11 @@ The primary learners may have difficulty sustaining attention. Apply these rules
 - Reveal labels only when they are needed, then fade or de-emphasize them so the mathematical object remains the focus.
 - Full Korean descriptions are still allowed in non-visible accessibility text such as `aria-label` when needed for screen-reader clarity.
 - During visual QA, review desktop and mobile layouts and remove every visible Korean word that is not necessary for understanding or navigation.
+
+## Quiz questions/answers: use math notation, not spelled-out Korean
+
+`src/app/shared/mathText.ts` (`parseMathText`) auto-renders formulas embedded in quiz `question`/`answer` strings (see `quizAnswersByIndex` in `src/app/shared/curriculumQuizzes.ts`) as proper math markup (superscripts, ×, ÷, −, =).
+
+- Write exponents as `2^4`, not `2의 4제곱` — the parser turns `2^4` into `2` with a superscript `4`; spelled-out Korean stays plain text and looks inconsistent.
+- Write multiplication/division as `x` or `*`/`÷` (normalized to `×`/`÷`), not `곱하기`/`나누기` in the numeric part of an expression.
+- Only prose around the formula (e.g. "같은 수의 곱셈을 빠르게 나타내기 위해서. 예: ...") should stay in Korean; the numeric expression itself should always use the symbolic form so it renders as a formula.

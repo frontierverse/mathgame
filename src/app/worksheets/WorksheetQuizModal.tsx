@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import QuizQuestionText from "../progress/QuizQuestionText";
 import { getQuizSetForSubunit } from "../shared/curriculumQuizzes";
@@ -27,10 +27,12 @@ export default function WorksheetQuizModal({
   onClose,
 }: WorksheetQuizModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [revealedAnswerQuizId, setRevealedAnswerQuizId] = useState<string | null>(null);
   const quizSet = getQuizSetForSubunit(subunitId);
   const quizzes = quizSet?.quizzes ?? [];
   const firstQuiz = quizzes[0] ?? null;
   const lastQuiz = quizzes[quizzes.length - 1] ?? null;
+  const answeredCount = quizzes.filter((quiz) => quiz.answer !== null).length;
   const pdfUrl = `/api/worksheets/${encodeURIComponent(subunitId)}/pdf`;
 
   useEffect(() => {
@@ -104,6 +106,15 @@ export default function WorksheetQuizModal({
                 <span className="rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-bold text-[var(--muted)]">
                   진도 체크 QUIZ {firstQuiz.globalNumber}~{lastQuiz.globalNumber}
                 </span>
+                <span
+                  className={`rounded-full border px-3 py-1.5 text-xs font-black ${
+                    answeredCount === quizzes.length
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+                      : "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                  }`}
+                >
+                  정답 {answeredCount}/{quizzes.length}
+                </span>
               </div>
 
               <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -133,13 +144,44 @@ export default function WorksheetQuizModal({
                     <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--control-background-active)] px-2 text-xs font-black tabular-nums text-[var(--control-foreground)]">
                       {quiz.globalNumber}
                     </span>
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-black tracking-[0.12em] text-[var(--lesson-accent)]">
-                        QUIZ {quiz.globalNumber} · 소단원 {quiz.numberInSubunit}번
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                        <p className="text-[11px] font-black tracking-[0.12em] text-[var(--lesson-accent)]">
+                          QUIZ {quiz.globalNumber} · 소단원 {quiz.numberInSubunit}번
+                        </p>
+                        {quiz.answer !== null ? (
+                          <span
+                            onMouseEnter={() => setRevealedAnswerQuizId(quiz.id)}
+                            onMouseLeave={() =>
+                              setRevealedAnswerQuizId((current) =>
+                                current === quiz.id ? null : current,
+                              )
+                            }
+                            className="inline-flex shrink-0 cursor-help items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-black text-emerald-500"
+                            title="정답이 등록되어 있습니다"
+                          >
+                            ✓ 정답
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--control-border)] bg-[var(--control-background)] px-2 py-0.5 text-[10px] font-black text-[var(--muted)]"
+                            title="정답이 아직 등록되지 않았습니다"
+                          >
+                            정답 미등록
+                          </span>
+                        )}
+                      </div>
                       <QuizQuestionText
-                        text={quiz.question}
-                        className="mt-1 break-words text-sm font-bold leading-6 text-[var(--foreground)] sm:text-base"
+                        text={
+                          revealedAnswerQuizId === quiz.id && quiz.answer !== null
+                            ? quiz.answer
+                            : quiz.question
+                        }
+                        className={`mt-1 break-words text-sm font-bold leading-6 sm:text-base ${
+                          revealedAnswerQuizId === quiz.id && quiz.answer !== null
+                            ? "text-emerald-500"
+                            : "text-[var(--foreground)]"
+                        }`}
                       />
                     </div>
                   </li>

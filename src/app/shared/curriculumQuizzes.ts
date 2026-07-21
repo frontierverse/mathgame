@@ -123,6 +123,26 @@ const quizSetDefinitions: readonly QuizSetDefinition[] = [
       "50을 소인수분해 해보세요.",
     ],
   },
+  {
+    subunitId: "m1-s1-u1-su3",
+    startIndex: 22,
+    questions: [
+      "약수가 무엇인가요?",
+      "공약수가 무엇인가요?",
+      "최대공약수가 무엇인가요?",
+      "배수가 무엇인가요?",
+      "공배수가 무엇인가요?",
+      "최소공배수가 무엇인가요?",
+      fixedNumberQuestion(
+        "2와 4의 최대공약수와 최소공배수는 무엇인가요?",
+        "제시한 두 수의 최대공약수와 최소공배수를 묻는 문항",
+      ),
+      fixedNumberQuestion(
+        "8과 9의 최대공약수와 최소공배수는 무엇인가요?",
+        "제시한 두 수의 최대공약수와 최소공배수를 묻는 문항",
+      ),
+    ],
+  },
 ];
 
 // Answers use zero-based quiz indexes.
@@ -144,6 +164,19 @@ const quizAnswersByIndex: Readonly<Partial<Record<number, string>>> = {
   14: "1보다 크고 소수가 아닌 수 (약수가 3개 이상인 수)",
   15: "소수",
   16: "합성수",
+  17: "같은 수의 곱셈을 빠르게 나타내기 위해서. 예: 2x2x2x2 = 2^4",
+  18: "2x2x2",
+  19: "16",
+  20: "6 = 2 x 3",
+  21: "50 = 2 x 5^2",
+  22: "어떤 수를 나누어떨어지게 하는 수",
+  23: "두 수 이상의 공통인 약수",
+  24: "공약수 중 가장 큰 수",
+  25: "어떤 수를 1배, 2배, 3배 ...한 수",
+  26: "두 수 이상의 공통인 배수",
+  27: "공배수 중 가장 작은 수",
+  28: "최대공약수 2, 최소공배수 4",
+  29: "최대공약수 1, 최소공배수 72",
 };
 
 function requireSubunitContext(subunitId: string) {
