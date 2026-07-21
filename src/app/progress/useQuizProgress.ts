@@ -16,6 +16,7 @@ import {
 
 const STORAGE_KEY = `math-space-quiz-progress-${QUIZ_PROGRESS_CACHE_VERSION}`;
 const RESET_STORAGE_KEYS = [
+  "math-space-quiz-progress-v10",
   "math-space-quiz-progress-v9",
   "math-space-quiz-progress-v8",
   "math-space-quiz-progress-v7",

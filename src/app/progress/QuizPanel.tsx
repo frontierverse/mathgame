@@ -8,20 +8,28 @@ import type { QuizMineralStage } from "./quizData";
 import { unlockedQuizCount } from "./quizProgress";
 
 type QuizPanelProps = {
+  id?: string;
+  ariaLabel?: string;
   name: string;
   quizIndex: number;
+  questionText?: string;
+  answerText?: string | null;
   counts: number[];
   diamondCountLimit?: number;
   navigationQuizIndexes?: readonly number[];
   onAward: (stage: QuizMineralStage) => void;
-  onUndo: () => void;
-  onNavigate: (quizIndex: number) => void;
+  onUndo?: () => void;
+  onNavigate?: (quizIndex: number) => void;
   onClose: () => void;
 };
 
 export default function QuizPanel({
+  id,
+  ariaLabel,
   name,
   quizIndex,
+  questionText,
+  answerText,
   counts,
   diamondCountLimit,
   navigationQuizIndexes,
@@ -43,6 +51,7 @@ export default function QuizPanel({
         onClose();
         return;
       }
+      if (!onNavigate) return;
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         if (navigationQuizIndexes) {
@@ -76,18 +85,33 @@ export default function QuizPanel({
   return (
     <QuizFlipCard
       key={`${name}-${quizIndex}`}
-      ariaLabel={`${name} ${quizIndex + 1}번 퀴즈`}
+      id={id}
+      ariaLabel={ariaLabel ?? `${name} ${quizIndex + 1}번 퀴즈`}
       quizIndex={quizIndex}
+      answerText={answerText}
       entered={entered}
-      faceClassName="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-[#ece1f4] bg-[#fffdf8] p-6 shadow-[0_12px_30px_rgba(111,92,74,0.1)] sm:p-7"
+      faceClassName="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-[var(--control-border-active)] bg-[var(--surface)] p-6 shadow-[0_16px_40px_rgba(73,53,96,0.16)] sm:p-7"
     >
-      <QuizDetail
-        name={name}
-        quizIndex={quizIndex}
-        counts={counts}
-        onAward={onAward}
-        onUndo={onUndo}
-      />
+      <div className="min-w-0 pr-10" role="status" aria-live="polite">
+        <p className="text-[11px] font-black tracking-[0.16em] text-[var(--lesson-accent)]">
+          QUIZ {quizIndex + 1}
+        </p>
+        <h2 className="mt-1 truncate text-3xl font-black tracking-[-0.04em] text-[var(--foreground)]">
+          {name}
+        </h2>
+      </div>
+
+      <div className="mt-6 border-t border-[var(--border)] pt-5">
+        <QuizDetail
+          name={name}
+          quizIndex={quizIndex}
+          questionText={questionText}
+          counts={counts}
+          onAward={onAward}
+          onUndo={onUndo}
+          showIdentity={false}
+        />
+      </div>
     </QuizFlipCard>
   );
 }

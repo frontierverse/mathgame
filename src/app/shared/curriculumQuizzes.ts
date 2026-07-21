@@ -49,6 +49,7 @@ type QuizQuestionDefinition =
   | {
       question: string;
       numberPolicy: QuizNumberPolicy;
+      allowCombinedTasks?: boolean;
     };
 
 type QuizSetDefinition = {
@@ -57,10 +58,15 @@ type QuizSetDefinition = {
   questions: readonly QuizQuestionDefinition[];
 };
 
-function fixedNumberQuestion(question: string, reason: string) {
+function fixedNumberQuestion(
+  question: string,
+  reason: string,
+  options: { allowCombinedTasks?: boolean } = {},
+) {
   return {
     question,
     numberPolicy: { mode: "fixed", reason },
+    ...options,
   } satisfies Exclude<QuizQuestionDefinition, string>;
 }
 
@@ -138,18 +144,44 @@ const quizSetDefinitions: readonly QuizSetDefinition[] = [
     startIndex: 22,
     questions: [
       "약수가 무엇인가요?",
-      "공약수가 무엇인가요?",
-      "최대공약수가 무엇인가요?",
-      "배수가 무엇인가요?",
-      "공배수가 무엇인가요?",
+      fixedNumberQuestion(
+        "12와 16의 약수들을 각각 나열하세요.",
+        "두 수의 약수를 각각 나열하는 고정 문항",
+        { allowCombinedTasks: true },
+      ),
+      fixedNumberQuestion(
+        "12와 16의 공약수들은 무엇인가요? 공약수는 무슨 뜻인가요?",
+        "공약수의 뜻과 제시한 두 수의 공약수를 함께 묻는 고정 문항",
+        { allowCombinedTasks: true },
+      ),
+      fixedNumberQuestion(
+        "12와 16의 최대공약수는 무엇인가요? 최대공약수는 무슨 뜻인가요?",
+        "제시한 두 수의 최대공약수와 그 뜻을 함께 묻는 고정 문항",
+        { allowCombinedTasks: true },
+      ),
+      fixedNumberQuestion(
+        "3의 배수를 4개 나열해보세요. 4의 배수를 4개 나열해보세요.",
+        "제시한 두 수의 배수를 각각 나열하는 고정 문항",
+        { allowCombinedTasks: true },
+      ),
+      "배수는 무슨 뜻인가요?",
+      fixedNumberQuestion(
+        "3과 4의 공배수들은 무엇인가요?",
+        "제시한 두 수의 공배수를 묻는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "3과 4의 최소공배수는 무엇인가요?",
+        "제시한 두 수의 최소공배수를 묻는 고정 문항",
+      ),
       "최소공배수가 무엇인가요?",
       fixedNumberQuestion(
         "2와 4의 최대공약수와 최소공배수는 무엇인가요?",
         "제시한 두 수의 최대공약수와 최소공배수를 묻는 문항",
       ),
       fixedNumberQuestion(
-        "8과 9의 최대공약수와 최소공배수는 무엇인가요?",
-        "제시한 두 수의 최대공약수와 최소공배수를 묻는 문항",
+        "8과 9의 최대공약수와 최소공배수는 무엇인가요? 왜 최소공약수는 배우지 않을까요? 왜 최대공배수는 배우지 않을까요?",
+        "최대공약수와 최소공배수, 최소공약수와 최대공배수의 성질을 함께 묻는 고정 문항",
+        { allowCombinedTasks: true },
       ),
     ],
   },
@@ -180,13 +212,16 @@ const quizAnswersByIndex: Readonly<Partial<Record<number, string>>> = {
   20: "6 = 2 x 3",
   21: "50 = 2 x 5^2",
   22: "어떤 수를 나누어떨어지게 하는 수",
-  23: "두 수 이상의 공통인 약수",
-  24: "공약수 중 가장 큰 수",
-  25: "어떤 수를 1배, 2배, 3배 ...한 수",
-  26: "두 수 이상의 공통인 배수",
-  27: "공배수 중 가장 작은 수",
-  28: "최대공약수 2, 최소공배수 4",
-  29: "최대공약수 1, 최소공배수 72",
+  23: "12의 약수: 1, 2, 3, 4, 6, 12 / 16의 약수: 1, 2, 4, 8, 16",
+  24: "12와 16의 공약수는 1, 2, 4입니다. 공약수는 두 수 이상의 공통인 약수입니다.",
+  25: "12와 16의 최대공약수는 4입니다. 최대공약수는 공약수 중 가장 큰 수입니다.",
+  26: "3의 배수: 3, 6, 9, 12 / 4의 배수: 4, 8, 12, 16",
+  27: "어떤 수를 1배, 2배, 3배, … 한 수입니다.",
+  28: "12, 24, 36, …",
+  29: "12",
+  30: "공배수 중 가장 작은 수",
+  31: "최대공약수 2, 최소공배수 4",
+  32: "최대공약수 1, 최소공배수 72. 최소공약수는 항상 1이라 따로 구할 필요가 없습니다. 공배수는 끝없이 커지므로 최대공배수는 없습니다.",
 };
 
 function requireSubunitContext(subunitId: string) {
@@ -195,16 +230,21 @@ function requireSubunitContext(subunitId: string) {
   return context;
 }
 
-function requireAtomicQuestion(question: string, subunitId: string, questionIndex: number) {
+function requireAtomicQuestion(
+  question: string,
+  subunitId: string,
+  questionIndex: number,
+  allowCombinedTasks = false,
+) {
   const sentenceEndCount = question.match(/[.!?]/g)?.length ?? 0;
   const containsNumberedParts = /\(\d+\)/.test(question);
   const containsBundledInstruction = question.includes("각각");
   const isTwoChoiceQuestion = /소수인가요\? 합성수인가요\?$/.test(question);
 
   if (
-    (sentenceEndCount !== 1 && !isTwoChoiceQuestion) ||
+    (sentenceEndCount !== 1 && !isTwoChoiceQuestion && !allowCombinedTasks) ||
     containsNumberedParts ||
-    containsBundledInstruction
+    (containsBundledInstruction && !allowCombinedTasks)
   ) {
     throw new Error(
       `Quiz must contain one short task: ${subunitId} question ${questionIndex + 1}`,
@@ -224,6 +264,10 @@ export const CURRICULUM_QUIZ_SETS: readonly CurriculumQuizSet[] =
         typeof questionDefinition === "string"
           ? ({ mode: "auto" } as const)
           : questionDefinition.numberPolicy;
+      const allowCombinedTasks =
+        typeof questionDefinition === "string"
+          ? false
+          : questionDefinition.allowCombinedTasks === true;
       const quizIndex = definition.startIndex + questionIndex;
       const quizContext =
         `${definition.subunitId} question ${questionIndex + 1} (quiz index ${quizIndex})`;
@@ -233,7 +277,12 @@ export const CURRICULUM_QUIZ_SETS: readonly CurriculumQuizSet[] =
       if (answer !== null) {
         requireSymbolicMathNotation(answer, `${quizContext} answer`);
       }
-      requireAtomicQuestion(question, definition.subunitId, questionIndex);
+      requireAtomicQuestion(
+        question,
+        definition.subunitId,
+        questionIndex,
+        allowCombinedTasks,
+      );
       const numericVariant = classifyNumericQuiz(
         question,
         numberPolicy,

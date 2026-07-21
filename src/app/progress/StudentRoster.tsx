@@ -6,7 +6,6 @@ import DiamondModal from "./DiamondModal";
 import MineralEvolutionLegend from "./MineralEvolutionLegend";
 import QuizBoard from "./QuizBoard";
 import QuizPanel from "./QuizPanel";
-import RandomQuizPanel from "./RandomQuizPanel";
 import RoundSettingsModal from "./RoundSettingsModal";
 import RoundToolbar from "./RoundToolbar";
 import {
@@ -20,10 +19,12 @@ import {
 import { getMineralInventory } from "./quizProgress";
 import {
   canStudentSolveQuiz,
+  clearRandomQuizRoundQueue,
   EMPTY_RANDOM_QUIZ_QUEUE_STATE,
   getRandomQuizRoundQueue,
   normalizeRandomQuizQueueState,
   pickRandomQuizParticipant,
+  PREVIOUS_RANDOM_QUIZ_QUEUE_STORAGE_KEY,
   RANDOM_QUIZ_QUEUE_STORAGE_KEY,
   reconcileQuizOrder,
   RESET_RANDOM_QUIZ_QUEUE_STORAGE_KEYS,
@@ -35,6 +36,7 @@ import useRoundAssignments from "./useRoundAssignments";
 const EMPTY_HIDDEN_STUDENT_NAMES: readonly string[] = [];
 const EMPTY_QUIZ_INDEXES: readonly number[] = [];
 const ROUND_IDS = CURRICULUM_QUIZ_ROUNDS.map(({ id }) => id);
+const ROUND_THREE_ID = "round-m1-s1-u1-su3";
 type Student = { name: string; age: number | null };
 
 function objectParticleFor(word: string) {
@@ -237,7 +239,20 @@ export default function StudentRoster({
         const savedState = window.localStorage.getItem(RANDOM_QUIZ_QUEUE_STORAGE_KEY);
         if (savedState) {
           setRandomQueueState(normalizeRandomQuizQueueState(JSON.parse(savedState)));
+        } else {
+          const legacyState = window.localStorage.getItem(
+            PREVIOUS_RANDOM_QUIZ_QUEUE_STORAGE_KEY,
+          );
+          if (legacyState) {
+            setRandomQueueState(
+              clearRandomQuizRoundQueue(
+                normalizeRandomQuizQueueState(JSON.parse(legacyState)),
+                ROUND_THREE_ID,
+              ),
+            );
+          }
         }
+        window.localStorage.removeItem(PREVIOUS_RANDOM_QUIZ_QUEUE_STORAGE_KEY);
       } catch {
         // A fresh in-memory queue is still usable when local storage is unavailable.
       }
@@ -698,23 +713,37 @@ export default function StudentRoster({
             </p>
           </div>
         ) : (
-          <div
-            className={`grid items-start gap-6 ${
-              selectedName && openQuizIndex !== null
-                ? "xl:grid-cols-[minmax(0,1fr)_minmax(300px,390px)]"
-                : ""
-            }`}
-          >
+          <div className="grid items-start gap-6">
             <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
               <div className="min-w-0">
-                {openRandomAssignment &&
+                {selectedName && openQuizIndex !== null ? (
+                  <QuizPanel
+                    name={selectedName.slice(1).trim() || selectedName}
+                    quizIndex={openQuizIndex}
+                    counts={selectedCounts}
+                    navigationQuizIndexes={cumulativeQuizIndexes}
+                    onAward={(stage) =>
+                      awardQuizStage(selectedName, openQuizIndex, stage)
+                    }
+                    onUndo={() => undoQuiz(selectedName, openQuizIndex)}
+                    onNavigate={navigateQuiz}
+                    onClose={closePanel}
+                  />
+                ) : openRandomAssignment &&
                 randomAssignedParticipant &&
                 randomAssignedContent ? (
-                  <RandomQuizPanel
+                  <QuizPanel
                     key={`${openRandomAssignment.quizIndex}-${openRandomAssignment.studentName}-${randomAssignedContent.variantKey}`}
-                    studentName={openRandomAssignment.studentName}
+                    id="random-quiz-panel"
+                    ariaLabel={`${
+                      openRandomAssignment.studentName.slice(1).trim() ||
+                      openRandomAssignment.studentName
+                    } ${openRandomAssignment.quizIndex + 1}번 랜덤 퀴즈`}
+                    name={
+                      openRandomAssignment.studentName.slice(1).trim() ||
+                      openRandomAssignment.studentName
+                    }
                     quizIndex={openRandomAssignment.quizIndex}
-                    variantKey={randomAssignedContent.variantKey}
                     questionText={randomAssignedContent.question}
                     answerText={randomAssignedContent.answer}
                     counts={randomAssignedCounts}
@@ -792,25 +821,6 @@ export default function StudentRoster({
                 </div>
               </div>
             </div>
-
-            {selectedName && openQuizIndex !== null ? (
-              <div className="order-first min-w-0 xl:order-none xl:col-start-2">
-                <div className="xl:sticky xl:top-4">
-                  <QuizPanel
-                    name={selectedName.slice(1)}
-                    quizIndex={openQuizIndex}
-                    counts={selectedCounts}
-                    navigationQuizIndexes={cumulativeQuizIndexes}
-                    onAward={(stage) =>
-                      awardQuizStage(selectedName, openQuizIndex, stage)
-                    }
-                    onUndo={() => undoQuiz(selectedName, openQuizIndex)}
-                    onNavigate={navigateQuiz}
-                    onClose={closePanel}
-                  />
-                </div>
-              </div>
-            ) : null}
           </div>
         )}
       </section>

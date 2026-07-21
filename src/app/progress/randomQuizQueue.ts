@@ -1,7 +1,9 @@
 import { MAX_QUIZ_COUNT, MAX_SOLVES } from "./quizData";
 import type { QuizProgress } from "./quizProgress";
 
-export const RANDOM_QUIZ_QUEUE_STORAGE_KEY = "math-space-random-quiz-queue-v4";
+export const RANDOM_QUIZ_QUEUE_STORAGE_KEY = "math-space-random-quiz-queue-v5";
+export const PREVIOUS_RANDOM_QUIZ_QUEUE_STORAGE_KEY =
+  "math-space-random-quiz-queue-v4";
 export const RESET_RANDOM_QUIZ_QUEUE_STORAGE_KEYS = [
   "math-space-random-quiz-queue-v3",
   "math-space-random-quiz-queue-v2",
@@ -17,7 +19,7 @@ export type RandomQuizRoundQueueState = {
 };
 
 export type RandomQuizQueueState = {
-  version: 3;
+  version: 4;
   rounds: Record<string, RandomQuizRoundQueueState>;
 };
 
@@ -27,7 +29,7 @@ export type RandomQuizParticipant = {
 };
 
 export const EMPTY_RANDOM_QUIZ_QUEUE_STATE: RandomQuizQueueState = {
-  version: 3,
+  version: 4,
   rounds: {},
 };
 
@@ -118,8 +120,22 @@ export function normalizeRandomQuizQueueState(value: unknown): RandomQuizQueueSt
   });
 
   return {
-    version: 3,
+    version: 4,
     rounds,
+  };
+}
+
+export function clearRandomQuizRoundQueue(
+  state: RandomQuizQueueState,
+  roundId: string,
+): RandomQuizQueueState {
+  if (!state.rounds[roundId]) return state;
+
+  const remainingRounds = { ...state.rounds };
+  delete remainingRounds[roundId];
+  return {
+    version: 4,
+    rounds: remainingRounds,
   };
 }
 
