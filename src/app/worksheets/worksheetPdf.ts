@@ -20,6 +20,11 @@ const QUESTION_LINE_HEIGHT = 16;
 const ANSWER_LINE_HEIGHT = 20;
 const EXPONENT_FONT_SCALE = 0.62;
 const EXPONENT_RISE_SCALE = 0.48;
+const FRACTION_FONT_SCALE = 0.72;
+const FRACTION_PADDING_SCALE = 0.18;
+const FRACTION_NUMERATOR_RISE_SCALE = 0.46;
+const FRACTION_DENOMINATOR_DROP_SCALE = 0.42;
+const FRACTION_RULE_RISE_SCALE = 0.2;
 const OPERATOR_GAP_SCALE = 0.12;
 
 const INK = rgb(0.09, 0.09, 0.11);
@@ -42,7 +47,22 @@ function measureMathText(text: string, font: PDFFont, fontSize: number) {
 }
 
 function isTightOperator(operator: string) {
-  return operator === "(" || operator === ")";
+  return operator === "(" || operator === ")" || operator === "|";
+}
+
+function getFractionLayout(
+  numerator: string,
+  denominator: string,
+  font: PDFFont,
+  fontSize: number,
+) {
+  const valueSize = fontSize * FRACTION_FONT_SCALE;
+  const numeratorWidth = font.widthOfTextAtSize(numerator, valueSize);
+  const denominatorWidth = font.widthOfTextAtSize(denominator, valueSize);
+  const width =
+    Math.max(numeratorWidth, denominatorWidth) + fontSize * FRACTION_PADDING_SCALE;
+
+  return { valueSize, numeratorWidth, denominatorWidth, width };
 }
 
 function measureFormula(tokens: readonly MathFormulaToken[], font: PDFFont, fontSize: number) {
@@ -50,7 +70,10 @@ function measureFormula(tokens: readonly MathFormulaToken[], font: PDFFont, font
 
   return tokens.reduce((width, token) => {
     if (token.type === "number") {
-      return width + font.widthOfTextAtSize(token.value, fontSize);
+      const signWidth = token.sign
+        ? font.widthOfTextAtSize(token.sign === "-" ? "−" : token.sign, fontSize)
+        : 0;
+      return width + signWidth + font.widthOfTextAtSize(token.value, fontSize);
     }
     if (token.type === "power") {
       return (
@@ -58,6 +81,18 @@ function measureFormula(tokens: readonly MathFormulaToken[], font: PDFFont, font
         font.widthOfTextAtSize(token.base, fontSize) +
         font.widthOfTextAtSize(token.exponent, fontSize * EXPONENT_FONT_SCALE)
       );
+    }
+    if (token.type === "fraction") {
+      const fraction = getFractionLayout(
+        token.numerator,
+        token.denominator,
+        font,
+        fontSize,
+      );
+      const signWidth = token.sign
+        ? font.widthOfTextAtSize(token.sign === "-" ? "−" : token.sign, fontSize)
+        : 0;
+      return width + signWidth + fraction.width;
     }
 
     const gap = isTightOperator(token.value) ? 0 : operatorGap * 2;
@@ -90,6 +125,17 @@ function drawMathText(
 
     segment.tokens.forEach((token) => {
       if (token.type === "number") {
+        if (token.sign) {
+          const sign = token.sign === "-" ? "−" : token.sign;
+          page.drawText(sign, {
+            x: cursorX,
+            y,
+            size: fontSize,
+            font,
+            color: INK,
+          });
+          cursorX += font.widthOfTextAtSize(sign, fontSize);
+        }
         page.drawText(token.value, {
           x: cursorX,
           y,
@@ -120,6 +166,52 @@ function drawMathText(
           color: INK,
         });
         cursorX += font.widthOfTextAtSize(token.exponent, exponentSize);
+        return;
+      }
+
+      if (token.type === "fraction") {
+        if (token.sign) {
+          const sign = token.sign === "-" ? "−" : token.sign;
+          page.drawText(sign, {
+            x: cursorX,
+            y,
+            size: fontSize,
+            font,
+            color: INK,
+          });
+          cursorX += font.widthOfTextAtSize(sign, fontSize);
+        }
+
+        const fraction = getFractionLayout(
+          token.numerator,
+          token.denominator,
+          font,
+          fontSize,
+        );
+        const numeratorX = cursorX + (fraction.width - fraction.numeratorWidth) / 2;
+        const denominatorX = cursorX + (fraction.width - fraction.denominatorWidth) / 2;
+
+        page.drawText(token.numerator, {
+          x: numeratorX,
+          y: y + fontSize * FRACTION_NUMERATOR_RISE_SCALE,
+          size: fraction.valueSize,
+          font,
+          color: INK,
+        });
+        page.drawLine({
+          start: { x: cursorX, y: y + fontSize * FRACTION_RULE_RISE_SCALE },
+          end: { x: cursorX + fraction.width, y: y + fontSize * FRACTION_RULE_RISE_SCALE },
+          thickness: 0.45,
+          color: INK,
+        });
+        page.drawText(token.denominator, {
+          x: denominatorX,
+          y: y - fontSize * FRACTION_DENOMINATOR_DROP_SCALE,
+          size: fraction.valueSize,
+          font,
+          color: INK,
+        });
+        cursorX += fraction.width;
         return;
       }
 

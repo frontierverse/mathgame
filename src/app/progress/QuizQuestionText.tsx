@@ -48,11 +48,36 @@ function splitNumberedItems(text: string) {
 
 function renderFormulaToken(token: MathFormulaToken, index: number) {
   if (token.type === "number") {
-    return createElement("mn", { key: `number-${index}` }, token.value);
+    return token.sign
+      ? createElement(
+          "mrow",
+          { key: `number-${index}` },
+          createElement("mo", null, token.sign === "-" ? "−" : token.sign),
+          createElement("mn", null, token.value),
+        )
+      : createElement("mn", { key: `number-${index}` }, token.value);
   }
 
   if (token.type === "operator") {
     return createElement("mo", { key: `operator-${index}` }, token.value);
+  }
+
+  if (token.type === "fraction") {
+    const fraction = createElement(
+      "mfrac",
+      null,
+      createElement("mn", null, token.numerator),
+      createElement("mn", null, token.denominator),
+    );
+
+    return token.sign
+      ? createElement(
+          "mrow",
+          { key: `fraction-${index}` },
+          createElement("mo", null, token.sign === "-" ? "−" : token.sign),
+          fraction,
+        )
+      : createElement("mrow", { key: `fraction-${index}` }, fraction);
   }
 
   return createElement(

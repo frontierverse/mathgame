@@ -6,6 +6,7 @@ import {
 } from "./numericQuizRuleCompiler";
 
 const QUIZ_STORAGE_CAPACITY = 100;
+export const QUIZZES_PER_ROUND = 10;
 
 export type CurriculumSubunitContext = {
   subunitId: string;
@@ -40,8 +41,7 @@ export type CurriculumQuizRound = {
   quizIndexes: readonly number[];
   gradeLabel: string;
   semesterLabel: string;
-  unitTitle: string;
-  subunitTitle: string;
+  curriculumLabel: string;
 };
 
 type QuizQuestionDefinition =
@@ -185,6 +185,66 @@ const quizSetDefinitions: readonly QuizSetDefinition[] = [
       ),
     ],
   },
+  {
+    subunitId: "m1-s1-u2-su1",
+    startIndex: 33,
+    questions: [
+      "양수는 무엇인가요?",
+      "음수는 무엇인가요?",
+      fixedNumberQuestion(
+        "0은 양수·음수 중 어느 쪽인가요?",
+        "0의 분류를 묻는 고정 문항",
+      ),
+      "정수는 무엇인가요?",
+      fixedNumberQuestion(
+        "-4, 0, 7/2 중 정수가 아닌 수는 무엇인가요?",
+        "정수와 분수를 구별하는 고정 문항",
+      ),
+      "유리수는 무엇인가요?",
+      fixedNumberQuestion(
+        "-3, 0, 2/5 중 유리수가 아닌 수는 무엇인가요?",
+        "정수와 분수가 모두 유리수임을 확인하는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "수직선에서 -4는 0의 어느 쪽에 있나요?",
+        "수직선에서 음수의 위치를 묻는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "-4와 2 중 큰 수는 무엇인가요?",
+        "음수와 양수의 대소를 비교하는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "-3과 -8 중 큰 수는 무엇인가요?",
+        "두 음수의 대소를 비교하는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "-2, 0, 3을 작은 수부터 나열하세요.",
+        "정수의 대소를 나열하는 고정 문항",
+      ),
+      "절댓값은 무엇인가요?",
+      fixedNumberQuestion(
+        "|-5|은 무엇인가요?",
+        "음수의 절댓값을 묻는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "|3|와 |-3|은 같나요?",
+        "서로 반대인 수의 절댓값을 비교하는 고정 문항",
+      ),
+      "반대되는 수는 무엇인가요?",
+      fixedNumberQuestion(
+        "3의 반대되는 수는 무엇인가요?",
+        "양수의 반대되는 수를 묻는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "-7의 반대되는 수는 무엇인가요?",
+        "음수의 반대되는 수를 묻는 고정 문항",
+      ),
+      fixedNumberQuestion(
+        "0의 반대되는 수는 무엇인가요?",
+        "0의 반대되는 수를 묻는 고정 문항",
+      ),
+    ],
+  },
 ];
 
 // Answers use zero-based quiz indexes.
@@ -222,6 +282,24 @@ const quizAnswersByIndex: Readonly<Partial<Record<number, string>>> = {
   30: "공배수 중 가장 작은 수",
   31: "최대공약수 2, 최소공배수 4",
   32: "최대공약수 1, 최소공배수 72. 최소공약수는 항상 1이라 따로 구할 필요가 없습니다. 공배수는 끝없이 커지므로 최대공배수는 없습니다.",
+  33: "0보다 큰 수입니다. + 기호는 생략할 수 있습니다.",
+  34: "0보다 작은 수입니다. 앞에 - 기호를 붙입니다.",
+  35: "둘 다 아닙니다.",
+  36: "양의 정수, 0, 음의 정수를 모두 포함하는 수입니다.",
+  37: "7/2",
+  38: "분모가 0이 아닌 두 정수의 비로 나타낼 수 있는 수입니다. 정수도 유리수입니다.",
+  39: "없습니다. 모두 유리수입니다.",
+  40: "왼쪽입니다. 왼쪽에 있을수록 더 작은 수입니다.",
+  41: "2",
+  42: "-3",
+  43: "-2 < 0 < 3",
+  44: "수직선에서 0까지의 거리입니다.",
+  45: "5",
+  46: "네. 둘 다 3입니다.",
+  47: "어떤 수와 더해서 0이 되는 수입니다.",
+  48: "-3",
+  49: "7",
+  50: "0",
 };
 
 function requireSubunitContext(subunitId: string) {
@@ -349,18 +427,73 @@ export const quizTextForIndex = (quizIndex: number) =>
 export const quizAnswerForIndex = (quizIndex: number) =>
   getQuizForIndex(quizIndex)?.answer ?? null;
 
+function uniqueInOrder(values: readonly string[]) {
+  return Array.from(new Set(values));
+}
+
+function curriculumLabelForRound(quizzes: readonly CurriculumQuiz[]) {
+  const unitGroups = new Map<
+    string,
+    { unitTitle: string; subunitTitles: string[] }
+  >();
+
+  quizzes.forEach((quiz) => {
+    const unitKey = `${quiz.gradeId}:${quiz.semesterId}:${quiz.unitId}`;
+    const group = unitGroups.get(unitKey);
+    if (!group) {
+      unitGroups.set(unitKey, {
+        unitTitle: quiz.unitTitle,
+        subunitTitles: [quiz.subunitTitle],
+      });
+      return;
+    }
+    if (!group.subunitTitles.includes(quiz.subunitTitle)) {
+      group.subunitTitles.push(quiz.subunitTitle);
+    }
+  });
+
+  return Array.from(unitGroups.values())
+    .map(({ unitTitle, subunitTitles }) =>
+      subunitTitles.length === 1 && subunitTitles[0] === unitTitle
+        ? unitTitle
+        : `${unitTitle} › ${subunitTitles.join(" · ")}`,
+    )
+    .join(" / ");
+}
+
+const orderedQuizzes = Array.from({ length: MAX_QUIZ_COUNT }, (_, quizIndex) => {
+  const quiz = quizzesByIndex.get(quizIndex);
+  if (!quiz) throw new Error(`Missing quiz index: ${quizIndex}`);
+  return quiz;
+});
+
 export const CURRICULUM_QUIZ_ROUNDS: readonly CurriculumQuizRound[] =
-  CURRICULUM_QUIZ_SETS.filter(({ quizzes }) => quizzes.length > 0).map(
-    (quizSet, roundIndex) => ({
-      id: `round-${quizSet.subunitId}`,
-      roundNumber: roundIndex + 1,
-      quizzes: quizSet.quizzes,
-      quizIndexes: quizSet.quizzes.map(({ quizIndex }) => quizIndex),
-      gradeLabel: quizSet.gradeLabel,
-      semesterLabel: quizSet.semesterLabel,
-      unitTitle: quizSet.unitTitle,
-      subunitTitle: quizSet.subunitTitle,
-    }),
+  Array.from(
+    { length: Math.floor(orderedQuizzes.length / QUIZZES_PER_ROUND) },
+    (_, roundIndex) => {
+      const quizzes = orderedQuizzes.slice(
+        roundIndex * QUIZZES_PER_ROUND,
+        (roundIndex + 1) * QUIZZES_PER_ROUND,
+      );
+
+      if (quizzes.length !== QUIZZES_PER_ROUND) {
+        throw new Error(`Quiz round ${roundIndex + 1} must contain 10 quizzes.`);
+      }
+
+      return {
+        id: `round-${roundIndex + 1}`,
+        roundNumber: roundIndex + 1,
+        quizzes,
+        quizIndexes: quizzes.map(({ quizIndex }) => quizIndex),
+        gradeLabel: uniqueInOrder(quizzes.map(({ gradeLabel }) => gradeLabel)).join(
+          " · ",
+        ),
+        semesterLabel: uniqueInOrder(
+          quizzes.map(({ semesterLabel }) => semesterLabel),
+        ).join(" · "),
+        curriculumLabel: curriculumLabelForRound(quizzes),
+      } satisfies CurriculumQuizRound;
+    },
   );
 
 const quizRoundsById = new Map(

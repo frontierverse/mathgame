@@ -45,7 +45,7 @@ export function isRoundComplete(
 }
 
 function roundOptionLabel(round: CurriculumQuizRound) {
-  return `ROUND ${round.roundNumber} · ${round.gradeLabel} · ${round.semesterLabel} · ${round.unitTitle} · ${round.subunitTitle}`;
+  return `ROUND ${round.roundNumber} · ${round.gradeLabel} · ${round.semesterLabel} · ${round.curriculumLabel}`;
 }
 
 export default function RoundToolbar({

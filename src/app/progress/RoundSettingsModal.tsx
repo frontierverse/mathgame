@@ -53,7 +53,7 @@ function displayName(name: string) {
 }
 
 function roundMeta(round: CurriculumQuizRound) {
-  return `${round.gradeLabel} · ${round.semesterLabel} · ${round.unitTitle} · ${round.subunitTitle}`;
+  return `${round.gradeLabel} · ${round.semesterLabel} · ${round.curriculumLabel}`;
 }
 
 function hasRoundProgress(round: CurriculumQuizRound, progress: QuizProgress) {
