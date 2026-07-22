@@ -24,6 +24,14 @@ import {
   storeQuizTimeLimitSeconds,
   timeoutStageFor,
 } from "./quizTimer";
+import { isRoundComplete } from "./roundProgress";
+import {
+  EMPTY_ROUND_TIMER_STATE,
+  formatRoundElapsedTime,
+  readStoredRoundTimerState,
+  storeRoundTimerState,
+  type RoundTimerState,
+} from "./roundTimer";
 import {
   canStudentSolveQuiz,
   clearRandomQuizRoundQueue,
@@ -135,6 +143,11 @@ export default function StudentRoster({
     () => CURRICULUM_QUIZ_ROUNDS[0]?.id ?? "round-1",
   );
   const [roundSettingsOpen, setRoundSettingsOpen] = useState(false);
+  const [roundTimerState, setRoundTimerState] = useState<RoundTimerState>(
+    EMPTY_ROUND_TIMER_STATE,
+  );
+  const [roundTimerReady, setRoundTimerReady] = useState(false);
+  const [roundTimerNowMs, setRoundTimerNowMs] = useState(0);
   const [quizTimeLimitSeconds, setQuizTimeLimitSeconds] = useState(
     DEFAULT_QUIZ_TIME_LIMIT_SECONDS,
   );
@@ -212,6 +225,20 @@ export default function StudentRoster({
     () => new Set(currentRoundParticipantNames),
     [currentRoundParticipantNames],
   );
+  const completedRoundIds = useMemo(
+    () =>
+      CURRICULUM_QUIZ_ROUNDS.flatMap((round) =>
+        isRoundComplete(
+          round,
+          roundAssignments[round.id] ?? EMPTY_HIDDEN_STUDENT_NAMES,
+          progress,
+        )
+          ? [round.id]
+          : [],
+      ),
+    [progress, roundAssignments],
+  );
+  const completedRoundIdsKey = completedRoundIds.join("|");
   const randomQuizParticipants = useMemo(
     () =>
       assignableStudentEntries.flatMap(({ student, originalIndex }) =>
@@ -237,6 +264,16 @@ export default function StudentRoster({
   const selectedRoundQueue = selectedRound
     ? getRandomQuizRoundQueue(randomQueueState, selectedRound.id)
     : getRandomQuizRoundQueue(randomQueueState, "");
+  const selectedRoundTimer = selectedRound
+    ? roundTimerState.rounds[selectedRound.id] ?? null
+    : null;
+  const selectedRoundElapsedTime = selectedRoundTimer
+    ? formatRoundElapsedTime(
+        selectedRoundTimer.startedAtMs,
+        roundTimerNowMs,
+        selectedRoundTimer.completedAtMs,
+      )
+    : null;
   const randomQuizOrder = reconcileQuizOrder(
     selectedRoundQueue.order,
     activeQuizIndexes,
@@ -269,6 +306,7 @@ export default function StudentRoster({
     progressReady &&
     randomQueueReady &&
     roundAssignmentsReady &&
+    roundTimerReady &&
     quizTimeLimitReady;
   const hasRemainingSharedQuiz = useMemo(
     () =>
@@ -297,6 +335,63 @@ export default function StudentRoster({
     if (!quizTimeLimitReady) return;
     storeQuizTimeLimitSeconds(quizTimeLimitSeconds);
   }, [quizTimeLimitReady, quizTimeLimitSeconds]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      setRoundTimerState(readStoredRoundTimerState());
+      setRoundTimerNowMs(Date.now());
+      setRoundTimerReady(true);
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!roundTimerReady) return;
+    storeRoundTimerState(roundTimerState);
+  }, [roundTimerReady, roundTimerState]);
+
+  useEffect(() => {
+    if (!roundTimerReady || !completedRoundIdsKey) return;
+
+    const timer = window.setTimeout(() => {
+      const completedAtMs = Date.now();
+      setRoundTimerState((current) => {
+        let changed = false;
+        const rounds = { ...current.rounds };
+
+        completedRoundIds.forEach((roundId) => {
+          const entry = rounds[roundId];
+          if (!entry || entry.completedAtMs !== undefined) return;
+          rounds[roundId] = { ...entry, completedAtMs };
+          changed = true;
+        });
+
+        return changed ? { ...current, rounds } : current;
+      });
+      setRoundTimerNowMs(completedAtMs);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [completedRoundIds, completedRoundIdsKey, roundTimerReady]);
+
+  useEffect(() => {
+    if (
+      !roundTimerReady ||
+      !selectedRoundTimer ||
+      selectedRoundTimer.completedAtMs !== undefined
+    ) {
+      return;
+    }
+
+    const timer = window.setInterval(() => setRoundTimerNowMs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [roundTimerReady, selectedRoundTimer]);
 
   useEffect(() => {
     let cancelled = false;
@@ -528,6 +623,31 @@ export default function StudentRoster({
     [progress, undoQuiz, withQuizAttemptReset],
   );
 
+  const startRoundTimer = useCallback((roundId: string) => {
+    const startedAtMs = Date.now();
+    setRoundTimerState((current) => {
+      if (current.rounds[roundId]) return current;
+      return {
+        ...current,
+        rounds: {
+          ...current.rounds,
+          [roundId]: { startedAtMs },
+        },
+      };
+    });
+    setRoundTimerNowMs(startedAtMs);
+  }, []);
+
+  const clearRoundTimer = useCallback((roundId: string) => {
+    setRoundTimerState((current) => {
+      if (!current.rounds[roundId]) return current;
+      const rounds = { ...current.rounds };
+      delete rounds[roundId];
+      return { ...current, rounds };
+    });
+    setRoundTimerNowMs(Date.now());
+  }, []);
+
   const resetRoundProgress = useCallback(
     async (round: CurriculumQuizRound) => {
       await withQuizAttemptReset(
@@ -540,6 +660,7 @@ export default function StudentRoster({
         delete nextRounds[round.id];
         return { ...current, rounds: nextRounds };
       });
+      clearRoundTimer(round.id);
 
       if (
         openQuizIndex !== null &&
@@ -558,7 +679,13 @@ export default function StudentRoster({
         completingRandomQuizRef.current = false;
       }
     },
-    [openQuizIndex, resetQuizRound, selectedRoundId, withQuizAttemptReset],
+    [
+      clearRoundTimer,
+      openQuizIndex,
+      resetQuizRound,
+      selectedRoundId,
+      withQuizAttemptReset,
+    ],
   );
 
   const closePanel = useCallback(() => {
@@ -768,7 +895,7 @@ export default function StudentRoster({
   );
 
   const openNextSharedQuiz = useCallback(() => {
-    if (!sharedQueueReady) return;
+    if (!selectedRound || !sharedQueueReady) return;
 
     const pendingQuizIndex = randomQuizOrder.find(
       (quizIndex) => validPendingByQuiz[String(quizIndex)] !== undefined,
@@ -786,13 +913,16 @@ export default function StudentRoster({
       return;
     }
 
+    startRoundTimer(selectedRound.id);
     openSharedQuiz(nextQuizIndex);
   }, [
     openSharedQuiz,
     progress,
     randomQuizOrder,
     randomQuizParticipants,
+    selectedRound,
     sharedQueueReady,
+    startRoundTimer,
     validPendingByQuiz,
   ]);
 
@@ -1138,6 +1268,15 @@ export default function StudentRoster({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
           <h1 className="shrink-0 text-3xl font-bold">진도 체크하기</h1>
+          {selectedRoundTimer && selectedRoundElapsedTime ? (
+            <span
+              aria-label={`ROUND ${selectedRound?.roundNumber ?? ""} 경과 시간 ${selectedRoundElapsedTime}`}
+              className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-[var(--control-border-active)] bg-[var(--control-background)] px-3 font-mono text-sm font-black tabular-nums text-[var(--control-foreground)]"
+            >
+              <span aria-hidden="true">⏱</span>
+              <time>{selectedRoundElapsedTime}</time>
+            </span>
+          ) : null}
           <button
             type="button"
             role="switch"

@@ -45,7 +45,7 @@ export function isRoundComplete(
 }
 
 function roundOptionLabel(round: CurriculumQuizRound) {
-  return `ROUND ${round.roundNumber} · ${round.gradeLabel} · ${round.semesterLabel} · ${round.curriculumLabel}`;
+  return `ROUND ${round.roundNumber} · ${round.gradeLabel} · ${round.semesterLabel} · ${round.curriculumLabel} · 퀴즈 ${round.quizIndexes.length}개`;
 }
 
 export default function RoundToolbar({
@@ -128,6 +128,9 @@ export default function RoundToolbar({
             </span>
             <span className="rounded-full border border-[var(--control-border)] bg-[var(--surface)] px-2.5 py-1 text-[var(--muted)]">
               {selectedRound.semesterLabel}
+            </span>
+            <span className="rounded-full border border-[var(--control-border)] bg-[var(--surface)] px-2.5 py-1 text-[var(--muted)]">
+              퀴즈 {selectedRound.quizIndexes.length}개
             </span>
             <span className="rounded-full border border-[var(--control-border)] bg-[var(--surface)] px-2.5 py-1 text-[var(--muted)]">
               {assignedNames.length}명
