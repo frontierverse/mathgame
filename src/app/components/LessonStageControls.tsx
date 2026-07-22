@@ -1,15 +1,13 @@
-import type { CircleAreaStage, PowersStage, PrimesStage, TriangleAreaStage } from "./types";
+import type { CircleAreaStage, PowersStage, TriangleAreaStage } from "./types";
 
 type LessonStageControlsProps = {
   lessonId: string;
   triangleAreaStage: TriangleAreaStage;
   circleAreaStage: CircleAreaStage;
   powersStage: PowersStage;
-  primesStage: PrimesStage;
   onTriangleAreaStageChange: (stage: TriangleAreaStage) => void;
   onCircleAreaStageChange: (stage: CircleAreaStage) => void;
   onPowersStageChange: (stage: PowersStage) => void;
-  onPrimesStageChange: (stage: PrimesStage) => void;
 };
 
 export default function LessonStageControls({
@@ -17,11 +15,9 @@ export default function LessonStageControls({
   triangleAreaStage,
   circleAreaStage,
   powersStage,
-  primesStage,
   onTriangleAreaStageChange,
   onCircleAreaStageChange,
   onPowersStageChange,
-  onPrimesStageChange,
 }: LessonStageControlsProps) {
   return (
     <>
@@ -42,54 +38,6 @@ export default function LessonStageControls({
         >
           이전
         </button>
-      )}
-      {lessonId === "primes-composites" && primesStage === 0 && (
-        <button
-          type="button"
-          onClick={() => onPrimesStageChange(1)}
-          className="absolute bottom-5 left-1/2 z-20 -translate-x-1/2 rounded-xl border border-[#5487bf] bg-[#eef7ff] px-5 py-3 text-sm font-bold text-[#335f91] shadow-[0_4px_0_#b6d4ec] transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
-        >
-          약수 →
-        </button>
-      )}
-      {lessonId === "primes-composites" && primesStage === 1 && (
-        <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 gap-3">
-          <button
-            type="button"
-            onClick={() => onPrimesStageChange(0)}
-            aria-label="이전 단계"
-            className="rounded-xl border border-[#b9add2] bg-[#f7f3fb] px-5 py-3 text-sm font-bold text-[#685c76] shadow-[0_4px_0_#d8cfe3] transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
-          >
-            ←
-          </button>
-          <button
-            type="button"
-            onClick={() => onPrimesStageChange(2)}
-            className="rounded-xl border border-[#5487bf] bg-[#eef7ff] px-5 py-3 text-sm font-bold text-[#335f91] shadow-[0_4px_0_#b6d4ec] transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
-          >
-            소인수분해 →
-          </button>
-        </div>
-      )}
-      {lessonId === "primes-composites" && primesStage === 2 && (
-        <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 gap-3">
-          <button
-            type="button"
-            onClick={() => onPrimesStageChange(1)}
-            aria-label="이전 단계"
-            className="rounded-xl border border-[#b9add2] bg-[#f7f3fb] px-5 py-3 text-sm font-bold text-[#685c76] shadow-[0_4px_0_#d8cfe3] transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
-          >
-            ←
-          </button>
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new Event("math-scene:replay"))}
-            aria-label="소인수분해 애니메이션 다시 보기"
-            className="rounded-xl border border-[#d99443] bg-[#fff8e8] px-4 py-3 text-sm font-bold text-[#9a5a18] shadow-[0_4px_0_#ead0a8] transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
-          >
-            ↻
-          </button>
-        </div>
       )}
       {lessonId === "triangle-area" && triangleAreaStage === 0 && (
         <button

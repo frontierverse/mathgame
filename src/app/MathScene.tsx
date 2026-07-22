@@ -6,8 +6,12 @@ import * as THREE from "three";
 import { getDefaultExpression, parseVisualExpression } from "./scenes/expression";
 import { createSceneHelpers, type AnimatedOrb } from "./scenes/helpers";
 import { buildLessonScene, hasDedicatedLessonScene } from "./scenes/lessonRegistry";
-import type { CircleAreaStage, LessonSceneContext, PowersStage, PrimesStage, TriangleAreaStage } from "./scenes/types";
-import { isFactorConceptLessonId } from "./shared/factorConcepts";
+import type {
+  CircleAreaStage,
+  LessonSceneContext,
+  PowersStage,
+  TriangleAreaStage,
+} from "./scenes/types";
 import { isDocumentUsingLightTheme, subscribeToTheme } from "./themeClient";
 
 type MathSceneProps = {
@@ -16,7 +20,6 @@ type MathSceneProps = {
   triangleStage?: TriangleAreaStage;
   circleStage?: CircleAreaStage;
   powersStage?: PowersStage;
-  primesStage?: PrimesStage;
 };
 
 const LIGHT_SCENE_PALETTE = {
@@ -61,9 +64,14 @@ export default function MathScene({
   triangleStage = 0,
   circleStage = 0,
   powersStage = 0,
-  primesStage = 0,
 }: MathSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const lessonSceneDescription =
+    lessonId === "divisors-gcd"
+      ? "12와 18의 약수를 비교하여 공약수 1, 2, 3, 6과 최대공약수 6을 보여 주는 애니메이션"
+      : lessonId === "multiples-lcm"
+        ? "4와 6의 배수를 비교하여 공배수 12, 24, 36과 최소공배수 12를 보여 주는 애니메이션"
+        : undefined;
   const isLightTheme = useSyncExternalStore(
     subscribeToTheme,
     isDocumentUsingLightTheme,
@@ -75,16 +83,13 @@ export default function MathScene({
     if (!container) return;
 
     const isNumberEvolution = lessonId === "quantity";
-    const isFactorConcept = isFactorConceptLessonId(lessonId);
     const hasDedicatedScene = hasDedicatedLessonScene(lessonId);
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
     const palette = isLightTheme ? LIGHT_SCENE_PALETTE : DARK_SCENE_PALETTE;
     const scene = new THREE.Scene();
-    if (!isFactorConcept) {
-      scene.fog = new THREE.FogExp2(palette.fog, 0.038);
-    }
+    scene.fog = new THREE.FogExp2(palette.fog, 0.038);
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
     const cameraTarget = new THREE.Vector3(0, 0.4, 0);
@@ -116,33 +121,31 @@ export default function MathScene({
     const keyLight = new THREE.DirectionalLight(palette.key, palette.keyIntensity);
     keyLight.position.set(4, 8, 7);
     scene.add(keyLight);
-    if (!isFactorConcept) {
-      const rimLight = new THREE.PointLight(
-        palette.rim,
-        palette.rimIntensity,
-        24,
-      );
-      rimLight.position.set(-7, 2, -2);
-      scene.add(rimLight);
-      const fillLight = new THREE.PointLight(
-        palette.fill,
-        palette.fillIntensity,
-        22,
-      );
-      fillLight.position.set(7, 0, 3);
-      scene.add(fillLight);
+    const rimLight = new THREE.PointLight(
+      palette.rim,
+      palette.rimIntensity,
+      24,
+    );
+    rimLight.position.set(-7, 2, -2);
+    scene.add(rimLight);
+    const fillLight = new THREE.PointLight(
+      palette.fill,
+      palette.fillIntensity,
+      22,
+    );
+    fillLight.position.set(7, 0, 3);
+    scene.add(fillLight);
 
-      const grid = new THREE.GridHelper(
-        24,
-        24,
-        palette.gridPrimary,
-        palette.gridSecondary,
-      );
-      grid.position.y = -2.5;
-      grid.material.opacity = palette.gridOpacity;
-      grid.material.transparent = true;
-      scene.add(grid);
-    }
+    const grid = new THREE.GridHelper(
+      24,
+      24,
+      palette.gridPrimary,
+      palette.gridSecondary,
+    );
+    grid.position.y = -2.5;
+    grid.material.opacity = palette.gridOpacity;
+    grid.material.transparent = true;
+    scene.add(grid);
 
     const parsed = parseVisualExpression(expression) ?? getDefaultExpression(lessonId);
     const interactiveMeshes: THREE.Mesh[] = [];
@@ -164,19 +167,14 @@ export default function MathScene({
       triangleStage,
       circleStage,
       powersStage,
-      primesStage,
       maxVisible,
       helpers,
     };
     const lessonScene = buildLessonScene(lessonId, sceneContext);
 
-    let factorContentSize: THREE.Vector3 | null = null;
     if (contentGroup.children.length > 0) {
       const contentBounds = new THREE.Box3().setFromObject(contentGroup);
       const contentCenter = contentBounds.getCenter(new THREE.Vector3());
-      if (isFactorConcept) {
-        factorContentSize = contentBounds.getSize(new THREE.Vector3());
-      }
       const contentTargetY =
         lessonId === "circle-circumference" && circleStage === 1
           ? 1
@@ -260,28 +258,18 @@ export default function MathScene({
       renderer.setSize(width, height);
       camera.aspect = width / Math.max(height, 1);
       lessonScene.resize?.(camera.aspect);
-      if (isFactorConcept) {
-        factorContentSize = new THREE.Box3()
-          .setFromObject(contentGroup)
-          .getSize(new THREE.Vector3());
-      }
-      if (isFactorConcept && factorContentSize) {
-        const halfVerticalFovTangent = Math.tan(
-          THREE.MathUtils.degToRad(camera.fov) / 2,
-        );
-        const verticalSpan = factorContentSize.y * 1.12;
-        const horizontalSpan = factorContentSize.x * 1.08;
-        const verticalFitDistance = verticalSpan / (2 * halfVerticalFovTangent);
-        const horizontalFitDistance =
-          horizontalSpan / (2 * halfVerticalFovTangent * camera.aspect);
-        cameraDistance = Math.max(verticalFitDistance, horizontalFitDistance, 8);
-        camera.position
-          .copy(cameraTarget)
-          .addScaledVector(cameraDirection, cameraDistance);
-      } else if (lessonId === "primes-composites") {
+      if (lessonId === "primes-composites") {
         const halfVerticalFovTangent = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
-        const verticalSpan = primesStage === 0 ? 8.2 : primesStage === 1 ? 8 : 8.6;
-        const horizontalSpan = primesStage === 0 ? 10.6 : primesStage === 1 ? 7.8 : 8.2;
+        const verticalSpan = 8.2;
+        const horizontalSpan = 10.6;
+        const verticalFitDistance = verticalSpan / (2 * halfVerticalFovTangent);
+        const horizontalFitDistance = horizontalSpan / (2 * halfVerticalFovTangent * camera.aspect);
+        cameraDistance = Math.max(verticalFitDistance, horizontalFitDistance);
+        camera.position.copy(cameraTarget).addScaledVector(cameraDirection, cameraDistance);
+      } else if (lessonId === "divisors-gcd" || lessonId === "multiples-lcm") {
+        const halfVerticalFovTangent = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+        const verticalSpan = 6.4;
+        const horizontalSpan = 7.6;
         const verticalFitDistance = verticalSpan / (2 * halfVerticalFovTangent);
         const horizontalFitDistance = horizontalSpan / (2 * halfVerticalFovTangent * camera.aspect);
         cameraDistance = Math.max(verticalFitDistance, horizontalFitDistance);
@@ -361,11 +349,13 @@ export default function MathScene({
       renderer.dispose();
       if (renderer.domElement.parentElement === container) container.removeChild(renderer.domElement);
     };
-  }, [expression, isLightTheme, lessonId, triangleStage, circleStage, powersStage, primesStage]);
+  }, [expression, isLightTheme, lessonId, triangleStage, circleStage, powersStage]);
 
   return (
     <div
       ref={containerRef}
+      role={lessonSceneDescription ? "img" : undefined}
+      aria-label={lessonSceneDescription}
       className="h-full min-h-[420px] w-full touch-none lg:min-h-0"
     />
   );

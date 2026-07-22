@@ -1,8 +1,8 @@
 import * as THREE from "three";
 
-import type { CircleAreaStage, PowersStage, PrimesStage, TriangleAreaStage } from "../shared/lessonScenes";
+import type { CircleAreaStage, PowersStage, TriangleAreaStage } from "../shared/lessonScenes";
 
-export type { CircleAreaStage, PowersStage, PrimesStage, TriangleAreaStage } from "../shared/lessonScenes";
+export type { CircleAreaStage, PowersStage, TriangleAreaStage } from "../shared/lessonScenes";
 
 export type ParsedExpression = {
   left: number;
@@ -27,7 +27,6 @@ export type LessonSceneContext = {
   triangleStage: TriangleAreaStage;
   circleStage: CircleAreaStage;
   powersStage: PowersStage;
-  primesStage: PrimesStage;
   maxVisible: number;
   helpers: SceneHelpers;
 };

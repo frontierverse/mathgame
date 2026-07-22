@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import MathGameLayout from "./components/MathGameLayout";
 import { getLessonIdFromQuery, lessons } from "./components/mathGameData";
 import { getPreview, isEditableTarget } from "./components/mathExpression";
-import type { CircleAreaStage, PowersStage, PrimesStage, TriangleAreaStage } from "./components/types";
+import type { CircleAreaStage, PowersStage, TriangleAreaStage } from "./components/types";
 
 const COMPLETED_LESSONS_STORAGE_KEY = "math-space-completed-lessons";
 const PROGRESS_CHANGE_EVENT = "math-space-progress-change";
@@ -78,10 +78,6 @@ function MathGame() {
     lessonId: string;
     stage: PowersStage;
   } | null>(null);
-  const [primesStageFor, setPrimesStageFor] = useState<{
-    lessonId: string;
-    stage: PrimesStage;
-  } | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -90,7 +86,6 @@ function MathGame() {
     triangleAreaStageFor?.lessonId === selectedLessonId ? triangleAreaStageFor.stage : 0;
   const circleAreaStage = circleAreaStageFor?.lessonId === selectedLessonId ? circleAreaStageFor.stage : 0;
   const powersStage = powersStageFor?.lessonId === selectedLessonId ? powersStageFor.stage : 0;
-  const primesStage = primesStageFor?.lessonId === selectedLessonId ? primesStageFor.stage : 0;
   const selectedLesson = lessons.find((lesson) => lesson.id === selectedLessonId) ?? lessons[0];
   const preview = useMemo(() => getPreview(expression), [expression]);
   const sceneExpression = expression || selectedLesson.example;
@@ -115,7 +110,6 @@ function MathGame() {
     setTriangleAreaStageFor(null);
     setCircleAreaStageFor(null);
     setPowersStageFor(null);
-    setPrimesStageFor(null);
   }, [pathname, router, searchParams]);
 
   useEffect(() => {
@@ -190,10 +184,6 @@ function MathGame() {
     setPowersStageFor({ lessonId: selectedLessonId, stage });
   }, [selectedLessonId]);
 
-  const changePrimesStage = useCallback((stage: PrimesStage) => {
-    setPrimesStageFor({ lessonId: selectedLessonId, stage });
-  }, [selectedLessonId]);
-
   return (
     <MathGameLayout
       lessons={lessons}
@@ -206,7 +196,6 @@ function MathGame() {
       triangleAreaStage={triangleAreaStage}
       circleAreaStage={circleAreaStage}
       powersStage={powersStage}
-      primesStage={primesStage}
       onSelectLesson={selectLesson}
       onToggleLessonComplete={toggleLessonComplete}
       onAddToken={addToken}
@@ -216,7 +205,6 @@ function MathGame() {
       onTriangleAreaStageChange={changeTriangleAreaStage}
       onCircleAreaStageChange={changeCircleAreaStage}
       onPowersStageChange={changePowersStage}
-      onPrimesStageChange={changePrimesStage}
     />
   );
 }
