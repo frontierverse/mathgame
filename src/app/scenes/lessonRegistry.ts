@@ -3,14 +3,12 @@ import {
   buildCircleAreaScene,
   buildCircleCircumferenceScene,
 } from "./lessons/circleAreaScene";
-import { buildDivisorsGcdScene } from "./lessons/divisorsGcdScene";
 import { buildFastAdditionScene } from "./lessons/fastAdditionScene";
 import { buildFallbackScene } from "./lessons/fallbackScene";
 import { buildMultiplicationScene } from "./lessons/multiplicationScene";
 import { buildMultiplesLcmScene } from "./lessons/multiplesLcmScene";
 import { buildPowersScene } from "./lessons/powersScene";
 import { buildPowersTwoScene } from "./lessons/powersTwoScene";
-import { buildPrimesCompositesScene } from "./lessons/primesCompositesScene";
 import { buildQuantityScene } from "./lessons/quantityScene";
 import { buildSquareAreaScene } from "./lessons/squareAreaScene";
 import { buildTimesTableTwoScene } from "./lessons/timesTableTwoScene";
@@ -41,10 +39,6 @@ export function buildLessonScene(lessonId: string, context: LessonSceneContext):
       return buildCircleAreaScene(context);
     case "powers":
       return buildPowersScene(context);
-    case "primes-composites":
-      return buildPrimesCompositesScene(context);
-    case "divisors-gcd":
-      return buildDivisorsGcdScene(context);
     case "multiples-lcm":
       return buildMultiplesLcmScene(context);
     case "powers-two":

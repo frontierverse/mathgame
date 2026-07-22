@@ -92,9 +92,9 @@ export const lessons: Lesson[] = [
   {
     id: "divisors-gcd",
     index: "12",
-    title: "약수 · 공약수 · 최대공약수",
-    description: "두 수의 공통 약수 찾기",
-    example: "12÷3",
+    title: "약수",
+    description: "피자 6조각을 남김없이 나누기",
+    example: "6",
     color: "#68b58d",
   },
   {

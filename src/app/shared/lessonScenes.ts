@@ -13,8 +13,6 @@ const dedicatedSceneLessonIds = new Set([
   "circle-circumference",
   "circle-area",
   "powers",
-  "primes-composites",
-  "divisors-gcd",
   "multiples-lcm",
   "powers-two",
 ]);

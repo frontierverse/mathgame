@@ -67,11 +67,9 @@ export default function MathScene({
 }: MathSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const lessonSceneDescription =
-    lessonId === "divisors-gcd"
-      ? "12와 18의 약수를 비교하여 공약수 1, 2, 3, 6과 최대공약수 6을 보여 주는 애니메이션"
-      : lessonId === "multiples-lcm"
-        ? "4와 6의 배수를 비교하여 공배수 12, 24, 36과 최소공배수 12를 보여 주는 애니메이션"
-        : undefined;
+    lessonId === "multiples-lcm"
+      ? "4와 6의 배수를 비교하여 공배수 12, 24, 36과 최소공배수 12를 보여 주는 애니메이션"
+      : undefined;
   const isLightTheme = useSyncExternalStore(
     subscribeToTheme,
     isDocumentUsingLightTheme,
@@ -258,15 +256,7 @@ export default function MathScene({
       renderer.setSize(width, height);
       camera.aspect = width / Math.max(height, 1);
       lessonScene.resize?.(camera.aspect);
-      if (lessonId === "primes-composites") {
-        const halfVerticalFovTangent = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
-        const verticalSpan = 8.2;
-        const horizontalSpan = 10.6;
-        const verticalFitDistance = verticalSpan / (2 * halfVerticalFovTangent);
-        const horizontalFitDistance = horizontalSpan / (2 * halfVerticalFovTangent * camera.aspect);
-        cameraDistance = Math.max(verticalFitDistance, horizontalFitDistance);
-        camera.position.copy(cameraTarget).addScaledVector(cameraDirection, cameraDistance);
-      } else if (lessonId === "divisors-gcd" || lessonId === "multiples-lcm") {
+      if (lessonId === "multiples-lcm") {
         const halfVerticalFovTangent = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
         const verticalSpan = 6.4;
         const horizontalSpan = 7.6;

@@ -62,7 +62,7 @@ export default function PrimeCompositeLesson2D() {
   };
 
   return (
-    <section className="relative flex min-h-[520px] min-w-0 max-w-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] shadow-[0_12px_30px_rgba(111,92,130,0.09)] sm:min-h-[620px] lg:min-h-0">
+    <section className="relative flex min-h-[520px] min-w-0 max-w-full flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] shadow-[0_12px_30px_rgba(111,92,130,0.09)] sm:min-h-[620px] lg:min-h-0">
       <header className="relative z-20 flex flex-wrap items-center justify-between gap-3 px-4 pb-1 pt-4 sm:px-6 sm:pt-5">
         <h2 className="sr-only">소수와 합성수</h2>
 

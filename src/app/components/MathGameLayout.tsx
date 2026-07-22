@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import ExpressionKeypad from "./ExpressionKeypad";
 import LessonProgress from "./LessonProgress";
 import LessonScene from "./LessonScene";
@@ -54,18 +56,29 @@ export default function MathGameLayout({
   onCircleAreaStageChange,
   onPowersStageChange,
 }: MathGameLayoutProps) {
+  const [isProgressCollapsed, setIsProgressCollapsed] = useState(false);
+
   return (
     <main className="learning-page-shell flex h-0 min-h-0 flex-1 flex-col overflow-y-auto bg-[var(--background)] text-[var(--foreground)] lg:overflow-hidden">
       <div className="mx-auto flex min-h-full w-full max-w-[1720px] flex-1 flex-col px-4 py-4 sm:px-6 lg:min-h-0 lg:px-8">
-        <section className="grid min-h-0 min-w-0 flex-none grid-cols-[minmax(0,1fr)] gap-4 lg:flex-1 lg:grid-cols-[270px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:overflow-hidden">
+        <section
+          className={`grid min-h-0 min-w-0 flex-none grid-cols-[minmax(0,1fr)] gap-4 lg:flex-1 lg:grid-rows-[minmax(0,1fr)] lg:overflow-hidden ${
+            isProgressCollapsed
+              ? "lg:grid-cols-[76px_minmax(0,1fr)]"
+              : "lg:grid-cols-[270px_minmax(0,1fr)]"
+          }`}
+        >
           <LessonProgress
             lessons={lessons}
             selectedLessonId={selectedLesson.id}
             completedLessonIds={completedLessonIds}
+            isCollapsed={isProgressCollapsed}
+            onToggleCollapsed={() => setIsProgressCollapsed((current) => !current)}
             onSelectLesson={onSelectLesson}
             onToggleLessonComplete={onToggleLessonComplete}
           />
           <LessonScene
+            lessons={lessons}
             lesson={selectedLesson}
             expression={expression}
             sceneExpression={sceneExpression}
@@ -73,6 +86,7 @@ export default function MathGameLayout({
             triangleAreaStage={triangleAreaStage}
             circleAreaStage={circleAreaStage}
             powersStage={powersStage}
+            onSelectLesson={onSelectLesson}
             onTriangleAreaStageChange={onTriangleAreaStageChange}
             onCircleAreaStageChange={onCircleAreaStageChange}
             onPowersStageChange={onPowersStageChange}
