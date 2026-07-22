@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { curriculum } from "../mathLogic";
 import { getQuizSetForSubunit } from "../shared/curriculumQuizzes";
 import PrintWorksheetButton from "./PrintWorksheetButton";
+import ReviewWorksheetCard, {
+  ReviewWorksheetCardFallback,
+} from "./ReviewWorksheetCard";
 import WorksheetCurriculumTabs from "./WorksheetCurriculumTabs";
 import { AVAILABLE_WORKSHEET_ID, availableWorksheet } from "./worksheetData";
 import { QUESTIONS_PER_PRINT_PAGE } from "./worksheetLayout";
@@ -11,6 +15,8 @@ export const metadata: Metadata = {
   title: "학습지 · 수학 공간",
   description: "중학교 1학년부터 3학년까지 소단원별 수학 학습지를 확인하고 인쇄합니다.",
 };
+
+export const dynamic = "force-dynamic";
 
 const semesterCount = curriculum.reduce((count, grade) => count + grade.semesters.length, 0);
 const unitCount = curriculum.reduce(
@@ -148,6 +154,10 @@ export default function WorksheetsPage() {
               </section>
             </div>
           </section>
+
+          <Suspense fallback={<ReviewWorksheetCardFallback />}>
+            <ReviewWorksheetCard />
+          </Suspense>
 
           <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
             <WorksheetCurriculumTabs

@@ -37,6 +37,20 @@ type WorksheetFonts = {
   bold: PDFFont;
 };
 
+type WorksheetPdfQuestion = {
+  number: number;
+  text: string;
+};
+
+type WorksheetPdfSpec = {
+  breadcrumb: string;
+  title: string;
+  subject: string;
+  footerLabel: string;
+  studentName?: string;
+  questions: readonly WorksheetPdfQuestion[];
+};
+
 function measureMathText(text: string, font: PDFFont, fontSize: number) {
   return parseMathText(text).reduce((width, segment) => {
     if (segment.type === "text") {
@@ -272,18 +286,17 @@ function wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: numbe
 
 function drawHeader(
   page: PDFPage,
-  quizSet: CurriculumQuizSet,
+  spec: WorksheetPdfSpec,
   fonts: WorksheetFonts,
 ) {
-  const breadcrumb = `${quizSet.gradeLabel} · ${quizSet.semesterLabel} · ${quizSet.unitTitle}`;
-  page.drawText(breadcrumb, {
+  page.drawText(spec.breadcrumb, {
     x: MARGIN_X,
     y: PAGE_HEIGHT - HEADER_TOP,
     size: 9,
     font: fonts.bold,
     color: PURPLE,
   });
-  page.drawText(`${quizSet.subunitTitle} 학습지`, {
+  page.drawText(spec.title, {
     x: MARGIN_X,
     y: PAGE_HEIGHT - HEADER_TOP - 30,
     size: 22,
@@ -297,6 +310,15 @@ function drawHeader(
     font: fonts.regular,
     color: INK,
   });
+  if (spec.studentName) {
+    page.drawText(spec.studentName, {
+      x: PAGE_WIDTH - MARGIN_X - 118,
+      y: PAGE_HEIGHT - HEADER_TOP - 26,
+      size: 9,
+      font: fonts.bold,
+      color: INK,
+    });
+  }
   page.drawLine({
     start: { x: PAGE_WIDTH - MARGIN_X - 122, y: PAGE_HEIGHT - HEADER_TOP - 29 },
     end: { x: PAGE_WIDTH - MARGIN_X - 58, y: PAGE_HEIGHT - HEADER_TOP - 29 },
@@ -389,7 +411,7 @@ function questionHeight(question: string, font: PDFFont) {
   );
 }
 
-export async function createWorksheetPdf(quizSet: CurriculumQuizSet) {
+async function createPdf(spec: WorksheetPdfSpec) {
   const pdfDocument = await PDFDocument.create();
   pdfDocument.registerFontkit(fontkit);
 
@@ -402,21 +424,21 @@ export async function createWorksheetPdf(quizSet: CurriculumQuizSet) {
     bold: await pdfDocument.embedFont(boldFontBytes, { subset: true }),
   };
 
-  pdfDocument.setTitle(`${quizSet.gradeLabel} ${quizSet.subunitTitle} 학습지`);
+  pdfDocument.setTitle(spec.title);
   pdfDocument.setAuthor("수학 공간");
-  pdfDocument.setSubject(`${quizSet.subunitTitle} 퀴즈 ${quizSet.quizzes.length}문항`);
+  pdfDocument.setSubject(spec.subject);
   pdfDocument.setCreationDate(new Date());
 
   let page = pdfDocument.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-  let y = drawHeader(page, quizSet, fonts);
+  let y = drawHeader(page, spec, fonts);
 
-  quizSet.quizzes.forEach((quiz) => {
-    const requiredHeight = questionHeight(quiz.question, fonts.regular);
+  spec.questions.forEach((question) => {
+    const requiredHeight = questionHeight(question.text, fonts.regular);
     if (y - requiredHeight < CONTENT_BOTTOM) {
       page = pdfDocument.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-      y = drawHeader(page, quizSet, fonts);
+      y = drawHeader(page, spec, fonts);
     }
-    y = drawQuestion(page, quiz.globalNumber, quiz.question, y, fonts);
+    y = drawQuestion(page, question.number, question.text, y, fonts);
   });
 
   const pages = pdfDocument.getPages();
@@ -427,7 +449,7 @@ export async function createWorksheetPdf(quizSet: CurriculumQuizSet) {
       thickness: 0.35,
       color: LINE,
     });
-    currentPage.drawText(`수학 공간 · ${quizSet.subunitTitle} · 최신 퀴즈 ${quizSet.quizzes.length}문항`, {
+    currentPage.drawText(`수학 공간 · ${spec.footerLabel}`, {
       x: MARGIN_X,
       y: FOOTER_Y,
       size: 7.5,
@@ -445,4 +467,34 @@ export async function createWorksheetPdf(quizSet: CurriculumQuizSet) {
   });
 
   return pdfDocument.save();
+}
+
+export async function createWorksheetPdf(quizSet: CurriculumQuizSet) {
+  return createPdf({
+    breadcrumb: `${quizSet.gradeLabel} · ${quizSet.semesterLabel} · ${quizSet.unitTitle}`,
+    title: `${quizSet.subunitTitle} 학습지`,
+    subject: `${quizSet.subunitTitle} 퀴즈 ${quizSet.quizzes.length}문항`,
+    footerLabel: `${quizSet.subunitTitle} · 최신 퀴즈 ${quizSet.quizzes.length}문항`,
+    questions: quizSet.quizzes.map((quiz) => ({
+      number: quiz.globalNumber,
+      text: quiz.question,
+    })),
+  });
+}
+
+export async function createReviewWorksheetPdf(
+  studentName: string,
+  questions: readonly { questionText: string }[],
+) {
+  return createPdf({
+    breadcrumb: `샤갈 복습 · ${questions.length}문항`,
+    title: `${studentName} 복습지`,
+    subject: `${studentName} 샤갈 복습 ${questions.length}문항`,
+    footerLabel: `${studentName} 복습 · ${questions.length}문항`,
+    studentName,
+    questions: questions.map((question, index) => ({
+      number: index + 1,
+      text: question.questionText,
+    })),
+  });
 }
