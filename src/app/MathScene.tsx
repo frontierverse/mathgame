@@ -7,6 +7,7 @@ import { getDefaultExpression, parseVisualExpression } from "./scenes/expression
 import { createSceneHelpers, type AnimatedOrb } from "./scenes/helpers";
 import { buildLessonScene, hasDedicatedLessonScene } from "./scenes/lessonRegistry";
 import type { CircleAreaStage, LessonSceneContext, PowersStage, PrimesStage, TriangleAreaStage } from "./scenes/types";
+import { isFactorConceptLessonId } from "./shared/factorConcepts";
 import { isDocumentUsingLightTheme, subscribeToTheme } from "./themeClient";
 
 type MathSceneProps = {
@@ -74,10 +75,16 @@ export default function MathScene({
     if (!container) return;
 
     const isNumberEvolution = lessonId === "quantity";
+    const isFactorConcept = isFactorConceptLessonId(lessonId);
     const hasDedicatedScene = hasDedicatedLessonScene(lessonId);
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     const palette = isLightTheme ? LIGHT_SCENE_PALETTE : DARK_SCENE_PALETTE;
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(palette.fog, 0.038);
+    if (!isFactorConcept) {
+      scene.fog = new THREE.FogExp2(palette.fog, 0.038);
+    }
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
     const cameraTarget = new THREE.Vector3(0, 0.4, 0);
@@ -109,23 +116,33 @@ export default function MathScene({
     const keyLight = new THREE.DirectionalLight(palette.key, palette.keyIntensity);
     keyLight.position.set(4, 8, 7);
     scene.add(keyLight);
-    const rimLight = new THREE.PointLight(palette.rim, palette.rimIntensity, 24);
-    rimLight.position.set(-7, 2, -2);
-    scene.add(rimLight);
-    const fillLight = new THREE.PointLight(palette.fill, palette.fillIntensity, 22);
-    fillLight.position.set(7, 0, 3);
-    scene.add(fillLight);
+    if (!isFactorConcept) {
+      const rimLight = new THREE.PointLight(
+        palette.rim,
+        palette.rimIntensity,
+        24,
+      );
+      rimLight.position.set(-7, 2, -2);
+      scene.add(rimLight);
+      const fillLight = new THREE.PointLight(
+        palette.fill,
+        palette.fillIntensity,
+        22,
+      );
+      fillLight.position.set(7, 0, 3);
+      scene.add(fillLight);
 
-    const grid = new THREE.GridHelper(
-      24,
-      24,
-      palette.gridPrimary,
-      palette.gridSecondary,
-    );
-    grid.position.y = -2.5;
-    grid.material.opacity = palette.gridOpacity;
-    grid.material.transparent = true;
-    scene.add(grid);
+      const grid = new THREE.GridHelper(
+        24,
+        24,
+        palette.gridPrimary,
+        palette.gridSecondary,
+      );
+      grid.position.y = -2.5;
+      grid.material.opacity = palette.gridOpacity;
+      grid.material.transparent = true;
+      scene.add(grid);
+    }
 
     const parsed = parseVisualExpression(expression) ?? getDefaultExpression(lessonId);
     const interactiveMeshes: THREE.Mesh[] = [];
@@ -142,6 +159,7 @@ export default function MathScene({
       contentGroup,
       interactiveMeshes,
       isLightTheme,
+      prefersReducedMotion,
       parsed,
       triangleStage,
       circleStage,
@@ -152,9 +170,13 @@ export default function MathScene({
     };
     const lessonScene = buildLessonScene(lessonId, sceneContext);
 
+    let factorContentSize: THREE.Vector3 | null = null;
     if (contentGroup.children.length > 0) {
       const contentBounds = new THREE.Box3().setFromObject(contentGroup);
       const contentCenter = contentBounds.getCenter(new THREE.Vector3());
+      if (isFactorConcept) {
+        factorContentSize = contentBounds.getSize(new THREE.Vector3());
+      }
       const contentTargetY =
         lessonId === "circle-circumference" && circleStage === 1
           ? 1
@@ -237,7 +259,26 @@ export default function MathScene({
       const { width, height } = container.getBoundingClientRect();
       renderer.setSize(width, height);
       camera.aspect = width / Math.max(height, 1);
-      if (lessonId === "primes-composites") {
+      lessonScene.resize?.(camera.aspect);
+      if (isFactorConcept) {
+        factorContentSize = new THREE.Box3()
+          .setFromObject(contentGroup)
+          .getSize(new THREE.Vector3());
+      }
+      if (isFactorConcept && factorContentSize) {
+        const halfVerticalFovTangent = Math.tan(
+          THREE.MathUtils.degToRad(camera.fov) / 2,
+        );
+        const verticalSpan = factorContentSize.y * 1.12;
+        const horizontalSpan = factorContentSize.x * 1.08;
+        const verticalFitDistance = verticalSpan / (2 * halfVerticalFovTangent);
+        const horizontalFitDistance =
+          horizontalSpan / (2 * halfVerticalFovTangent * camera.aspect);
+        cameraDistance = Math.max(verticalFitDistance, horizontalFitDistance, 8);
+        camera.position
+          .copy(cameraTarget)
+          .addScaledVector(cameraDirection, cameraDistance);
+      } else if (lessonId === "primes-composites") {
         const halfVerticalFovTangent = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
         const verticalSpan = primesStage === 0 ? 8.2 : primesStage === 1 ? 8 : 8.6;
         const horizontalSpan = primesStage === 0 ? 10.6 : primesStage === 1 ? 7.8 : 8.2;
@@ -275,12 +316,23 @@ export default function MathScene({
     };
     window.addEventListener("math-scene:replay", replayLessonAnimation);
     const animate = (timestamp: number) => {
-      const elapsed = Math.max(0, (timestamp - animationStartedAt) / 1000);
+      const elapsed = prefersReducedMotion
+        ? 20
+        : Math.max(0, (timestamp - animationStartedAt) / 1000);
       animatedOrbs.forEach(({ mesh, baseY, baseTilt, phase }) => {
-        mesh.position.y = baseY + Math.sin(elapsed * 1.45 + phase) * 0.08;
+        mesh.position.y = prefersReducedMotion
+          ? baseY
+          : baseY + Math.sin(elapsed * 1.45 + phase) * 0.08;
         mesh.rotation.z = baseTilt;
         const targetScale = mesh.userData.active ? mesh.userData.baseScale * 1.22 : mesh.userData.baseScale;
-        mesh.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.08);
+        if (prefersReducedMotion) {
+          mesh.scale.setScalar(targetScale);
+        } else {
+          mesh.scale.lerp(
+            new THREE.Vector3(targetScale, targetScale, targetScale),
+            0.08,
+          );
+        }
       });
       lessonScene.animate?.(elapsed);
       renderer.render(scene, camera);

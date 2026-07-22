@@ -1,6 +1,11 @@
 import MathScene from "../MathScene";
+import { isFactorConceptLessonId } from "../shared/factorConcepts";
 import { hasDedicatedLessonScene } from "../shared/lessonScenes";
+import DivisorsLesson2D from "./DivisorsLesson2D";
+import FactorConceptLesson from "./FactorConceptLesson";
 import LessonStageControls from "./LessonStageControls";
+import PrimeCompositeLesson2D from "./PrimeCompositeLesson2D";
+import PrimeFactorizationLesson2D from "./PrimeFactorizationLesson2D";
 import type {
   CircleAreaStage,
   ExpressionPreview,
@@ -39,6 +44,28 @@ export default function LessonScene({
   onPowersStageChange,
   onPrimesStageChange,
 }: LessonSceneProps) {
+  if (lesson.id === "divisors") {
+    return <DivisorsLesson2D key={lesson.id} />;
+  }
+
+  if (lesson.id === "primes-composites") {
+    return <PrimeCompositeLesson2D key={lesson.id} />;
+  }
+
+  if (lesson.id === "prime-factorization") {
+    return <PrimeFactorizationLesson2D key={lesson.id} />;
+  }
+
+  if (isFactorConceptLessonId(lesson.id)) {
+    return (
+      <FactorConceptLesson
+        key={lesson.id}
+        lessonId={lesson.id}
+        sceneExpression={sceneExpression}
+      />
+    );
+  }
+
   return (
     <section className="relative flex min-h-[620px] flex-col overflow-hidden rounded-2xl border border-[#ded3ed] bg-[#f8f4fb] shadow-[0_12px_30px_rgba(111,92,130,0.09)] lg:min-h-0">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(197,226,230,0.45),transparent_52%)]" />

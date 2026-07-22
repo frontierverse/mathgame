@@ -22,6 +22,7 @@ export type LessonSceneContext = {
   contentGroup: THREE.Group;
   interactiveMeshes: THREE.Mesh[];
   isLightTheme: boolean;
+  prefersReducedMotion: boolean;
   parsed: ParsedExpression;
   triangleStage: TriangleAreaStage;
   circleStage: CircleAreaStage;
@@ -33,4 +34,5 @@ export type LessonSceneContext = {
 
 export type LessonScene = {
   animate?: (elapsed: number) => void;
+  resize?: (aspect: number) => void;
 };

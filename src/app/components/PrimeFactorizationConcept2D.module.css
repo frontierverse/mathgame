@@ -1,0 +1,128 @@
+.scene {
+  --factor-prime: #53aebb;
+  --factor-composite: #9b84d9;
+  --factor-connector: #95899a;
+
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+:global(.theme-light) .scene {
+  --factor-prime: #287c89;
+  --factor-composite: #6d559e;
+  --factor-connector: #a8a0aa;
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.connector,
+.connectorFuture {
+  fill: none;
+  stroke: var(--factor-connector);
+  stroke-width: 3;
+  transition: opacity 500ms ease;
+}
+
+.connectorFuture {
+  opacity: 0;
+}
+
+.node,
+.nodePrime,
+.nodeRoot,
+.nodeFuture {
+  transition: opacity 500ms ease, transform 500ms ease;
+}
+
+.nodeFuture {
+  opacity: 0;
+}
+
+.node circle {
+  fill: var(--factor-composite);
+  stroke: #6d559e;
+  stroke-width: 3;
+}
+
+.nodePrime circle {
+  fill: var(--factor-prime);
+  stroke: #287c89;
+  stroke-width: 3;
+}
+
+.nodeRoot circle {
+  fill: #d3a94e;
+  stroke: #a6761e;
+  stroke-width: 3;
+}
+
+.node text,
+.nodePrime text,
+.nodeRoot text {
+  fill: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.nodePrime text,
+.nodeRoot text {
+  font-size: 21px;
+}
+
+.equation {
+  fill: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 33px;
+  font-weight: 900;
+  animation: equation-in 420ms ease-out both;
+}
+
+.equationPrime {
+  fill: var(--factor-prime);
+}
+
+.equationComposite {
+  fill: var(--factor-composite);
+}
+
+.factorLabel {
+  fill: var(--factor-prime);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+@keyframes equation-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connector,
+  .connectorFuture,
+  .node,
+  .nodePrime,
+  .nodeRoot,
+  .nodeFuture {
+    transition: none;
+  }
+
+  .equation {
+    animation: none;
+  }
+}
