@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 
+import MultiplesLcmP5 from "./MultiplesLcmP5";
 import PrimeFactorizationLesson2D from "./PrimeFactorizationLesson2D";
 
 const DEFAULT_FIRST_VALUE = 3;
@@ -35,55 +36,6 @@ function greatestCommonDivisor(first: number, second: number) {
 
 function leastCommonMultiple(first: number, second: number) {
   return (first * second) / greatestCommonDivisor(first, second);
-}
-
-function getMultiples(value: number, limit: number) {
-  return Array.from({ length: limit / value }, (_, index) => value * (index + 1));
-}
-
-function MultipleRow({
-  value,
-  multiples,
-  leastCommonMultipleValue,
-  tone,
-}: {
-  value: number;
-  multiples: number[];
-  leastCommonMultipleValue: number;
-  tone: "blue" | "red";
-}) {
-  const toneBorder =
-    tone === "blue" ? "var(--statistics-series-2)" : "var(--statistics-series-3)";
-
-  return (
-    <div className="grid gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 sm:grid-cols-[5rem_minmax(0,1fr)] sm:items-center">
-      <span className="text-sm font-black text-[var(--control-foreground)]">{value}의 배수</span>
-      <div className="flex flex-wrap gap-1.5" aria-label={`${value}의 배수`}> 
-        {multiples.map((multiple) => {
-          const isCommonMultiple = multiple % leastCommonMultipleValue === 0;
-          const isLeastCommonMultiple = multiple === leastCommonMultipleValue;
-
-          return (
-            <span
-              key={multiple}
-              style={
-                isCommonMultiple ? undefined : { borderColor: toneBorder }
-              }
-              className={`flex h-9 min-w-9 items-center justify-center rounded-full border px-1.5 font-mono text-sm font-black transition ${
-                isLeastCommonMultiple
-                  ? "border-[var(--statistics-series-1)] bg-[var(--control-background-active)] text-[var(--foreground)] ring-2 ring-[var(--focus-ring)] ring-offset-2 ring-offset-[var(--surface)]"
-                  : isCommonMultiple
-                    ? "border-[var(--statistics-series-7)] bg-[var(--control-background-active)] text-[var(--foreground)]"
-                    : "bg-[var(--control-background)] text-[var(--control-foreground)]"
-              }`}
-            >
-              {multiple}
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 
 function TravelQuestion() {
@@ -203,6 +155,7 @@ export default function MultiplesLcmLesson2D() {
   const [firstInput, setFirstInput] = useState(String(DEFAULT_FIRST_VALUE));
   const [secondInput, setSecondInput] = useState(String(DEFAULT_SECOND_VALUE));
   const [inputError, setInputError] = useState<string | null>(null);
+  const [replayKey, setReplayKey] = useState(0);
   const [activePart, setActivePart] = useState<
     "multiples" | "travel" | "factorization"
   >("multiples");
@@ -210,9 +163,6 @@ export default function MultiplesLcmLesson2D() {
     () => leastCommonMultiple(firstValue, secondValue),
     [firstValue, secondValue],
   );
-  const limit = lcm * 2;
-  const firstMultiples = useMemo(() => getMultiples(firstValue, limit), [firstValue, limit]);
-  const secondMultiples = useMemo(() => getMultiples(secondValue, limit), [secondValue, limit]);
 
   function applyValues(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -232,6 +182,7 @@ export default function MultiplesLcmLesson2D() {
     setSecondValue(nextSecondValue);
     setFirstInput(String(nextFirstValue));
     setSecondInput(String(nextSecondValue));
+    setReplayKey((current) => current + 1);
     setInputError(null);
   }
 
@@ -241,6 +192,7 @@ export default function MultiplesLcmLesson2D() {
     setFirstInput(String(DEFAULT_FIRST_VALUE));
     setSecondInput(String(DEFAULT_SECOND_VALUE));
     setInputError(null);
+    setReplayKey((current) => current + 1);
     setActivePart("multiples");
   }
 
@@ -270,82 +222,68 @@ export default function MultiplesLcmLesson2D() {
         ) : activePart === "factorization" ? (
           <PrimeFactorizationLesson2D />
         ) : (
-          <>
-        <form onSubmit={applyValues} noValidate className="flex flex-wrap items-end gap-2">
-          <label className="flex w-24 flex-col gap-1">
-            <span className="text-xs font-black text-[var(--muted)]">첫 수</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={MIN_VALUE}
-              max={MAX_VALUE}
-              step="1"
-              value={firstInput}
-              onChange={(event) => {
-                setFirstInput(event.target.value);
-                setInputError(null);
-              }}
-              aria-label="첫 번째 수"
-              aria-describedby="multiples-input-range"
-              className="h-11 w-full rounded-xl border border-[var(--control-border)] bg-[var(--control-background)] px-2 text-center font-mono text-xl font-black text-[var(--foreground)] outline-none transition focus:border-[#b5742b] focus-visible:ring-2 focus-visible:ring-[#b5742b]"
-            />
-          </label>
-          <label className="flex w-24 flex-col gap-1">
-            <span className="text-xs font-black text-[var(--muted)]">둘째 수</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={MIN_VALUE}
-              max={MAX_VALUE}
-              step="1"
-              value={secondInput}
-              onChange={(event) => {
-                setSecondInput(event.target.value);
-                setInputError(null);
-              }}
-              aria-label="둘째 수"
-              aria-describedby="multiples-input-range"
-              className="h-11 w-full rounded-xl border border-[var(--control-border)] bg-[var(--control-background)] px-2 text-center font-mono text-xl font-black text-[var(--foreground)] outline-none transition focus:border-[#b5742b] focus-visible:ring-2 focus-visible:ring-[#b5742b]"
-            />
-          </label>
-          <button
-            type="submit"
-            className="h-11 rounded-xl bg-[#b5742b] px-5 font-black text-white shadow-[0_4px_0_#8a541a] transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b5742b] focus-visible:ring-offset-2 active:translate-y-0"
-          >
-            보기
-          </button>
-          <span id="multiples-input-range" aria-live="polite" className="pb-2 text-xs font-black text-[#b5742b]">
-            {inputError ?? `${MIN_VALUE}–${MAX_VALUE}`}
-          </span>
-        </form>
+          <div className="grid gap-4">
+            <div
+              role="img"
+              aria-label={`${firstValue}의 배수와 ${secondValue}의 배수가 ${lcm}, ${lcm * 2}, ${lcm * 3}에서 만나는 애니메이션입니다.`}
+              className="relative min-h-[360px] sm:min-h-[430px]"
+            >
+              <MultiplesLcmP5
+                firstValue={firstValue}
+                secondValue={secondValue}
+                leastCommonMultiple={lcm}
+                replayKey={replayKey}
+              />
+            </div>
 
-        <div className="grid gap-3" role="img" aria-label={`${firstValue}와 ${secondValue}의 배수와 공배수`}> 
-          <MultipleRow
-            value={firstValue}
-            multiples={firstMultiples}
-            leastCommonMultipleValue={lcm}
-            tone="blue"
-          />
-          <MultipleRow
-            value={secondValue}
-            multiples={secondMultiples}
-            leastCommonMultipleValue={lcm}
-            tone="red"
-          />
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl bg-[var(--control-background-active)] px-4 py-3">
-            <p className="text-sm font-black text-[var(--control-foreground)]">공배수</p>
-            <p className="mt-1 font-mono text-2xl font-black text-[var(--foreground)]">{lcm} · {limit}</p>
+            <form onSubmit={applyValues} noValidate className="flex flex-wrap items-end justify-center gap-2">
+              <label className="flex w-24 flex-col gap-1">
+                <span className="text-xs font-black text-[var(--muted)]">첫 수</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={MIN_VALUE}
+                  max={MAX_VALUE}
+                  step="1"
+                  value={firstInput}
+                  onChange={(event) => {
+                    setFirstInput(event.target.value);
+                    setInputError(null);
+                  }}
+                  aria-label="첫 번째 수"
+                  aria-describedby="multiples-input-range"
+                  className="h-11 w-full rounded-xl border border-[var(--control-border)] bg-[var(--control-background)] px-2 text-center font-mono text-xl font-black text-[var(--foreground)] outline-none transition focus:border-[#b5742b] focus-visible:ring-2 focus-visible:ring-[#b5742b]"
+                />
+              </label>
+              <label className="flex w-24 flex-col gap-1">
+                <span className="text-xs font-black text-[var(--muted)]">둘째 수</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={MIN_VALUE}
+                  max={MAX_VALUE}
+                  step="1"
+                  value={secondInput}
+                  onChange={(event) => {
+                    setSecondInput(event.target.value);
+                    setInputError(null);
+                  }}
+                  aria-label="둘째 수"
+                  aria-describedby="multiples-input-range"
+                  className="h-11 w-full rounded-xl border border-[var(--control-border)] bg-[var(--control-background)] px-2 text-center font-mono text-xl font-black text-[var(--foreground)] outline-none transition focus:border-[#b5742b] focus-visible:ring-2 focus-visible:ring-[#b5742b]"
+                />
+              </label>
+              <button
+                type="submit"
+                className="h-11 rounded-xl bg-[#b5742b] px-5 font-black text-white shadow-[0_4px_0_#8a541a] transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b5742b] focus-visible:ring-offset-2 active:translate-y-0"
+              >
+                보기
+              </button>
+              <span id="multiples-input-range" aria-live="polite" className="pb-2 text-xs font-black text-[#b5742b]">
+                {inputError ?? `${MIN_VALUE}–${MAX_VALUE}`}
+              </span>
+            </form>
           </div>
-          <div className="rounded-2xl border-2 border-[var(--statistics-series-1)] bg-[var(--control-background-active)] px-4 py-3">
-            <p className="text-sm font-black text-[var(--control-foreground)]">최소공배수</p>
-            <p className="mt-1 font-mono text-3xl font-black text-[var(--foreground)]">{lcm}</p>
-          </div>
-        </div>
-
-          </>
         )}
       </div>
       <footer className="relative z-20 flex justify-center gap-3 px-5 pb-5 pt-1">

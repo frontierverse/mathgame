@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import IntegerNumberLineP5 from "./IntegerNumberLineP5";
 import styles from "./IntegerRationalLesson2D.module.css";
 
 type LessonPart = {
@@ -206,6 +207,7 @@ function NumberLine({
   jumps = [],
   maximum,
   minimum,
+  specialValues = [],
 }: {
   ariaLabel: string;
   highlightedValues?: readonly { color: string; value: number }[];
@@ -213,141 +215,51 @@ function NumberLine({
   jumps?: readonly NumberLineJump[];
   maximum: number;
   minimum: number;
+  specialValues?: readonly { color: string; label: string; value: number }[];
 }) {
-  const values = Array.from(
-    { length: maximum - minimum + 1 },
-    (_, index) => minimum + index,
-  );
-  const startX = 56;
-  const endX = 704;
-  const lineY = 116;
-  const xForValue = (value: number) =>
-    startX + ((value - minimum) / (maximum - minimum)) * (endX - startX);
-  const zeroX = minimum <= 0 && maximum >= 0 ? xForValue(0) : null;
-  const jumpDrawDelay = (index: number) => 500 + index * 700;
-
   return (
-    <div className="w-full overflow-x-auto rounded-3xl border border-[var(--border)] bg-[var(--control-background)] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:p-3">
-      <svg
-        role="img"
-        aria-label={ariaLabel}
-        viewBox="0 0 760 172"
-        className="h-auto min-w-[560px] w-full overflow-visible"
-      >
-      <rect x="14" y="20" width="732" height="128" rx="30" fill="var(--surface)" opacity="0.56" />
-      {zeroX !== null ? (
-        <>
-          <path d={`M ${startX} ${lineY} H ${zeroX}`} stroke={RED} strokeWidth="10" strokeLinecap="round" opacity="0.12" />
-          <path d={`M ${zeroX} ${lineY} H ${endX}`} stroke={BLUE} strokeWidth="10" strokeLinecap="round" opacity="0.12" />
-          <circle cx={zeroX} cy={lineY} r="21" fill="var(--control-background)" stroke={YELLOW} strokeWidth="3" />
-        </>
-      ) : null}
-
-      <line
-        x1={startX - 16}
-        y1={lineY}
-        x2={endX + 16}
-        y2={lineY}
-        stroke="var(--control-border)"
-        strokeWidth="3"
-        strokeLinecap="round"
+    <div
+      key={id}
+      role="img"
+      aria-label={ariaLabel}
+      className="relative min-h-44 w-full overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--control-background)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:min-h-48"
+    >
+      <IntegerNumberLineP5
+        highlightedValues={highlightedValues}
+        jumps={jumps}
+        maximum={maximum}
+        minimum={minimum}
+        specialValues={specialValues}
       />
-      <path d={`M ${startX - 20} ${lineY} l 10 -6 v 12 z`} fill="var(--muted)" />
-      <path d={`M ${endX + 20} ${lineY} l -10 -6 v 12 z`} fill="var(--muted)" />
-
-      {jumps.map((jump, index) => {
-        const fromX = xForValue(jump.from);
-        const toX = xForValue(jump.to);
-        const arcY = 84 - (jump.level ?? 0) * 21;
-        const labelX = (fromX + toX) / 2;
-        const drawDelay = jumpDrawDelay(index);
-
-        return (
-          <g key={`${id}-${jump.from}-${jump.to}-${index}`}>
-            <path
-              className={styles.jumpPath}
-              style={delay(drawDelay)}
-              pathLength={1}
-              d={`M ${fromX} ${lineY - 5} C ${fromX} ${arcY}, ${toX} ${arcY}, ${toX} ${lineY - 5}`}
-              fill="none"
-              stroke={jump.color}
-              strokeWidth="7"
-              strokeLinecap="round"
-            />
-            <path
-              className={styles.jumpArrow}
-              style={delay(drawDelay + 540)}
-              d={`M ${toX - 7} ${lineY - 18} L ${toX + 7} ${lineY - 18} L ${toX} ${lineY - 4} Z`}
-              fill={jump.color}
-            />
-            <text
-              className={styles.jumpLabel}
-              style={delay(drawDelay + 300)}
-              x={labelX}
-              y={arcY - 7}
-              textAnchor="middle"
-              fill={jump.color}
-              fontSize="18"
-              fontWeight="800"
-            >
-              {jump.label}
-            </text>
-          </g>
-        );
-      })}
-
-      {values.map((value) => {
-        const x = xForValue(value);
-        const highlightIndex = highlightedValues.findIndex((item) => item.value === value);
-        const highlight = highlightIndex >= 0 ? highlightedValues[highlightIndex] : undefined;
-        const markerColor = value === 0 ? YELLOW : highlight?.color;
-
-        return (
-          <g key={value}>
-            <line
-              x1={x}
-              y1={lineY - 9}
-              x2={x}
-              y2={lineY + 9}
-              stroke="var(--control-foreground)"
-              strokeWidth="2"
-            />
-            {markerColor ? (
-              <g className={styles.svgPop} style={delay(180 + Math.max(0, highlightIndex) * 140)}>
-                <circle cx={x} cy={lineY} r="17" fill={markerColor} opacity="0.16" />
-                <circle cx={x} cy={lineY} r="10" fill={markerColor} stroke="var(--surface)" strokeWidth="3" />
-              </g>
-            ) : null}
-            <text
-              x={x}
-              y={lineY + 38}
-              textAnchor="middle"
-              fill={markerColor ?? "var(--control-foreground)"}
-              fontSize="17"
-              fontWeight="800"
-            >
-              {signed(value)}
-            </text>
-          </g>
-        );
-      })}
-      </svg>
     </div>
   );
 }
 
 function PositiveNegativePart() {
   return (
-    <div className="grid max-w-5xl gap-4 sm:grid-cols-3">
-      <div className={styles.fadeUp} style={delay(0)}>
-        <Thermometer color={BLUE} kind="warm" value="+5℃" label="영상" />
+    <div className="grid w-full max-w-5xl gap-4">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className={styles.fadeUp} style={delay(0)}>
+          <Thermometer color={BLUE} kind="warm" value="+5℃" label="영상" />
+        </div>
+        <div className={styles.fadeUp} style={delay(150)}>
+          <Thermometer color={RED} kind="cold" value="−3℃" label="영하" />
+        </div>
+        <div className={styles.fadeUp} style={delay(300)}>
+          <ZeroPointCard />
+        </div>
       </div>
-      <div className={styles.fadeUp} style={delay(150)}>
-        <Thermometer color={RED} kind="cold" value="−3℃" label="영하" />
-      </div>
-      <div className={styles.fadeUp} style={delay(300)}>
-        <ZeroPointCard />
-      </div>
+      <NumberLine
+        id="positive-negative"
+        ariaLabel="수직선에서 영하 3도는 0의 왼쪽, 영상 5도는 0의 오른쪽에 있습니다."
+        minimum={-5}
+        maximum={5}
+        highlightedValues={[
+          { value: -3, color: RED },
+          { value: 0, color: YELLOW },
+          { value: 5, color: BLUE },
+        ]}
+      />
     </div>
   );
 }
@@ -429,6 +341,19 @@ function IntegerPart() {
       >
         정수 = 양의 정수 + 0 + 음의 정수
       </p>
+      <div className="sm:col-span-3">
+        <NumberLine
+          id="integers"
+          ariaLabel="음의 정수, 0, 양의 정수가 이어진 수직선입니다."
+          minimum={-4}
+          maximum={4}
+          highlightedValues={[
+            { value: -3, color: RED },
+            { value: 0, color: YELLOW },
+            { value: 3, color: BLUE },
+          ]}
+        />
+      </div>
     </div>
   );
 }
@@ -503,6 +428,24 @@ function RationalPart() {
             ))}
           </div>
         </section>
+      </div>
+      <div className="relative mt-5">
+        <NumberLine
+          id="rationals"
+          ariaLabel="정수와 분수, 소수가 모두 수직선 위의 유리수로 표시됩니다."
+          minimum={-3}
+          maximum={3}
+          highlightedValues={[
+            { value: -2, color: RED },
+            { value: 0, color: YELLOW },
+            { value: 3, color: BLUE },
+          ]}
+          specialValues={[
+            { value: -0.7, label: "−0.7", color: PURPLE },
+            { value: 0.5, label: "1/2", color: ORANGE },
+            { value: 2.25, label: "2.25", color: MINT },
+          ]}
+        />
       </div>
     </section>
   );

@@ -2,6 +2,8 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 
+import DivisorPizzaP5 from "./DivisorPizzaP5";
+
 const DEFAULT_PIZZA_SLICES = 6;
 const MAX_PIZZA_SLICES = 120;
 const PEOPLE_OPTIONS = [1, 2, 3, 4, 5, 6] as const;
@@ -31,102 +33,6 @@ function getGreatestCommonDivisor(first: number, second: number) {
   }
 
   return left;
-}
-
-function pointOnCircle(angle: number, radius: number, center = 130) {
-  const radians = (angle * Math.PI) / 180;
-  return {
-    x: center + Math.cos(radians) * radius,
-    y: center + Math.sin(radians) * radius,
-  };
-}
-
-function pizzaSlicePath(index: number, sliceCount: number) {
-  const angle = 360 / sliceCount;
-  const start = pointOnCircle(-90 + index * angle, 108);
-  const end = pointOnCircle(-90 + (index + 1) * angle, 108);
-  const largeArcFlag = angle > 180 ? 1 : 0;
-
-  return `M 130 130 L ${start.x} ${start.y} A 108 108 0 ${largeArcFlag} 1 ${end.x} ${end.y} Z`;
-}
-
-function toppingPosition(index: number, sliceCount: number, radius: number) {
-  return pointOnCircle(-90 + (index + 0.5) * (360 / sliceCount), radius);
-}
-
-function PizzaGraphic({ people, sliceCount }: { people: number | null; sliceCount: number }) {
-  const isDivisor = people !== null && sliceCount % people === 0;
-  const groupSize = people === null ? 0 : Math.floor(sliceCount / people);
-  const sharedSlices = people === null ? 0 : groupSize * people;
-  const remainingSlices = sliceCount - sharedSlices;
-  const showToppings = sliceCount <= 12;
-
-  return (
-    <div
-      role="img"
-      aria-label={
-        people === null
-          ? `피자 ${sliceCount}조각`
-          : isDivisor
-            ? `피자 ${sliceCount}조각을 ${people}명이 ${groupSize}조각씩 나누어 먹는 모습`
-            : `피자 ${sliceCount}조각을 ${people}명이 나누어 먹으면 남는 조각이 생기는 모습`
-      }
-      className="relative flex min-h-[280px] items-center justify-center sm:min-h-[320px]"
-    >
-      <svg
-        viewBox="0 0 260 260"
-        className={`h-full max-h-[310px] w-full max-w-[310px] overflow-visible transition-transform duration-500 ${isDivisor ? "scale-[1.02]" : ""}`}
-        aria-hidden="true"
-      >
-        <circle cx="130" cy="137" r="112" fill="#c9a36a" opacity="0.2" />
-        <circle cx="130" cy="130" r="112" fill="#d99348" stroke="#a8642e" strokeWidth="5" />
-        <circle cx="130" cy="130" r="103" fill="#f6ca6b" stroke="#f8e3a8" strokeWidth="5" />
-
-        {sliceCount === 1 ? (
-          <circle
-            cx="130"
-            cy="130"
-            r="108"
-            fill={people === null ? "#f6ca6b" : remainingSlices > 0 ? "#d95b67" : GROUP_COLORS[0]}
-            stroke="#a8642e"
-            strokeWidth="2.5"
-          />
-        ) : (
-          Array.from({ length: sliceCount }, (_, index) => {
-            const groupIndex = groupSize === 0 ? 0 : Math.floor(index / groupSize);
-            const color =
-              people === null
-                ? "#f6ca6b"
-                : index < sharedSlices
-                  ? GROUP_COLORS[groupIndex % GROUP_COLORS.length]
-                  : "#d95b67";
-            const firstTopping = toppingPosition(index, sliceCount, 67);
-            const secondTopping = toppingPosition(index, sliceCount, 86);
-
-            return (
-              <g key={index} className="transition-opacity duration-300">
-                <path d={pizzaSlicePath(index, sliceCount)} fill={color} stroke="#a8642e" strokeWidth="2.5" />
-                {showToppings ? (
-                  <>
-                    <circle cx={firstTopping.x} cy={firstTopping.y} r="8" fill="#d95b57" stroke="#b74642" strokeWidth="2" />
-                    <circle cx={secondTopping.x} cy={secondTopping.y} r="6" fill="#d95b57" stroke="#b74642" strokeWidth="2" />
-                  </>
-                ) : null}
-              </g>
-            );
-          })
-        )}
-
-        <circle cx="130" cy="130" r="16" fill="#f8e3a8" stroke="#a8642e" strokeWidth="2" />
-        <text x="130" y="128" textAnchor="middle" className="fill-[#5d3928] font-mono text-[18px] font-black">
-          {sliceCount}
-        </text>
-        <text x="130" y="144" textAnchor="middle" className="fill-[#7c4b31] text-[10px] font-black">
-          조각
-        </text>
-      </svg>
-    </div>
-  );
 }
 
 function MiniSlice() {
@@ -204,6 +110,7 @@ export default function DivisorsLesson2D() {
   const [commonDivisorValue, setCommonDivisorValue] = useState(8);
   const [commonDivisorInput, setCommonDivisorInput] = useState("8");
   const [people, setPeople] = useState<number | null>(null);
+  const [replayKey, setReplayKey] = useState(0);
   const [showRemainder, setShowRemainder] = useState(false);
   const [activePart, setActivePart] = useState<"divisors" | "division" | "common">("divisors");
   const [inputError, setInputError] = useState<string | null>(null);
@@ -241,6 +148,7 @@ export default function DivisorsLesson2D() {
     setPizzaSlices(nextSliceCount);
     setSliceInput(String(nextSliceCount));
     setPeople(null);
+    setReplayKey((current) => current + 1);
     setShowRemainder(false);
     setActivePart("divisors");
     setInputError(null);
@@ -252,6 +160,7 @@ export default function DivisorsLesson2D() {
     setCommonDivisorValue(8);
     setCommonDivisorInput("8");
     setPeople(null);
+    setReplayKey((current) => current + 1);
     setShowRemainder(false);
     setActivePart("divisors");
     setInputError(null);
@@ -290,7 +199,23 @@ export default function DivisorsLesson2D() {
       </header>
 
       <div className="relative z-10 grid flex-1 gap-3 px-4 pb-5 sm:px-7 lg:grid-cols-[minmax(280px,0.9fr)_minmax(360px,1.1fr)] lg:items-center lg:gap-8">
-        <PizzaGraphic people={activePart === "divisors" ? people : null} sliceCount={pizzaSlices} />
+        <div
+          role="img"
+          aria-label={
+            people === null
+              ? `피자 ${pizzaSlices}조각을 남김없이 나눌 수 있는 사람 수는 ${divisors.join(", ")}명입니다.`
+              : isDivisor
+                ? `피자 ${pizzaSlices}조각을 ${people}명이 ${pizzaSlices / people}조각씩 나누는 애니메이션입니다.`
+                : `피자 ${pizzaSlices}조각을 ${people}명에게 나누면 ${remainder}조각이 남는 애니메이션입니다.`
+          }
+          className="relative min-h-[280px] sm:min-h-[320px]"
+        >
+          <DivisorPizzaP5
+            people={activePart === "divisors" ? people : null}
+            replayKey={replayKey}
+            sliceCount={pizzaSlices}
+          />
+        </div>
 
         <div className="flex min-w-0 flex-col justify-center">
           <form onSubmit={submitSliceCount} className="flex flex-wrap items-end gap-2" noValidate>

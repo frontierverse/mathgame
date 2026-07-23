@@ -2,7 +2,7 @@
 
 import { type FormEvent, useState } from "react";
 
-import DivisorsConcept2D from "./DivisorsConcept2D";
+import PrimeFactorArrayP5 from "./PrimeFactorArrayP5";
 
 const MIN_VALUE = 1;
 const MAX_VALUE = 60;
@@ -127,10 +127,10 @@ export default function PrimeCompositeLesson2D() {
 
       <div
         role="img"
-        aria-label={`${value}의 직사각형 배열이 약수쌍에 따라 바뀝니다. 결과는 ${classification}입니다. 약수는 ${divisors.join(", ")}입니다.`}
+        aria-label={`${value}개의 블록을 약수쌍에 따라 여러 직사각형 모양으로 배열합니다. 만들 수 있는 직사각형은 ${Math.ceil(divisors.length / 2)}가지이며, 결과는 ${classification}입니다. 약수는 ${divisors.join(", ")}입니다.`}
         className="relative min-h-[390px] flex-1 sm:min-h-[450px]"
       >
-        <DivisorsConcept2D key={`${value}-${replayKey}`} value={value} variant="array" />
+        <PrimeFactorArrayP5 key={`${value}-${replayKey}`} value={value} replayKey={replayKey} />
       </div>
       <p className="sr-only" aria-live="polite">
         {value}는 {classification}입니다.
