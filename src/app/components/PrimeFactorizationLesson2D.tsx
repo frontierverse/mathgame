@@ -5,7 +5,7 @@ import { type FormEvent, useState } from "react";
 import PrimeFactorizationConcept2D from "./PrimeFactorizationConcept2D";
 
 const MIN_VALUE = 1;
-const MAX_VALUE = 60;
+const MAX_VALUE = 120;
 
 function parseInputValue(rawValue: string) {
   if (!/^\d+$/.test(rawValue)) return null;
@@ -66,7 +66,7 @@ export default function PrimeFactorizationLesson2D() {
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            maxLength={2}
+            maxLength={3}
             value={draftValue}
             onChange={(event) => setDraftValue(event.target.value)}
             onFocus={(event) => event.currentTarget.select()}
@@ -79,7 +79,7 @@ export default function PrimeFactorizationLesson2D() {
             소인수분해
           </span>
           <span id="prime-factorization-input-range" className="sr-only">
-            1 이상 60 이하의 자연수를 입력하세요.
+            1 이상 120 이하의 자연수를 입력하세요.
           </span>
           <button
             type="submit"
@@ -92,10 +92,10 @@ export default function PrimeFactorizationLesson2D() {
           {nextValue === null ? (
             <span
               aria-live="polite"
-              aria-label="1 이상 60 이하만 입력할 수 있습니다."
+              aria-label="1 이상 120 이하만 입력할 수 있습니다."
               className="absolute -bottom-4 left-0 w-20 text-center font-mono text-[11px] font-black text-[#d95b67] sm:w-24"
             >
-              1–60
+              1–120
             </span>
           ) : null}
         </form>

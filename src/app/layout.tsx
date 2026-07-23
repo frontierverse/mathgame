@@ -49,7 +49,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitializationScript }} />
       </head>
-      <body className="flex min-h-dvh flex-col">
+      <body suppressHydrationWarning className="flex min-h-dvh flex-col">
         <AppHeader />
         {children}
       </body>

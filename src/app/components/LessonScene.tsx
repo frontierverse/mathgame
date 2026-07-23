@@ -2,6 +2,7 @@ import MathScene from "../MathScene";
 import { hasDedicatedLessonScene } from "../shared/lessonScenes";
 import DivisorsLesson2D from "./DivisorsLesson2D";
 import LessonStageControls from "./LessonStageControls";
+import MultiplesLcmLesson2D from "./MultiplesLcmLesson2D";
 import PrimeCompositeLesson2D from "./PrimeCompositeLesson2D";
 import type {
   CircleAreaStage,
@@ -51,11 +52,17 @@ export default function LessonScene({
     />
   );
 
-  if (lesson.id === "divisors-gcd" || lesson.id === "primes-composites") {
+  if (
+    lesson.id === "divisors-gcd" ||
+    lesson.id === "primes-composites" ||
+    lesson.id === "multiples-lcm"
+  ) {
     return (
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         {lesson.id === "divisors-gcd" ? (
           <DivisorsLesson2D key={lesson.id} />
+        ) : lesson.id === "multiples-lcm" ? (
+          <MultiplesLcmLesson2D key={lesson.id} />
         ) : (
           <PrimeCompositeLesson2D key={lesson.id} />
         )}
