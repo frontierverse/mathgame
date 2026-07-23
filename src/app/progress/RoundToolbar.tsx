@@ -145,7 +145,8 @@ export default function RoundToolbar({
           <div>
             <div className="flex items-center justify-between gap-4 text-[11px] font-black text-[var(--lesson-text)]">
               <span>
-                야르 {roundProgress.rubyCount}/{roundProgress.rubyTarget}
+                <span className="text-transparent">야르</span>{" "}
+                {roundProgress.rubyCount}/{roundProgress.rubyTarget}
               </span>
               <span>
                 {roundProgress.completedStudentCount}/

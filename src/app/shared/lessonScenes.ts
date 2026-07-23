@@ -13,6 +13,7 @@ const dedicatedSceneLessonIds = new Set([
   "circle-circumference",
   "circle-area",
   "powers",
+  "integers-rationals",
   "multiples-lcm",
   "powers-two",
 ]);

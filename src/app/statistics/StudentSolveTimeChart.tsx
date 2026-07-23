@@ -1,3 +1,7 @@
+"use client";
+
+import { useState, type KeyboardEvent, type PointerEvent } from "react";
+
 import type { QuizStatisticsRecord } from "./quizStatistics";
 
 type StudentSolveTimeChartProps = {
@@ -197,6 +201,9 @@ function PointMark({
 export default function StudentSolveTimeChart({
   records,
 }: StudentSolveTimeChartProps) {
+  const [activeQuizPositionState, setActiveQuizPositionState] = useState<
+    number | null
+  >(null);
   const aggregatesByStudent = new Map<string, Map<number, Aggregate>>();
   const quizIndexSet = new Set<number>();
 
@@ -290,6 +297,71 @@ export default function StudentSolveTimeChart({
     },
   );
 
+  const activeQuizPosition =
+    activeQuizPositionState !== null &&
+    activeQuizPositionState < quizIndices.length
+      ? activeQuizPositionState
+      : null;
+  const activeQuizIndex =
+    activeQuizPosition === null ? null : quizIndices[activeQuizPosition];
+  const activeX =
+    activeQuizPosition === null ? null : xForPosition(activeQuizPosition);
+
+  const selectQuizFromPointer = (event: PointerEvent<SVGSVGElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    if (bounds.width === 0 || bounds.height === 0) return;
+
+    const x = (event.clientX - bounds.left) * (chartWidth / bounds.width);
+    const y = (event.clientY - bounds.top) * (CHART_HEIGHT / bounds.height);
+
+    if (
+      x < PLOT_LEFT ||
+      x > chartWidth - PLOT_RIGHT ||
+      y < PLOT_TOP ||
+      y > PLOT_BOTTOM
+    ) {
+      setActiveQuizPositionState(null);
+      return;
+    }
+
+    const closestPosition = quizIndices.reduce(
+      (closest, _quizIndex, position) =>
+        Math.abs(xForPosition(position) - x) <
+        Math.abs(xForPosition(closest) - x)
+          ? position
+          : closest,
+      0,
+    );
+    setActiveQuizPositionState((current) =>
+      current === closestPosition ? current : closestPosition,
+    );
+  };
+
+  const handleChartKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
+    let nextPosition: number | null = null;
+
+    if (event.key === "ArrowLeft") {
+      nextPosition = Math.max(
+        0,
+        (activeQuizPosition ?? quizIndices.length) - 1,
+      );
+    } else if (event.key === "ArrowRight") {
+      nextPosition = Math.min(
+        quizIndices.length - 1,
+        (activeQuizPosition ?? -1) + 1,
+      );
+    } else if (event.key === "Home") {
+      nextPosition = 0;
+    } else if (event.key === "End") {
+      nextPosition = quizIndices.length - 1;
+    }
+
+    if (nextPosition !== null) {
+      event.preventDefault();
+      setActiveQuizPositionState(nextPosition);
+    }
+  };
+
   return (
     <figure className="mt-8" aria-labelledby="student-time-chart-heading">
       <figcaption id="student-time-chart-heading" className="text-lg font-black">
@@ -322,18 +394,35 @@ export default function StudentSolveTimeChart({
 
       <div className="mt-3 overflow-x-auto pb-2">
         <svg
-          role="img"
+          role="application"
           aria-label="학생별 퀴즈 평균 풀이 시간 선 그래프"
           viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}
           width={chartWidth}
           height={CHART_HEIGHT}
-          className="block max-w-none"
+          tabIndex={0}
+          className="block max-w-none cursor-crosshair focus:outline-none"
+          onBlur={() => setActiveQuizPositionState(null)}
+          onFocus={() =>
+            setActiveQuizPositionState((current) => current ?? 0)
+          }
+          onKeyDown={handleChartKeyDown}
+          onPointerDown={selectQuizFromPointer}
+          onPointerLeave={() => setActiveQuizPositionState(null)}
+          onPointerMove={selectQuizFromPointer}
         >
           <title>학생별 퀴즈 평균 풀이 시간</title>
           <desc>
             가로축은 퀴즈 번호이고 세로축은 반복 풀이를 포함한 학생별 평균
             시간(초)입니다.
           </desc>
+
+          <rect
+            x={PLOT_LEFT}
+            y={PLOT_TOP}
+            width={plotWidth}
+            height={plotHeight}
+            fill="transparent"
+          />
 
           {quizIndices.map((quizIndex, position) => {
             const x = xForPosition(position);
@@ -427,6 +516,20 @@ export default function StudentSolveTimeChart({
             평균(초)
           </text>
 
+          {activeX !== null ? (
+            <line
+              x1={activeX}
+              y1={PLOT_TOP}
+              x2={activeX}
+              y2={PLOT_BOTTOM}
+              stroke="var(--foreground)"
+              strokeWidth="1.5"
+              strokeDasharray="5 4"
+              opacity="0.75"
+              pointerEvents="none"
+            />
+          ) : null}
+
           {series.map((student) => (
             <g key={student.studentName} style={{ color: student.color }}>
               <path
@@ -455,8 +558,64 @@ export default function StudentSolveTimeChart({
               )}
             </g>
           ))}
+
+          {activeQuizPosition !== null
+            ? series.map((student) => {
+                const point = student.points[activeQuizPosition];
+                if (!point) return null;
+
+                return (
+                  <circle
+                    key={student.studentName}
+                    cx={point.x}
+                    cy={point.y}
+                    r="9"
+                    fill="none"
+                    stroke={student.color}
+                    strokeWidth="1.75"
+                    pointerEvents="none"
+                  />
+                );
+              })
+            : null}
         </svg>
       </div>
+
+      {activeQuizPosition === null || activeQuizIndex === null ? (
+        <p className="text-xs font-bold text-[var(--muted)]">
+          선 위에 올려 보기
+        </p>
+      ) : (
+        <div
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-bold text-[var(--foreground)]"
+          aria-live="polite"
+        >
+          <strong className="mr-1 text-sm">{activeQuizIndex + 1}번</strong>
+          {series.map((student) => {
+            const point = student.points[activeQuizPosition];
+            const time =
+              point === null
+                ? "—"
+                : point.measuredCount === 0
+                  ? "0초"
+                  : `${formatAverageSeconds(point.averageSeconds)}초`;
+
+            return (
+              <span
+                key={student.studentName}
+                className="inline-flex items-center gap-1 rounded-full border border-[var(--border)] px-2 py-1"
+              >
+                <span
+                  aria-hidden="true"
+                  className="size-2 rounded-full"
+                  style={{ backgroundColor: student.color }}
+                />
+                {student.displayName} {time}
+              </span>
+            );
+          })}
+        </div>
+      )}
     </figure>
   );
 }

@@ -1,0 +1,198 @@
+.partIn {
+  animation: part-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.fadeUp {
+  animation: fade-up 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+.pop {
+  animation: pop-in 480ms cubic-bezier(0.34, 1.4, 0.5, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+.svgPop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop-in 480ms cubic-bezier(0.34, 1.4, 0.5, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+.svgFade {
+  animation: fade-in 400ms ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+
+.jumpPath {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-path 620ms cubic-bezier(0.4, 0, 0.3, 1) forwards;
+  animation-delay: var(--d, 0ms);
+}
+
+.jumpArrow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop-in 260ms cubic-bezier(0.34, 1.4, 0.5, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+.jumpLabel {
+  animation: fade-up 320ms ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+
+.mercury {
+  transform-box: fill-box;
+  transform-origin: center 88%;
+  animation: mercury-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 200ms;
+}
+
+.sunRays {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sun-spin 14s linear infinite;
+}
+
+.snowflake {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: snow-sway 3.4s ease-in-out infinite;
+}
+
+.zeroPulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: zero-pulse 2.6s ease-in-out infinite;
+  animation-delay: 600ms;
+}
+
+.zeroDirection {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-path 700ms cubic-bezier(0.4, 0, 0.3, 1) forwards;
+  animation-delay: var(--d, 250ms);
+}
+
+@keyframes part-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+
+  70% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes draw-path {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes mercury-rise {
+  from {
+    transform: scaleY(0.12);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes sun-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes snow-sway {
+  0%,
+  100% {
+    transform: rotate(-12deg);
+  }
+
+  50% {
+    transform: rotate(12deg);
+  }
+}
+
+@keyframes zero-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .partIn,
+  .fadeUp,
+  .pop,
+  .svgPop,
+  .svgFade,
+  .jumpArrow,
+  .jumpLabel,
+  .mercury,
+  .sunRays,
+  .snowflake,
+  .zeroPulse {
+    animation: none;
+  }
+
+  .jumpPath,
+  .zeroDirection {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

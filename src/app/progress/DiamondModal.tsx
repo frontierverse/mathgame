@@ -161,7 +161,8 @@ export default function DiamondModal({
               {studentName} · 다이아몬드 {diamondIndex + 1}
             </p>
             <h2 id="diamond-modal-title" className="mt-0.5 text-xl font-black text-[#463c56]">
-              다이아몬드를 만든 야르 {rubyQuizIndexes.length}개
+              다이아몬드를 만든 <span className="text-transparent">야르</span>{" "}
+              {rubyQuizIndexes.length}개
             </h2>
           </div>
         </div>

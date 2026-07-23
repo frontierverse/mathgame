@@ -226,7 +226,9 @@ export default function QuizDetail({
                   variant={variant}
                   className="h-16 w-16 shrink-0"
                 />
-                <span className="text-sm">{label ?? MINERALS[variant].label}</span>
+                <span className="text-sm text-transparent">
+                  {label ?? MINERALS[variant].label}
+                </span>
               </button>
             ))}
           </div>

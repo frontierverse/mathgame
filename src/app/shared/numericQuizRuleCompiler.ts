@@ -318,7 +318,224 @@ function factorizationPool(originalValue: number) {
     : LARGE_FACTORIZATION_TARGETS;
 }
 
+type ArithmeticOperator = "+" | "-";
+type MultiplicationDivisionOperator = "×" | "÷";
+type RationalOperand = {
+  denominator: number;
+  numerator: number;
+};
+
+const INTEGER_ARITHMETIC_OPERANDS = {
+  "+": [
+    [-9, 4],
+    [-6, -7],
+    [-12, 5],
+    [8, -13],
+    [14, -9],
+  ],
+  "-": [
+    [8, 13],
+    [-4, 7],
+    [-9, -5],
+    [6, -11],
+    [-15, -8],
+  ],
+} as const;
+
+const FRACTION_ARITHMETIC_OPERANDS = {
+  "+": [
+    ["2/3", "1/6"],
+    ["-3/4", "1/2"],
+    ["-5/6", "-1/3"],
+    ["3/8", "-1/4"],
+    ["-2/5", "7/10"],
+  ],
+  "-": [
+    ["5/6", "1/3"],
+    ["-2/5", "3/10"],
+    ["-3/4", "-1/2"],
+    ["7/8", "5/12"],
+    ["-1/6", "-2/3"],
+  ],
+} as const;
+
+const INTEGER_MULTIPLICATION_DIVISION_OPERANDS = {
+  "×": [
+    [-6, 4],
+    [-5, -3],
+    [7, -8],
+    [-9, -2],
+    [12, -3],
+  ],
+  "÷": [
+    [18, -6],
+    [-20, 5],
+    [-24, -6],
+    [35, -7],
+    [-48, 8],
+  ],
+} as const;
+
+const FRACTION_MULTIPLICATION_DIVISION_OPERANDS = {
+  "×": [
+    ["2/3", "3/5"],
+    ["-3/4", "2/3"],
+    ["-5/6", "-3/5"],
+    ["3/8", "-4/9"],
+    ["-2/5", "7/4"],
+  ],
+  "÷": [
+    ["5/6", "1/3"],
+    ["-3/5", "9/10"],
+    ["-7/8", "-7/4"],
+    ["3/4", "-2/5"],
+    ["-2/3", "-4/9"],
+  ],
+} as const;
+
+function parseRationalOperand(value: string): RationalOperand | null {
+  const match = value.match(/^(-?\d+)(?:\/(\d+))?$/);
+  if (!match) return null;
+
+  const numerator = Number(match[1]);
+  const denominator = Number(match[2] ?? 1);
+  if (
+    !Number.isSafeInteger(numerator) ||
+    !Number.isSafeInteger(denominator) ||
+    denominator <= 0
+  ) {
+    return null;
+  }
+
+  return { numerator, denominator };
+}
+
+function greatestCommonDivisor(first: number, second: number) {
+  let left = Math.abs(first);
+  let right = Math.abs(second);
+
+  while (right !== 0) {
+    [left, right] = [right, left % right];
+  }
+
+  return left || 1;
+}
+
+function solveRationalArithmetic(
+  first: RationalOperand,
+  operator: ArithmeticOperator,
+  second: RationalOperand,
+) {
+  const numerator =
+    first.numerator * second.denominator +
+    (operator === "+" ? 1 : -1) * second.numerator * first.denominator;
+  const denominator = first.denominator * second.denominator;
+  const divisor = greatestCommonDivisor(numerator, denominator);
+  const simplifiedNumerator = numerator / divisor;
+  const simplifiedDenominator = denominator / divisor;
+
+  return simplifiedDenominator === 1
+    ? String(simplifiedNumerator)
+    : `${simplifiedNumerator}/${simplifiedDenominator}`;
+}
+
+function rationalArithmeticAnswer(question: string) {
+  const match = question.match(
+    /^(-?\d+(?:\/\d+)?) ([+-]) (-?\d+(?:\/\d+)?)을 계산하세요\.$/,
+  );
+  if (!match) return null;
+
+  const first = parseRationalOperand(match[1] ?? "");
+  const second = parseRationalOperand(match[3] ?? "");
+  const operator = match[2] as ArithmeticOperator;
+  if (!first || !second || (operator !== "+" && operator !== "-")) return null;
+
+  return solveRationalArithmetic(first, operator, second);
+}
+
+function rationalMultiplicationDivisionAnswer(question: string) {
+  const match = question.match(
+    /^(-?\d+(?:\/\d+)?) ([×÷]) (-?\d+(?:\/\d+)?)을 계산하세요\.$/,
+  );
+  if (!match) return null;
+
+  const first = parseRationalOperand(match[1] ?? "");
+  const second = parseRationalOperand(match[3] ?? "");
+  const operator = match[2] as MultiplicationDivisionOperator;
+  if (!first || !second || (operator !== "×" && operator !== "÷")) return null;
+  if (operator === "÷" && second.numerator === 0) return null;
+
+  const numerator =
+    operator === "×"
+      ? first.numerator * second.numerator
+      : first.numerator * second.denominator;
+  const denominator =
+    operator === "×"
+      ? first.denominator * second.denominator
+      : first.denominator * second.numerator;
+  const normalizedNumerator = denominator < 0 ? -numerator : numerator;
+  const normalizedDenominator = Math.abs(denominator);
+  const divisor = greatestCommonDivisor(
+    normalizedNumerator,
+    normalizedDenominator,
+  );
+  const simplifiedNumerator = normalizedNumerator / divisor;
+  const simplifiedDenominator = normalizedDenominator / divisor;
+
+  return simplifiedDenominator === 1
+    ? String(simplifiedNumerator)
+    : `${simplifiedNumerator}/${simplifiedDenominator}`;
+}
+
 const RULES: readonly NumericQuizRule[] = [
+  {
+    id: "integer-rational-addition-subtraction",
+    match(question) {
+      const match = question.match(
+        /^-?\d+(?:\/\d+)? ([+-]) -?\d+(?:\/\d+)?을 계산하세요\.$/,
+      );
+      if (!match) return null;
+
+      const operator = match[1] as ArithmeticOperator;
+      if (operator !== "+" && operator !== "-") return null;
+      const operands: readonly (readonly [number | string, number | string])[] =
+        question.includes("/")
+          ? FRACTION_ARITHMETIC_OPERANDS[operator]
+          : INTEGER_ARITHMETIC_OPERANDS[operator];
+
+      return {
+        factory: (random) => {
+          const [first, second] = randomItem(random, operands);
+          return `${first} ${operator} ${second}을 계산하세요.`;
+        },
+        answerForQuestion: rationalArithmeticAnswer,
+      };
+    },
+  },
+  {
+    id: "integer-rational-multiplication-division",
+    match(question) {
+      const match = question.match(
+        /^-?\d+(?:\/\d+)? ([×÷]) -?\d+(?:\/\d+)?을 계산하세요\.$/,
+      );
+      if (!match) return null;
+
+      const operator = match[1] as MultiplicationDivisionOperator;
+      if (operator !== "×" && operator !== "÷") return null;
+      const operands: readonly (readonly [number | string, number | string])[] =
+        question.includes("/")
+          ? FRACTION_MULTIPLICATION_DIVISION_OPERANDS[operator]
+          : INTEGER_MULTIPLICATION_DIVISION_OPERANDS[operator];
+
+      return {
+        factory: (random) => {
+          const [first, second] = randomItem(random, operands);
+          return `${first} ${operator} ${second}을 계산하세요.`;
+        },
+        answerForQuestion: rationalMultiplicationDivisionAnswer,
+      };
+    },
+  },
   {
     id: "repeated-addition-to-multiplication",
     match(question) {

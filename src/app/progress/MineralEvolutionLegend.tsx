@@ -18,7 +18,13 @@ export default function MineralEvolutionLegend() {
           ) : null}
           <span className="flex items-center gap-1 text-xs font-black text-[#675d70]">
             <MineralObject variant={mineral} className="h-7 w-7 shrink-0" />
-            {MINERALS[mineral].label}
+            <span
+              className={
+                mineral === "rock" || mineral === "ruby" ? "text-transparent" : undefined
+              }
+            >
+              {MINERALS[mineral].label}
+            </span>
           </span>
         </div>
       ))}

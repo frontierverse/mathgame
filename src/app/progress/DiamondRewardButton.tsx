@@ -93,7 +93,7 @@ export default function DiamondRewardButton({
             className="block rounded-xl border border-[#eadce3] bg-[#fffefa] p-2 shadow-[0_10px_24px_rgba(70,45,82,0.2)]"
           >
             <span className="mb-1.5 block text-center text-[10px] font-black leading-none text-[#a33f53]">
-              {rubyCount} 야르!
+              {rubyCount} <span className="text-transparent">야르</span>!
             </span>
             <span className="grid grid-cols-5 gap-1">
               {Array.from({ length: rubyCount }, (_, rubyIndex) => (
