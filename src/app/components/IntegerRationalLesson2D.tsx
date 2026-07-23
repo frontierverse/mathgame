@@ -789,58 +789,135 @@ function MultiplicationPart() {
   );
 }
 
+function SignRuleNumberLine({
+  accent,
+  direction,
+  formula,
+}: {
+  accent: string;
+  direction: "left" | "right";
+  formula: string;
+}) {
+  const values = [-6, -4, -2, 0, 2, 4, 6] as const;
+  const jumps = direction === "right"
+    ? [[0, 2], [2, 4], [4, 6]] as const
+    : [[0, -2], [-2, -4], [-4, -6]] as const;
+  const startX = 28;
+  const endX = 292;
+  const lineY = 82;
+  const xForValue = (value: number) => startX + ((value + 6) / 12) * (endX - startX);
+  const endpointColor = direction === "right" ? BLUE : RED;
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--control-background)] px-2 py-1">
+      <svg role="img" aria-label={`${formula} 수직선`} viewBox="0 0 320 126" className="h-auto w-full">
+        <line x1="16" y1={lineY} x2="304" y2={lineY} stroke="var(--control-border)" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M12 82l8-5v10z" fill="var(--muted)" />
+        <path d="M308 82l-8-5v10z" fill="var(--muted)" />
+
+        {jumps.map(([from, to], index) => {
+          const fromX = xForValue(from);
+          const toX = xForValue(to);
+          const arcY = 47 - index * 11;
+          const label = direction === "right" ? "+2" : "−2";
+          const arrow = direction === "right"
+            ? `M ${toX - 6} ${lineY - 14} L ${toX + 6} ${lineY - 14} L ${toX} ${lineY - 3} Z`
+            : `M ${toX + 6} ${lineY - 14} L ${toX - 6} ${lineY - 14} L ${toX} ${lineY - 3} Z`;
+
+          return (
+            <g key={`${from}-${to}`}>
+              <path
+                className={styles.jumpPath}
+                style={delay(220 + index * 380)}
+                pathLength={1}
+                d={`M ${fromX} ${lineY - 4} C ${fromX} ${arcY}, ${toX} ${arcY}, ${toX} ${lineY - 4}`}
+                fill="none"
+                stroke={accent}
+                strokeWidth="5"
+                strokeLinecap="round"
+              />
+              <path className={styles.jumpArrow} style={delay(560 + index * 380)} d={arrow} fill={accent} />
+              <text
+                className={styles.jumpLabel}
+                style={delay(420 + index * 380)}
+                x={(fromX + toX) / 2}
+                y={arcY - 5}
+                textAnchor="middle"
+                fill={accent}
+                fontSize="13"
+                fontWeight="800"
+              >
+                {label}
+              </text>
+            </g>
+          );
+        })}
+
+        {values.map((value) => {
+          const x = xForValue(value);
+          const highlighted = jumps.flat().includes(value);
+          const markerColor = value === 0 ? YELLOW : highlighted ? endpointColor : undefined;
+
+          return (
+            <g key={value}>
+              <line x1={x} y1={lineY - 7} x2={x} y2={lineY + 7} stroke="var(--control-foreground)" strokeWidth="1.7" />
+              {markerColor ? <circle cx={x} cy={lineY} r="7" fill={markerColor} stroke="var(--surface)" strokeWidth="2" /> : null}
+              <text x={x} y={lineY + 27} textAnchor="middle" fill={markerColor ?? "var(--control-foreground)"} fontSize="12" fontWeight="800">
+                {signed(value)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
 function SignRulePart() {
   const rules = [
-    { accent: MINT, first: "+", result: "+", second: "+" },
-    { accent: ORANGE, first: "+", result: "−", second: "−" },
-    { accent: PURPLE, first: "−", result: "−", second: "+" },
-    { accent: YELLOW, first: "−", result: "+", second: "−" },
+    { accent: MINT, direction: "right", first: "+", formula: "(+2) × (+3) = +6", result: "+", second: "+" },
+    { accent: ORANGE, direction: "left", first: "+", formula: "(+2) × (−3) = −6", result: "−", second: "−" },
+    { accent: PURPLE, direction: "left", first: "−", formula: "(−2) × (+3) = −6", result: "−", second: "+" },
+    { accent: YELLOW, direction: "right", first: "−", formula: "(−2) × (−3) = +6", result: "+", second: "−" },
   ] as const;
-
   const colorForSign = (sign: "+" | "−") => (sign === "+" ? BLUE : RED);
 
   return (
     <div className="mx-auto w-full max-w-5xl rounded-[2rem] border border-[var(--border)] bg-[var(--control-background)] p-4 shadow-[0_18px_34px_rgba(42,100,138,0.1)] sm:p-7">
-      <div className="grid gap-3 sm:grid-cols-2">
-      {rules.map((rule, ruleIndex) => (
-        <article
-          key={`${rule.first}-${rule.second}`}
-          className={`flex items-center justify-center gap-2 rounded-3xl border bg-[var(--surface)] px-3 py-4 shadow-[0_10px_20px_rgba(0,0,0,0.08)] ${styles.fadeUp}`}
-          style={{ borderColor: rule.accent, boxShadow: `0 12px 24px ${rule.accent}22`, ...delay(ruleIndex * 160) }}
-        >
-          {[rule.first, rule.second].map((sign, index) => (
-            <span key={`${sign}-${index}`} className="contents">
-              {index === 1 ? <span className="font-mono text-xl font-black text-[var(--muted)]">×</span> : null}
-              <span
-                className="flex size-11 items-center justify-center rounded-2xl border-2 bg-[var(--surface)] font-mono text-2xl font-black shadow-sm"
-                style={{ borderColor: colorForSign(sign), color: colorForSign(sign) }}
-              >
-                {sign}
-              </span>
-            </span>
-          ))}
-          <span className="font-mono text-xl font-black text-[var(--muted)]">=</span>
-          <span
-            className={`flex size-11 items-center justify-center rounded-2xl font-mono text-2xl font-black text-white shadow-[0_8px_16px_rgba(0,0,0,0.18)] ${styles.pop}`}
-            style={{ backgroundColor: colorForSign(rule.result), ...delay(ruleIndex * 160 + 350) }}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {rules.map((rule, ruleIndex) => (
+          <article
+            key={`${rule.first}-${rule.second}`}
+            className={`rounded-3xl border bg-[var(--surface)] p-3 shadow-[0_10px_20px_rgba(0,0,0,0.08)] sm:p-4 ${styles.fadeUp}`}
+            style={{ borderColor: rule.accent, boxShadow: `0 12px 24px ${rule.accent}22`, ...delay(ruleIndex * 160) }}
           >
-            {rule.result}
-          </span>
-        </article>
-      ))}
+            <div className="flex items-center justify-center gap-1.5">
+              {[rule.first, rule.second].map((sign, index) => (
+                <span key={`${sign}-${index}`} className="contents">
+                  {index === 1 ? <span className="font-mono text-lg font-black text-[var(--muted)]">×</span> : null}
+                  <span
+                    className="flex size-9 items-center justify-center rounded-xl border-2 bg-[var(--surface)] font-mono text-xl font-black shadow-sm"
+                    style={{ borderColor: colorForSign(sign), color: colorForSign(sign) }}
+                  >
+                    {sign}
+                  </span>
+                </span>
+              ))}
+              <span className="font-mono text-lg font-black text-[var(--muted)]">=</span>
+              <span
+                className="flex size-9 items-center justify-center rounded-xl font-mono text-xl font-black text-white shadow-sm"
+                style={{ backgroundColor: colorForSign(rule.result) }}
+              >
+                {rule.result}
+              </span>
+            </div>
+            <p className="mt-3 text-center font-mono text-base font-black tracking-[-0.04em]" style={{ color: rule.accent }}>
+              {rule.formula}
+            </p>
+            <SignRuleNumberLine accent={rule.accent} direction={rule.direction} formula={rule.formula} />
+          </article>
+        ))}
       </div>
-      <article
-        className={`mt-4 flex flex-wrap items-center justify-center gap-3 rounded-3xl border border-[#dfc0c6] bg-[#df5b68]/10 px-4 py-4 shadow-sm ${styles.fadeUp}`}
-        style={delay(1050)}
-      >
-        <span className="rounded-2xl border border-[#2388d8] bg-[var(--surface)] px-3 py-2 font-mono text-xl font-black text-[#2388d8]">+6</span>
-        <span className="font-mono text-2xl font-black text-[var(--muted)]">÷</span>
-        <span className="rounded-2xl border border-[#df5b68] bg-[var(--surface)] px-3 py-2 font-mono text-xl font-black text-[#df5b68]">−2</span>
-        <span className="font-mono text-2xl font-black text-[var(--muted)]">=</span>
-        <span className={`rounded-2xl bg-[#df5b68] px-3 py-2 font-mono text-xl font-black text-white shadow-sm ${styles.pop}`} style={delay(1500)}>
-          −3
-        </span>
-      </article>
     </div>
   );
 }
