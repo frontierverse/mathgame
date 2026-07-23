@@ -51,10 +51,39 @@ type WorksheetPdfSpec = {
   questions: readonly WorksheetPdfQuestion[];
 };
 
+const PDF_MATH_GLYPH_FALLBACKS: Readonly<Record<string, string>> = {
+  "−": "-",
+  "∕": "/",
+  "∗": "*",
+  "∙": "·",
+  "⋅": "·",
+  "≤": "<=",
+  "≥": ">=",
+  "≠": "!=",
+  "±": "+/-",
+  "√": "sqrt",
+  "π": "pi",
+};
+
+const supportedCodePointsByFont = new WeakMap<PDFFont, ReadonlySet<number>>();
+
+function pdfSafeText(text: string, font: PDFFont) {
+  const supportedCodePoints =
+    supportedCodePointsByFont.get(font) ?? new Set(font.getCharacterSet());
+  supportedCodePointsByFont.set(font, supportedCodePoints);
+
+  return Array.from(text)
+    .map((character) => {
+      if (supportedCodePoints.has(character.codePointAt(0) ?? 0)) return character;
+      return PDF_MATH_GLYPH_FALLBACKS[character] ?? "?";
+    })
+    .join("");
+}
+
 function measureMathText(text: string, font: PDFFont, fontSize: number) {
   return parseMathText(text).reduce((width, segment) => {
     if (segment.type === "text") {
-      return width + font.widthOfTextAtSize(segment.value, fontSize);
+      return width + font.widthOfTextAtSize(pdfSafeText(segment.value, font), fontSize);
     }
     return width + measureFormula(segment.tokens, font, fontSize);
   }, 0);
@@ -71,8 +100,8 @@ function getFractionLayout(
   fontSize: number,
 ) {
   const valueSize = fontSize * FRACTION_FONT_SCALE;
-  const numeratorWidth = font.widthOfTextAtSize(numerator, valueSize);
-  const denominatorWidth = font.widthOfTextAtSize(denominator, valueSize);
+  const numeratorWidth = font.widthOfTextAtSize(pdfSafeText(numerator, font), valueSize);
+  const denominatorWidth = font.widthOfTextAtSize(pdfSafeText(denominator, font), valueSize);
   const width =
     Math.max(numeratorWidth, denominatorWidth) + fontSize * FRACTION_PADDING_SCALE;
 
@@ -85,15 +114,18 @@ function measureFormula(tokens: readonly MathFormulaToken[], font: PDFFont, font
   return tokens.reduce((width, token) => {
     if (token.type === "number") {
       const signWidth = token.sign
-        ? font.widthOfTextAtSize(token.sign === "-" ? "−" : token.sign, fontSize)
+        ? font.widthOfTextAtSize(pdfSafeText(token.sign, font), fontSize)
         : 0;
-      return width + signWidth + font.widthOfTextAtSize(token.value, fontSize);
+      return width + signWidth + font.widthOfTextAtSize(pdfSafeText(token.value, font), fontSize);
     }
     if (token.type === "power") {
       return (
         width +
-        font.widthOfTextAtSize(token.base, fontSize) +
-        font.widthOfTextAtSize(token.exponent, fontSize * EXPONENT_FONT_SCALE)
+        font.widthOfTextAtSize(pdfSafeText(token.base, font), fontSize) +
+        font.widthOfTextAtSize(
+          pdfSafeText(token.exponent, font),
+          fontSize * EXPONENT_FONT_SCALE,
+        )
       );
     }
     if (token.type === "fraction") {
@@ -104,13 +136,13 @@ function measureFormula(tokens: readonly MathFormulaToken[], font: PDFFont, font
         fontSize,
       );
       const signWidth = token.sign
-        ? font.widthOfTextAtSize(token.sign === "-" ? "−" : token.sign, fontSize)
+        ? font.widthOfTextAtSize(pdfSafeText(token.sign, font), fontSize)
         : 0;
       return width + signWidth + fraction.width;
     }
 
     const gap = isTightOperator(token.value) ? 0 : operatorGap * 2;
-    return width + gap + font.widthOfTextAtSize(token.value, fontSize);
+    return width + gap + font.widthOfTextAtSize(pdfSafeText(token.value, font), fontSize);
   }, 0);
 }
 
@@ -126,21 +158,22 @@ function drawMathText(
 
   parseMathText(text).forEach((segment) => {
     if (segment.type === "text") {
-      page.drawText(segment.value, {
+      const value = pdfSafeText(segment.value, font);
+      page.drawText(value, {
         x: cursorX,
         y,
         size: fontSize,
         font,
         color: INK,
       });
-      cursorX += font.widthOfTextAtSize(segment.value, fontSize);
+      cursorX += font.widthOfTextAtSize(value, fontSize);
       return;
     }
 
     segment.tokens.forEach((token) => {
       if (token.type === "number") {
         if (token.sign) {
-          const sign = token.sign === "-" ? "−" : token.sign;
+          const sign = pdfSafeText(token.sign, font);
           page.drawText(sign, {
             x: cursorX,
             y,
@@ -150,42 +183,45 @@ function drawMathText(
           });
           cursorX += font.widthOfTextAtSize(sign, fontSize);
         }
-        page.drawText(token.value, {
+        const value = pdfSafeText(token.value, font);
+        page.drawText(value, {
           x: cursorX,
           y,
           size: fontSize,
           font,
           color: INK,
         });
-        cursorX += font.widthOfTextAtSize(token.value, fontSize);
+        cursorX += font.widthOfTextAtSize(value, fontSize);
         return;
       }
 
       if (token.type === "power") {
-        page.drawText(token.base, {
+        const base = pdfSafeText(token.base, font);
+        page.drawText(base, {
           x: cursorX,
           y,
           size: fontSize,
           font,
           color: INK,
         });
-        cursorX += font.widthOfTextAtSize(token.base, fontSize);
+        cursorX += font.widthOfTextAtSize(base, fontSize);
 
         const exponentSize = fontSize * EXPONENT_FONT_SCALE;
-        page.drawText(token.exponent, {
+        const exponent = pdfSafeText(token.exponent, font);
+        page.drawText(exponent, {
           x: cursorX,
           y: y + fontSize * EXPONENT_RISE_SCALE,
           size: exponentSize,
           font,
           color: INK,
         });
-        cursorX += font.widthOfTextAtSize(token.exponent, exponentSize);
+        cursorX += font.widthOfTextAtSize(exponent, exponentSize);
         return;
       }
 
       if (token.type === "fraction") {
         if (token.sign) {
-          const sign = token.sign === "-" ? "−" : token.sign;
+          const sign = pdfSafeText(token.sign, font);
           page.drawText(sign, {
             x: cursorX,
             y,
@@ -204,8 +240,10 @@ function drawMathText(
         );
         const numeratorX = cursorX + (fraction.width - fraction.numeratorWidth) / 2;
         const denominatorX = cursorX + (fraction.width - fraction.denominatorWidth) / 2;
+        const numerator = pdfSafeText(token.numerator, font);
+        const denominator = pdfSafeText(token.denominator, font);
 
-        page.drawText(token.numerator, {
+        page.drawText(numerator, {
           x: numeratorX,
           y: y + fontSize * FRACTION_NUMERATOR_RISE_SCALE,
           size: fraction.valueSize,
@@ -218,7 +256,7 @@ function drawMathText(
           thickness: 0.45,
           color: INK,
         });
-        page.drawText(token.denominator, {
+        page.drawText(denominator, {
           x: denominatorX,
           y: y - fontSize * FRACTION_DENOMINATOR_DROP_SCALE,
           size: fraction.valueSize,
@@ -230,15 +268,16 @@ function drawMathText(
       }
 
       const operatorGap = isTightOperator(token.value) ? 0 : fontSize * OPERATOR_GAP_SCALE;
+      const operator = pdfSafeText(token.value, font);
       cursorX += operatorGap;
-      page.drawText(token.value, {
+      page.drawText(operator, {
         x: cursorX,
         y,
         size: fontSize,
         font,
         color: INK,
       });
-      cursorX += font.widthOfTextAtSize(token.value, fontSize) + operatorGap;
+      cursorX += font.widthOfTextAtSize(operator, fontSize) + operatorGap;
     });
   });
 }
