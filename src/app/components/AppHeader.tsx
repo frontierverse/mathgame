@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/progress", label: "진도 체크" },
   { href: "/worksheets", label: "학습지" },
   { href: "/statistics", label: "통계" },
+  { href: "/life", label: "학생 생활" },
 ] as const;
 
 function isCurrentPath(pathname: string, href: (typeof NAV_ITEMS)[number]["href"]) {
@@ -45,7 +46,7 @@ export default function AppHeader() {
 
         <nav
           aria-label="주요 메뉴"
-          className="col-span-2 row-start-2 grid grid-cols-4 gap-2 sm:ml-auto sm:flex"
+          className="col-span-2 row-start-2 grid grid-cols-5 gap-1 sm:ml-auto sm:flex sm:gap-2"
         >
           {NAV_ITEMS.map(({ href, label }) => {
             const isCurrent = isCurrentPath(pathname, href);
@@ -55,7 +56,7 @@ export default function AppHeader() {
                 key={href}
                 href={href}
                 aria-current={isCurrent ? "page" : undefined}
-                className={`inline-flex min-h-11 items-center justify-center rounded-xl border px-3.5 text-sm font-bold shadow-[0_4px_12px_rgba(111,92,130,0.1)] transition hover:-translate-y-0.5 active:translate-y-0 ${
+                className={`inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-xl border px-1.5 text-xs font-bold shadow-[0_4px_12px_rgba(111,92,130,0.1)] transition hover:-translate-y-0.5 active:translate-y-0 sm:px-3.5 sm:text-sm ${
                   isCurrent
                     ? "border-[var(--control-border-active)] bg-[var(--control-background-active)] text-[var(--control-foreground)]"
                     : "border-[var(--control-border)] bg-[var(--control-background)] text-[var(--control-foreground)] hover:border-[var(--control-border-active)] hover:bg-[var(--control-background-active)]"
