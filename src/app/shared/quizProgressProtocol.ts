@@ -1,2 +1,0 @@
-export const QUIZ_PROGRESS_CACHE_VERSION = "v13";
-export const QUIZ_PROGRESS_PROTOCOL = 4;

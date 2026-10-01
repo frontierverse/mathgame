@@ -1,58 +1,17 @@
-import type { Metadata } from "next";
-import localFont from "next/font/local";
+import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
 import "./globals.css";
-import AppHeader from "./components/AppHeader";
-import { DARK_THEME, LIGHT_THEME, THEME_STORAGE_KEY } from "./theme";
-
-const notoSansKr = localFont({
-  variable: "--font-geist-sans",
-  display: "swap",
-  src: [
-    {
-      path: "../../public/fonts/MalgunGothic.ttf",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/MalgunGothic-Bold.ttf",
-      weight: "700",
-      style: "normal",
-    },
-  ],
-});
-
-const notoSansKrMono = localFont({
-  variable: "--font-geist-mono",
-  display: "swap",
-  src: "../../public/fonts/MalgunGothic.ttf",
-});
 
 export const metadata: Metadata = {
-  title: "수학 공간 · 입체 수학 학습",
-  description: "수식을 입력하고 입체 공간에서 수학 개념을 탐험하는 학습 서비스",
+  title: "수학 적립 금고",
+  description: "문제를 풀고 별을 모으고, 최종 테스트로 6개월 적립 금고를 채우는 수학 학습 공간",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "수학 금고" },
 };
 
-const themeInitializationScript = `(function(){try{var r=document.documentElement;var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});var l=t===${JSON.stringify(LIGHT_THEME)};r.classList.toggle("theme-light",l);r.classList.toggle("theme-dark",!l);r.dataset.theme=l?${JSON.stringify(LIGHT_THEME)}:${JSON.stringify(DARK_THEME)}}catch(e){}})()`;
+export const viewport: Viewport = {
+  width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#ffffff",
+};
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html
-      lang="ko"
-      data-theme={DARK_THEME}
-      suppressHydrationWarning
-      className={`${notoSansKr.variable} ${notoSansKrMono.variable} theme-dark h-full antialiased`}
-    >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitializationScript }} />
-      </head>
-      <body suppressHydrationWarning className="flex min-h-dvh flex-col">
-        <AppHeader />
-        {children}
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return <html lang="ko"><body>{children}</body></html>;
 }

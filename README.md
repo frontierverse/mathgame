@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 수학 적립 금고 · mathgame
 
-## Getting Started
+첨부한 「수학 적립 금고 앱」의 화면을 바탕으로 만든 모바일 친화형 웹 프로토타입입니다. Next.js 16, React 19, TypeScript를 사용합니다.
 
-First, run the development server:
+## 구현 범위
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- 하단 메뉴: 공부 / 보상받기 / 내 페이지
+- 첫 개념: 개념 0 「분수와 음수」. 원본의 분수 조각과 수직선 그림을 사용합니다.
+- 연습 6문제: 정답마다 별 1개, 오답은 다시 풀기, 완료 시 간식 쿠폰 1장
+- 최종 테스트 3문제: 제출한 답은 바꿀 수 없고, 정답당 1,000원, 최대 3,000원의 적립 예시
+- 내 페이지: 6개월 금고, 별·쿠폰·통과 단계와 적립 내역
+- 후속 개념은 잠김 / 문제 준비 중으로 표시하며 문제를 등록하지 않았습니다.
+
+문제는 `src/app/curriculum.ts`에 등록되어 있습니다. 문제 선택지는 MathML로 표시합니다. 적립 기간은 원본 예시인 2026.9.29–2027.3.29를 사용하고 날짜·남은 일수는 한국 시간으로 계산합니다. 수·금 외의 날에는 테스트를 미리 체험할 수 있습니다.
+
+이 버전의 보상은 화면 체험용입니다. 실제 지급·쿠폰 발급·로그인·서버 저장은 연결하지 않았습니다. 학습 상태는 열린 페이지의 메모리에만 유지되며 새로고침하면 초기화됩니다.
+
+## 로컬 실행
+
+Node.js 20.9 이상을 사용합니다. 검증 환경은 Mac의 Node.js 22.21.0 / npm 11.6.2입니다.
+
+```sh
+npm ci
+npm run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+이 Mac의 브라우저에서 http://127.0.0.1:3000 을 엽니다. 이 주소는 Mac의 localhost이며 다른 컴퓨터에서 직접 접속할 수 없습니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 검증
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```sh
+npm run lint
+npm run build
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+원본과 브라우저 화면의 비교, 반응형·문제·보상 검증은 `design-qa.md`에 기록했습니다.
