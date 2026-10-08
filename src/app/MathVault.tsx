@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Banknote, BookOpen, Check, ChevronDown, ChevronRight, Circle, Gift, Lightbulb, LockKeyhole, RotateCcw, Star, UserRound, X } from "lucide-react";
+import { ArrowLeft, Banknote, BookOpen, Check, ChevronDown, ChevronRight, Circle, Gift, Lightbulb, LockKeyhole, RotateCcw, Star, UserRound, X } from "lucide-react";
 import { concept, earnedWon, formatWon, practiceQuestions, testQuestions, testScore } from "./curriculum";
 import { compactDate, dateLabel, hasLesson, learningStatus, weekDates, type Student, type StudentSession, type StudentProgress, type ProgressAction } from "./studentProgress";
 import StudyCalendar, { DayMarker } from "./StudyCalendar";
@@ -9,6 +9,7 @@ import StudentPicker from "./StudentPicker";
 import ConceptLesson from "./ConceptLesson";
 import Formula from "./Formula";
 import MeaningChoice from "./MeaningChoice";
+import VaultCard from "./VaultCard";
 
 type Tab = "study" | "rewards" | "profile";
 type StudyView = "calendar" | "concept" | "practice" | "complete";
@@ -228,7 +229,7 @@ export default function MathVault({ today, initialStudents, initialSession, init
     </section>;
     return <section className="rewards-screen">
       <p className="eyebrow">{dateLabel(today)}</p><header className="page-title"><h1>보상받기</h1><DemoLabel /></header>
-      <button className="vault-summary" onClick={() => changeTab("profile")}><span><span className="vault-label">내 적립 금고</span><strong>{formatWon(totalWon)}</strong></span><span className="vault-countdown">{daysLeft === null ? "—" : `D-${daysLeft}`}<ArrowRight size={16} aria-hidden="true" /></span></button>
+      <VaultCard key={activeStudent?.id} amount={totalWon} daysLeft={daysLeft} onOpen={() => changeTab("profile")} />
       <div className="section-heading"><h2>최종 테스트</h2><span>수 · 금</span></div>
       <article className="final-test-card"><div className="card-topline"><span className="eyebrow">개념 0</span><strong className="max-earned"><span>최대</span> 3,000원</strong></div><h2>분수와 음수</h2>
         <p className="card-description">3문제 · 정답 +1,000원</p>
@@ -248,9 +249,7 @@ export default function MathVault({ today, initialStudents, initialSession, init
     if (!activeStudent || !progress) return null;
     return <section className={`profile-screen student-color-${activeStudent.color}`}>
       <header className="profile-header"><span className="student-avatar is-active">{activeStudent.avatar}</span><div><h1>{activeStudent.name}</h1><p className="login-status"><Circle size={7} fill="currentColor" strokeWidth={0} aria-hidden="true" />로그인됨</p></div><button className="student-switch" disabled={pending} onClick={switchStudent}>학생 바꾸기</button></header>
-      <article className="vault-card"><div className="card-topline"><span>적립 금고</span><span className="countdown-pill">{daysLeft === null ? "—" : `D-${daysLeft}`}</span></div><h2>{formatWon(totalWon)}</h2>
-        <progress max={100} value={cycleProgress} aria-label="적립 기간 경과" /><div className="vault-dates"><span>{startDate ? compactDate(startDate) : "—"}</span><span>퇴소 {payoutDate ? compactDate(payoutDate) : "—"}</span></div>
-      </article>
+      <VaultCard key={activeStudent.id} amount={totalWon} daysLeft={daysLeft} startDate={startDate} payoutDate={payoutDate} cycleProgress={cycleProgress} />
       <div className="stats-grid"><div><span>별</span><strong><Star size={19} fill="currentColor" strokeWidth={0} aria-hidden="true" /> {stars}</strong></div><div><span>쿠폰</span><strong>{couponClaimed ? 1 : 0}장</strong></div><div><span>학습일</span><strong>{progress.completedDays.length}일</strong></div></div>
       <div className="week-heading"><h2>이번 주</h2><button onClick={() => showCalendar()}>달력<ChevronRight size={15} aria-hidden="true" /></button></div>
       <div className="week-progress">{weekDates(today).map((date, index) => <button key={date} className={date === today ? "today" : ""} onClick={() => showCalendar(date)} aria-label={`${dateLabel(date)} 달력에서 보기`}>

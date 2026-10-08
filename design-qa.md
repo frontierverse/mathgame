@@ -83,3 +83,11 @@ final result: passed
 - Reviewed all nine question screens at 390 × 844. At 320 × 568, long fraction choices fit and scrolling exposes selection, feedback and submit controls above navigation. The repeated-addition lesson formula fits its 288px container (252px MathML width). At 1280 × 900 the quiz retains the centered 480px shell. Browser warning/error logs were empty.
 - Captures: `output/meaning-qa/practice-1.png` through `practice-6.png`, `test-1.png` through `test-3.png`, `practice-6-320-feedback.png`, `test-3-desktop.png`, `concept-repeated-addition.png`, and `concept-repeated-addition-320-scrolled.png`. Evidence is ignored by Git.
 - Final lint, production build and whitespace checks passed after the lesson update.
+
+## Vault timing follow-up — 2026-10-08
+
+- Profile and rewards vaults hide the countdown by default. The profile also hides its discharge date and period progress bar. Amounts remain visible. A quiet horizontal movement icon replaces the always-visible deadline.
+- A deliberate horizontal drag of at least 32px reveals timing only while held. Releasing, cancelling, losing focus or leaving the screen conceals it. Vertical movement and taps do not reveal dates. The timing button also supports holding Enter/Space for keyboard access; releasing the key conceals the content.
+- Browser observed the countdown and profile dates during actual pointer drags, then verified their absence after release. Dragging the rewards vault did not navigate. Plain tap and keyboard Enter on the amount still opened the profile. Moving focus between vault controls did not prevent a subsequent drag. Vertical movement and a plain tap on the timing control kept timing hidden; Space release also left it hidden.
+- Default and revealed profile states were reviewed at 390 × 844. Profile/rewards cards fit 320 × 568 without horizontal overflow; the centered desktop shell was reviewed at 1280 × 900. Browser warning/error logs were empty. Captures are in `output/vault-qa/` (ignored by Git); real students' learning progress was not submitted or changed.
+- Lint, production build and all twenty existing domain/question tests passed. No database/API changes were required.
