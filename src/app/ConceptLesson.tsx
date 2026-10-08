@@ -4,10 +4,12 @@ import Image from "next/image";
 import { useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
 import Formula from "./Formula";
+import { dateLabel } from "./studentProgress";
 
 const beats = ["분수 곱셈", "양수 더하기", "음수 더하기"] as const;
 
-export default function ConceptLesson({ onBack, onPractice, onResetScroll, continuing }: {
+export default function ConceptLesson({ date, onBack, onPractice, onResetScroll, continuing }: {
+  date: string;
   onBack: () => void;
   onPractice: () => void;
   onResetScroll: () => void;
@@ -18,8 +20,9 @@ export default function ConceptLesson({ onBack, onPractice, onResetScroll, conti
 
   return <section className="concept-screen">
     <header className="compact-header">
-      <button className="icon-button" aria-label="단계 지도로 돌아가기" onClick={onBack}><ArrowLeft size={23} /></button>
+      <button className="icon-button" aria-label="달력으로 돌아가기" onClick={onBack}><ArrowLeft size={23} /></button>
       <span className="eyebrow">개념 0</span>
+      <span className="lesson-date">{dateLabel(date)}</span>
       <span className="lesson-count" aria-label={`설명 ${beat + 1} / ${beats.length}`}>{beat + 1} / {beats.length}</span>
     </header>
     <h1>{beats[beat]}</h1>

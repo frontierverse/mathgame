@@ -1,6 +1,6 @@
 @font-face{font-family:"Noto Sans KR";src:url("/fonts/NotoSansKR-Regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap}
 @font-face{font-family:"Noto Sans KR";src:url("/fonts/NotoSansKR-Bold.woff2") format("woff2");font-style:normal;font-weight:700 900;font-display:swap}
-:root{--ink:#1a1c15;--muted:#737269;--line:#e4e2da;--surface:#f6f5ef;--gold:#ca981b;--gold-text:#90650a;--gold-pale:#fcf4de;--green:#206d4d;--green-pale:#e8f3ed;--nav-height:78px;color-scheme:light}
+:root{--ink:#1a1c15;--muted:#737269;--line:#e4e2da;--surface:#f6f5ef;--gold:#ca981b;--gold-text:#90650a;--gold-pale:#fcf4de;--green:#206d4d;--green-pale:#e8f3ed;--nav-height:76px;color-scheme:light}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:#f2f1ed;color:var(--ink);font-family:"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;-webkit-font-smoothing:antialiased}
 button,input,textarea{font:inherit}
@@ -203,3 +203,88 @@ textarea::placeholder{color:#8a877c}
 @media(min-width:700px){.app-shell{border-left:1px solid #e5e3d9;border-right:1px solid #e5e3d9}}
 @media(max-width:359px){main>section{padding-left:16px;padding-right:16px}.current-concept{padding:17px}.card-description{font-size:13px}.compact-header h1{font-size:15px}.small-earned{font-size:11px}.star-badge{padding:7px 10px}.question-formula{font-size:42px}.long-formula{font-size:29px}.lesson-formula{font-size:30px}.fraction-visual{padding:30px 18px}.coupon-card{gap:9px;padding:14px 12px}.coupon-card .gift-tile{width:40px;height:40px}.stats-grid{gap:7px}.stats-grid>div{padding:13px 10px}.stats-grid strong{font-size:18px}.max-earned{font-size:19px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+/* Student selection and the calendar use the approved Claude screens. */
+.student-color-1{--student-color:#3265a5;--student-surface:#e9eef9}
+.student-color-2{--student-color:#a75422;--student-surface:#fcEddd}
+.student-color-3{--student-color:#206d4d;--student-surface:#e8f3ed}
+.student-color-4{--student-color:#6d4892;--student-surface:#f0e9f7}
+.student-avatar{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;background:var(--student-surface);color:var(--student-color);font-weight:800;width:84px;height:84px;font-size:36px}
+.student-picker{padding-top:calc(36px + env(safe-area-inset-top,0px))}
+.student-picker .eyebrow{font-size:12px;line-height:20px}
+.student-picker h1{font-size:30px;line-height:44px;letter-spacing:-1.2px;margin-top:8px;font-weight:800}
+.student-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:24px}
+.student-card{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;min-height:186px;border:1px solid #deddd8;border-radius:22px;background:#fff;color:var(--ink)}
+.student-card strong{font-size:17px;line-height:24px}
+.student-card:hover{border-color:var(--student-color);background:#fdfdfb}
+.student-card:active{background:var(--student-surface)}
+.bottom-nav button{padding:10px 0;color:#818177}
+.nav-icon{display:flex;align-items:center;justify-content:center;width:68px;height:48px;border-radius:14px;transition:background .15s,color .15s}
+.bottom-nav .active .nav-icon{background:var(--ink);color:#fff}
+.notification-dot{top:7px;right:16px}
+.calendar-screen{padding-top:calc(20px + env(safe-area-inset-top,0px))}
+.calendar-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.student-chip{display:flex;align-items:center;gap:8px;border-radius:99px;background:var(--surface);padding:4px 12px 4px 4px;min-height:44px;color:var(--ink)}
+.student-chip .student-avatar{width:36px;height:36px;font-size:16px}
+.student-chip strong{font-size:13px;white-space:nowrap}
+.calendar-totals{display:flex;gap:8px;align-items:center}
+.calendar-totals .star-badge{min-height:32px;padding:6px 10px;gap:4px;font-size:13px}
+.earned-mini{display:flex;align-items:center;justify-content:center;min-height:32px;padding:6px 10px;border-radius:99px;background:var(--green-pale);color:var(--green);font-size:13px;font-weight:700;white-space:nowrap}
+.month-toolbar{display:flex;align-items:center;justify-content:space-between;margin-top:20px;min-height:44px}
+.month-toolbar button{display:flex;align-items:center;justify-content:center;width:44px;height:44px;background:transparent;color:var(--ink)}
+.month-toolbar h1{font-size:22px;line-height:32px;letter-spacing:-.8px;font-weight:800}
+.calendar-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center;font-size:12px;color:#737269;line-height:24px;margin-top:16px;margin-bottom:4px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.calendar-day{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;height:56px;min-width:0;padding:0;background:transparent;color:var(--ink);font-size:15px;font-weight:700}
+.day-number{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;border:1px solid transparent}
+.calendar-day.weekend{color:#8b8b81}
+.calendar-day.today .day-number{border-color:var(--ink);color:var(--ink)}
+.calendar-day.selected .day-number{border-color:var(--ink);background:var(--ink);color:#fff}
+.calendar-day:hover:not(.selected) .day-number{background:var(--surface)}
+.day-marker{display:block;flex-shrink:0;overflow:visible;color:#cac9c0}
+.day-marker.completed{color:var(--green)}
+.day-marker.planned{color:var(--gold)}
+.day-marker.none{visibility:hidden}
+.calendar-legend{display:flex;justify-content:center;align-items:center;gap:14px;min-height:20px;margin-top:14px;color:#74736a;font-size:11px;white-space:nowrap}
+.calendar-legend>span{display:flex;align-items:center;gap:5px}
+.calendar-legend>span:last-child svg{color:var(--ink)}
+.selected-lesson{border-top:1px solid var(--line);margin-top:24px;padding-top:16px}
+.selected-lesson h2{font-size:14px;line-height:22px;font-weight:700}
+.calendar-lesson-card{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:116px;text-align:left;background:#fff;border:1px solid var(--ink);border-radius:18px;padding:16px;margin-top:10px;color:var(--ink)}
+.calendar-lesson-content{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.calendar-lesson-content .eyebrow{font-size:12px}
+.calendar-preview-formulas{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:22px}
+.calendar-preview-formulas math{font-size:inherit}
+.calendar-lesson-status{display:flex;align-items:center;gap:4px;font-size:11px;color:#68675d}
+.calendar-lesson-status>span{margin:0 1px}
+.lesson-open{display:flex;align-items:center;justify-content:center;width:42px;height:42px;background:var(--ink);border-radius:50%;color:#fff;flex-shrink:0}
+.no-lesson,.no-history{font-size:14px;color:#79786e;line-height:1.6;margin-top:12px}
+.profile-screen{padding-top:calc(20px + env(safe-area-inset-top,0px))}
+.profile-header{gap:12px;margin-bottom:20px;min-height:64px}
+.profile-header .student-avatar{width:64px;height:64px;font-size:25px;border:2px solid var(--student-color);box-shadow:inset 0 0 0 3px white}
+.profile-header h1{font-size:20px;line-height:29px}
+.profile-header .login-status{display:flex;align-items:center;gap:5px;color:var(--green);font-weight:700;font-size:12px;line-height:20px;margin-top:2px}
+.student-switch{margin-left:auto;min-height:44px;padding:10px 12px;border:1px solid #d7d6ce;border-radius:12px;background:#fff;color:var(--ink);font-size:12px;font-weight:700;white-space:nowrap}
+.profile-screen .vault-card{padding:20px}
+.profile-screen .stats-grid{margin-top:20px}
+.week-heading{display:flex;align-items:center;justify-content:space-between;margin-top:24px;min-height:36px}
+.week-heading h2{font-size:18px;font-weight:700}
+.week-heading button{display:flex;align-items:center;gap:3px;min-height:44px;background:transparent;color:var(--gold-text);font-size:13px;font-weight:700}
+.week-progress{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:4px}
+.week-progress button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:76px;background:#fff;border:1px solid var(--line);border-radius:14px;color:var(--ink)}
+.week-progress button.today{border-color:var(--ink)}
+.week-progress button>span{font-size:12px;line-height:16px;color:#848379}
+.week-progress strong{font-size:16px;line-height:20px}
+.profile-screen .single-heading{margin-top:24px;margin-bottom:14px}
+.coupon-ledger-icon,.practice-ledger-icon{background:var(--gold-pale);color:var(--gold-text)}
+.ledger-item .coupon-ledger-amount{font-size:13px;color:var(--gold-text)}
+.ledger-item .practice-ledger-amount{font-size:15px;color:var(--ink)}
+.lesson-date{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+.lesson-date+.lesson-count{margin-left:12px}
+@media(max-width:359px){.student-card{min-height:170px}.student-avatar{width:74px;height:74px;font-size:32px}.calendar-preview-formulas{font-size:18px;gap:5px}.calendar-lesson-card{padding:13px;gap:8px}.lesson-open{width:36px;height:36px}.calendar-legend{gap:10px}.profile-header{gap:9px}.profile-header .student-avatar{width:54px;height:54px}.student-switch{padding:9px;font-size:11px}.profile-header h1{font-size:19px}.lesson-date{font-size:11px}.lesson-date+.lesson-count{margin-left:7px}}
+
+.bottom-nav{padding-left:14px;padding-right:14px}
+.profile-screen .stats-grid span{display:block;line-height:18px}
+.profile-screen .stats-grid strong{margin-top:8px;line-height:28px}
+.profile-screen .vault-card h2{font-size:40px;line-height:1.2}
+.month-toolbar{margin-top:16px}
+.selected-lesson{margin-top:18px}
