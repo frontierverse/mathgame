@@ -48,7 +48,7 @@ Reviewed on 2026-10-08. No actionable P0/P1/P2 findings remain after the fixes b
 ## Remaining limits
 
 - **[P3]** Exact font metrics and icon glyphs cannot be established from raster artboards. Existing app families preserve the observed hierarchy and meaning.
-- Real authentication, server persistence, coupon delivery and payments are not connected. Demo student state lives in memory and resets to seed data on refresh. Registered demonstration dates share concept 0; unregistered dates show an empty state.
+- At the original design review, demo student state lived in memory. The DB follow-up below replaces demo identity/progress. External coupon delivery and payments are still not connected. Registered demonstration dates share concept 0; unregistered dates show an empty state.
 - Physical-device safe areas, OS text scaling and a full screen-reader session were not tested. Responsive browser layouts and keyboard focus were verified.
 
 ## Acceptance
@@ -63,3 +63,13 @@ Reviewed on 2026-10-08. No actionable P0/P1/P2 findings remain after the fixes b
 - [x] Lint and production build passed.
 
 final result: passed
+
+## DB follow-up — 2026-10-08
+
+- The roster now comes from the existing Supabase `Youth` table, with hidden and closed/purged records excluded. Nine eligible students were read successfully. No real names, IDs or credentials are written into source or this report.
+- Numeric avatars retain roster position and cycle the four reference colors. Real names and admission/discharge dates replace the four prototype cards and dates. Missing dates show `—`.
+- A signed, HttpOnly, seven-day student selection session restores on reload. Student switching deletes the session, reloads the DB roster and loads the selected student's persisted progress. This is the requested card selection flow, without password identity verification.
+- `MathLearningProgress` stores practice stars, completion dates, coupon state, submitted test answers and reflection by stable `Youth.id`. RLS prevents direct anonymous/authenticated client access; the server uses the existing service role.
+- Eight domain/session/database tests passed, including grading, input validation, immutable submissions, student isolation, concurrent retries, request origin and expired/tampered tokens. Stale tabs must match their displayed student with the signed session before writing. Local API checks returned the expected 404/403/401 for an unknown student, cross-site write, absent session and tampered session.
+- A synthetic closed student was used for a live Supabase integration check: wrong/correct practice, concurrent retry, six-question completion, coupon, reflection, test answers and persisted reload all passed. The fixture and test records were removed; real students' learning records were not changed.
+- Browser verified real roster, student selection, actual dates, session restore after refresh, calendar-to-concept/back and student switching. New data and connection states preserve the existing visual layout; short-screen roster/profile are reviewed separately in the DB evidence.

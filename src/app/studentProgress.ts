@@ -1,13 +1,13 @@
 import { testQuestions } from "./curriculum";
 
-export const students = [
-  { id: 1, name: "학생 1", payoutDate: "2027-03-29" },
-  { id: 2, name: "학생 2", payoutDate: "2027-02-26" },
-  { id: 3, name: "학생 3", payoutDate: "2027-03-29" },
-  { id: 4, name: "학생 4", payoutDate: "2027-01-29" },
-] as const;
-
-export type Student = typeof students[number];
+export type Student = {
+  id: string;
+  name: string;
+  avatar: string;
+  color: number;
+  admissionDate: string | null;
+  payoutDate: string | null;
+};
 export type StudentProgress = {
   stars: number;
   couponClaimed: boolean;
@@ -18,20 +18,25 @@ export type StudentProgress = {
   testDate: string | null;
 };
 
-export function createStudentProgress(): Record<number, StudentProgress> {
-  return Object.fromEntries(students.map(student => [student.id, {
-    stars: student.id === 1 || student.id === 4 ? 6 : student.id === 2 ? 3 : 0,
-    couponClaimed: student.id === 1,
-    testAnswers: testQuestions.map(question => student.id === 1 ? question.answer : null),
+export function emptyStudentProgress(): StudentProgress {
+  return {
+    stars: 0,
+    couponClaimed: false,
+    testAnswers: testQuestions.map(() => null),
     reflection: "",
-    completedDays: student.id === 1
-      ? ["2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-05", "2026-10-06", "2026-10-07"]
-      : student.id === 2 ? ["2026-09-29", "2026-09-30", "2026-10-02", "2026-10-06"]
-      : student.id === 4 ? ["2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-05", "2026-10-06", "2026-10-07"] : [],
-    practiceDate: student.id === 3 ? null : "2026-10-07",
-    testDate: student.id === 1 ? "2026-10-07" : null,
-  }]));
+    completedDays: [],
+    practiceDate: null,
+    testDate: null,
+  };
 }
+
+export type ProgressAction =
+  | { type: "practice"; index: number; answer: string; date: string }
+  | { type: "test"; index: number; answer: string }
+  | { type: "coupon" }
+  | { type: "reflection"; value: string };
+
+export type StudentSession = { student: Student; progress: StudentProgress };
 
 export function hasLesson(date: string) {
   const day = new Date(`${date}T00:00:00Z`).getUTCDay();

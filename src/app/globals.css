@@ -204,6 +204,11 @@ textarea::placeholder{color:#8a877c}
 @media(max-width:359px){main>section{padding-left:16px;padding-right:16px}.current-concept{padding:17px}.card-description{font-size:13px}.compact-header h1{font-size:15px}.small-earned{font-size:11px}.star-badge{padding:7px 10px}.question-formula{font-size:42px}.long-formula{font-size:29px}.lesson-formula{font-size:30px}.fraction-visual{padding:30px 18px}.coupon-card{gap:9px;padding:14px 12px}.coupon-card .gift-tile{width:40px;height:40px}.stats-grid{gap:7px}.stats-grid>div{padding:13px 10px}.stats-grid strong{font-size:18px}.max-earned{font-size:19px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 /* Student selection and the calendar use the approved Claude screens. */
+.connection-error{margin:16px 20px;padding:12px 14px;border:1px solid #e4c3b9;border-radius:12px;background:#fff6f2;color:#7e3420;font-size:13px;line-height:1.5}
+.student-picker .connection-error{margin:20px 0 0}
+.connection-error .small-button{margin-top:10px}
+.connection-status{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:20;border-radius:99px;padding:6px 12px;background:var(--ink);color:white;font-size:12px;box-shadow:0 3px 10px #0002}
+.student-card:disabled{opacity:.6}
 .student-color-1{--student-color:#3265a5;--student-surface:#e9eef9}
 .student-color-2{--student-color:#a75422;--student-surface:#fcEddd}
 .student-color-3{--student-color:#206d4d;--student-surface:#e8f3ed}

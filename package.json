@@ -6,13 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test tests/student-database.test.mjs",
+    "db:migrate": "node scripts/migrate-math-progress.mjs",
+    "test:db": "node scripts/check-database-integration.mjs"
   },
   "dependencies": {
     "lucide-react": "1.49.0",
     "next": "16.2.10",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -20,6 +24,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "pg": "^8.23.1",
     "typescript": "^5"
   }
 }

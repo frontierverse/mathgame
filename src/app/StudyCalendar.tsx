@@ -25,7 +25,7 @@ export default function StudyCalendar({ student, progress, totalWon, today, mont
   const statusLabels = { completed: "완료", planned: "예정", missed: "못 함" } as const;
   return <section className="calendar-screen">
     <header className="calendar-header">
-      <button className={`student-chip student-color-${student.id}`} onClick={onProfile} aria-label={`${student.name} 내 페이지`}><span className="student-avatar">{student.id}</span><strong>{student.name}</strong></button>
+      <button className={`student-chip student-color-${student.color}`} onClick={onProfile} aria-label={`${student.name} 내 페이지`}><span className="student-avatar">{student.avatar}</span><strong>{student.name}</strong></button>
       <div className="calendar-totals"><span className="star-badge" aria-label={`모은 별 ${progress.stars}개`}><Star size={13} fill="currentColor" strokeWidth={0} aria-hidden="true" />{progress.stars}</span><span className="earned-mini">{formatWon(totalWon)}</span></div>
     </header>
     <div className="month-toolbar"><button aria-label="이전 달" onClick={() => onMonthChange(shiftMonth(month, -1))}><ChevronLeft size={22} /></button><h1 aria-live="polite">{label}</h1><button aria-label="다음 달" onClick={() => onMonthChange(shiftMonth(month, 1))}><ChevronRight size={22} /></button></div>
