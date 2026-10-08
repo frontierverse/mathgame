@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test tests/student-database.test.mjs",
+    "test": "node --test tests/*.test.mjs",
     "db:migrate": "node scripts/migrate-math-progress.mjs",
     "test:db": "node scripts/check-database-integration.mjs"
   },

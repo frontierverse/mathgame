@@ -8,6 +8,7 @@ import StudyCalendar, { DayMarker } from "./StudyCalendar";
 import StudentPicker from "./StudentPicker";
 import ConceptLesson from "./ConceptLesson";
 import Formula from "./Formula";
+import MeaningChoice from "./MeaningChoice";
 
 type Tab = "study" | "rewards" | "profile";
 type StudyView = "calendar" | "concept" | "practice" | "complete";
@@ -155,7 +156,8 @@ export default function MathVault({ today, initialStudents, initialSession, init
     const questions = finalTest ? testQuestions : practiceQuestions;
     const question = questions[index];
     const count = questions.length;
-    return <section className={`quiz-screen ${finalTest ? "final-test-screen" : ""}`} aria-label={finalTest ? "최종 테스트" : "연습문제"}>
+    const movements = question.choices.every(choice => choice.kind === "movement");
+    return <section className={`quiz-screen meaning-quiz ${finalTest ? "final-test-screen" : ""}`} aria-label={finalTest ? "최종 테스트" : "연습문제"}>
       <header className="compact-header">
         <button className="icon-button" aria-label={finalTest ? "보상 화면으로 돌아가기" : "달력으로 돌아가기"} onClick={() => finalTest ? changeTab("rewards") : showStudy("calendar")}><ArrowLeft size={23} /></button>
         <h1>{finalTest ? "최종 테스트" : "연습"}</h1>
@@ -171,11 +173,12 @@ export default function MathVault({ today, initialStudents, initialSession, init
       </div>
       {!finalTest && hintOpen && <p id="question-hint" className="rule-note">{question.hint}</p>}
       <div className={`question-formula ${question.expression.length > 5 ? "long-formula" : ""}`}><Formula tokens={question.expression} label={question.label} question /></div>
-      <div className="answer-grid" role="group" aria-label="정답 선택">
-        {question.choices.map(choice => <button key={choice.id} aria-label={`답 ${choice.label}`} aria-pressed={selected === choice.id} disabled={pending || feedback !== null}
-          className={`answer-choice ${selected === choice.id ? "selected" : ""} ${feedback === "correct" && selected === choice.id ? "correct-choice" : ""} ${feedback === "incorrect" && selected === choice.id ? "incorrect-choice" : ""}`}
+      <p className="choice-instruction">{question.instruction}</p>
+      <div className={`answer-grid meaning-answer-grid ${movements ? "movement-answer-grid" : ""}`} role="group" aria-label="풀이 선택">
+        {question.choices.map(choice => <button key={choice.id} aria-label={`풀이 ${choice.label}`} aria-pressed={selected === choice.id} disabled={pending || feedback !== null}
+          className={`answer-choice meaning-answer-choice ${movements ? "movement-answer-choice" : ""} ${selected === choice.id ? "selected" : ""} ${feedback === "correct" && selected === choice.id ? "correct-choice" : ""} ${feedback === "incorrect" && selected === choice.id ? "incorrect-choice" : ""}`}
           onClick={() => setSelected(choice.id)}>
-          <Formula tokens={choice.tokens} label={choice.label} />
+          <MeaningChoice choice={choice} />
           {selected === choice.id && (feedback === "incorrect" ? <X className="choice-check" size={18} aria-hidden="true" /> : <Check className="choice-check" size={18} aria-hidden="true" />)}
         </button>)}
       </div>

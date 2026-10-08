@@ -7,7 +7,7 @@ export default function Formula({ tokens, label, question = false, highlight }: 
   highlight?: "numerator" | "direction";
 }) {
   return (
-    <math xmlns="http://www.w3.org/1998/Math/MathML" aria-label={question ? `${label}의 계산 결과를 고르세요.` : label}>
+    <math xmlns="http://www.w3.org/1998/Math/MathML" aria-label={question ? `${label}. 식의 뜻을 나타내는 풀이를 고르세요.` : label}>
       <mrow>
         {tokens.map((token, index) => {
           if (Array.isArray(token)) {
@@ -22,7 +22,6 @@ export default function Formula({ tokens, label, question = false, highlight }: 
             ? <mn key={index} className={highlight === "numerator" && token !== 0 ? "numerator-highlight" : undefined}>{token < 0 ? `−${Math.abs(token)}` : token}</mn>
             : <mo key={index} stretchy="false">{token}</mo>;
         })}
-        {question && <><mo>=</mo><mo className="question-mark">?</mo></>}
       </mrow>
     </math>
   );

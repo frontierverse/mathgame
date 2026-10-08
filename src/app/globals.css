@@ -105,6 +105,26 @@ math{font-family:"STIX Two Math","Cambria Math",serif;math-style:compact}
 .answer-choice.correct-choice .choice-check{color:var(--green)}
 .answer-choice.incorrect-choice{border-color:#b62921;background:#fcf3f0;color:#b62921}
 .answer-choice.incorrect-choice .choice-check{color:#b62921}
+.meaning-quiz .question-formula{min-height:110px;margin:16px 0;font-size:42px}
+.meaning-quiz .question-formula.long-formula{font-size:32px}
+.choice-instruction{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px}
+.meaning-answer-grid{grid-template-columns:minmax(0,1fr);gap:8px}
+.meaning-answer-choice{padding:12px 38px 12px 14px;min-height:76px}
+.meaning-answer-choice math{font-size:28px}
+.meaning-answer-choice .choice-check{top:50%;right:12px;transform:translateY(-50%)}
+.movement-answer-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.movement-answer-choice{padding:14px 12px;min-height:140px}
+.movement-answer-choice .choice-check{top:12px;right:10px;transform:none}
+.movement-meaning{position:relative;display:block;width:100%;height:110px}
+.movement-meaning svg{position:absolute;top:46px;left:0;width:100%;height:24px}
+.movement-distance{position:absolute;top:0;left:50%;transform:translateX(-50%)}
+.movement-start{position:absolute;bottom:0;color:var(--ink)}
+.movement-meaning.left{color:#b62921}
+.movement-meaning.right{color:#3265a5}
+.movement-meaning.left .movement-start{right:0}
+.movement-meaning.right .movement-start{left:0}
+.movement-meaning math{font-size:25px}
+@media(max-width:359px){.meaning-quiz .question-formula{font-size:38px}.meaning-quiz .question-formula.long-formula{font-size:29px}.meaning-answer-choice math{font-size:24px}.movement-meaning math{font-size:23px}.movement-answer-choice{padding-left:10px;padding-right:10px}}
 .quiz-action{margin-top:auto;padding-top:24px}
 .feedback-action{padding:16px;border-radius:17px;margin-top:auto;background:var(--green-pale);color:var(--green)}
 .feedback-action.incorrect{background:#fbe9e8;color:#b62921}

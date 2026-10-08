@@ -33,8 +33,8 @@ export default function ConceptLesson({ date, onBack, onPractice, onResetScroll,
           <ArrowDown size={27} aria-hidden="true" />
           <Image className="fraction-board" src="/concept-0/fraction-board.png" width={416} height={82} alt="" loading="eager" />
         </div>
-        <p className="lesson-cue">분자에 ×4</p>
-        <div className="lesson-formula"><Formula tokens={[4, "×", [1, 8], "=", [4, 8]]} label="4 곱하기 8분의 1은 8분의 4. 분자에 4를 곱하고 분모는 그대로 둡니다." highlight="numerator" /></div>
+        <p className="lesson-cue">같은 조각 4번</p>
+        <div className="lesson-formula"><Formula tokens={[4, "×", [1, 8], "=", [1, 8], "+", [1, 8], "+", [1, 8], "+", [1, 8]]} label="4 곱하기 8분의 1은 8분의 1을 네 번 더한다는 뜻입니다." /></div>
       </> : <>
         <div className="number-line-visual">
           <Image src={beat === 1 ? "/concept-0/positive-number-line.png" : "/concept-0/negative-number-line.png"}
