@@ -2,78 +2,75 @@
 
 final result: passed
 
-## Findings
+Reviewed on 2026-10-08. No actionable P0/P1/P2 findings remain in the applied mobile design after the fixes below.
 
-No actionable P0/P1/P2 findings remain after the revisions below. The first concept is usable through the study, practice, coupon, final-test and vault screens. Payments, coupon delivery and persistence are outside this frontend design prototype; the UI explicitly identifies reward examples.
+## Reference and comparison target
 
-## Comparison target and evidence
+- Visual source: the ten artboards inspected in the user's open Claude app, captured on 2026-10-07. Source directory: `/Users/seungsikshin/.codex/visualizations/2026/10/07/01a11696-340c-75a0-b1e7-393598c5e6fc/math-vault-audit`.
+- Implementation: `http://127.0.0.1:3000/`, rendered through the Codex in-app browser on the user's Mac. Existing Next.js app and curriculum retained.
+- Main viewport: 390 × 844 CSS pixels; screenshots are 390 × 844 pixels. Claude mobile crops are 388 × 840 pixels, normalized to 390 × 844 for comparison. Source rounded artboard corners and the outer canvas are excluded from fidelity expectations.
+- Paired comparison files are 780 × 876 pixels, including a 32px evidence label. Source is on the left and the applied browser screen is on the right. Comparisons were inspected together, including focused progress and answer crops.
+- Responsive viewports: 320 × 568 and 1280 × 900. Mobile fills the viewport; desktop centers the existing shell at a maximum width of 480px.
+- Current evidence: `output/mobile-qa/` inside this repository (ignored by Git). The prior PDF-based report has been replaced by this Claude-based review.
 
-- Source visual truth: `/Users/seungsikshin/Documents/Codex/2026-10-01/task-4/attachments/c0ecd123-bf52-4e53-a431-5558705a0a92/수학 적립 금고 앱.pdf`, pages 1–10.
-- Extracted visual truth: `/Users/seungsikshin/Documents/Codex/2026-10-01/task-4/tmp/pdfs/source-000.jpg` through `source-009.jpg`.
-- Implementation URL: `http://127.0.0.1:3000/`, rendered in the user's connected Mac Chrome, not a remote Linux browser.
-- Main viewport: 390 × 844 CSS pixels. Source screenshots: 1170 × 2532 pixels, normalized by 3× downsampling to 390 × 844. Browser screenshots: 390 × 844 pixels, 1 image pixel per CSS pixel. No device bezel or browser chrome is included in either side of the comparisons.
-- Combined comparison images are 780 × 844 pixels: normalized source on the left, actual browser implementation on the right.
-- Responsive evidence: `math-vault-320.jpg` at 320 × 740 and `math-vault-desktop.jpg` at the normal 1920 × 886 browser viewport. The web app uses a centered shell, max-width 480px on desktop; it fills the mobile viewport without a simulated phone frame.
-- Evidence directory: `/Users/seungsikshin/Documents/Codex/2026-10-01/task-4/`.
+| State | Claude source | Browser evidence | Combined evidence |
+| --- | --- | --- | --- |
+| Study, zero stars | `01-study-map-mobile.png` | `study-mobile.png` | `study-comparison-final.png` |
+| Concept 0 | `02-concept-mobile.png` | `concept-fraction-final.png`, `concept-positive-final.png`, `concept-negative-final.png` | `concept-adaptation-comparison.png` |
+| First practice, no selection | `03-practice-mobile.png` | `practice-mobile.png` | `practice-mobile-comparison.png` |
+| First practice correct, one star | `04-practice-right-mobile.png` | `practice-correct-final.png` | `practice-correct-comparison-final.png` |
+| Practice complete, six stars | `06-practice-done-mobile.png` | `practice-complete.png` | `practice-complete-comparison.png` |
+| Rewards, coupon available, zero earned | `07-rewards-mobile.png` | `rewards-mobile.png` | `rewards-mobile-comparison.png` |
+| Final test question 2, answer selected | `08-final-test-mobile.png` | `test-selected-mobile.png` | `test-selected-mobile-comparison.png` |
+| Final test 3/3, 3,000 won example | `09-test-done-mobile.png` | `test-result-mobile.png` | `test-result-mobile-comparison.png` |
+| Vault, six stars, one coupon, 1/9 passed | `10-my-vault-mobile.png` | `profile-mobile.png` | `profile-mobile-comparison.png` |
 
-| State | Browser screenshot | Combined full-view evidence |
-| --- | --- | --- |
-| Study, zero stars | `math-vault-study.jpg` | `math-vault-study-comparison-final.png` |
-| Concept 0 explanation | `math-vault-concept.jpg` | `math-vault-concept-comparison-final.png` |
-| Practice question 1, no answer selected | `math-vault-practice.jpg` | `math-vault-practice-comparison-final.png` |
-| Six practice answers completed, empty reflection | `math-vault-complete.jpg` | `math-vault-complete-comparison-final.png` |
-| Rewards, six stars, coupon available, zero won | `math-vault-rewards.jpg` | `math-vault-rewards-comparison-final.png` |
-| Final test question 2, answer 0 selected, question 1 submitted | `math-vault-test.jpg` | `math-vault-test-comparison-final.png` |
-| Final test, 3/3 correct, 3,000 won example | `math-vault-result.jpg` | `math-vault-result-comparison-final.png` |
-| Profile, six stars, one coupon, 1/9 passed, 3,000 won | `math-vault-profile.jpg` | `math-vault-profile-comparison-final.png` |
-
-Focused comparison: `math-vault-card-detail.png` shows the current-concept card from both artifacts at readable size. Final-test and result full-view pairs were also inspected at full resolution to check fraction typography, selected-answer borders, progress colors and the result ledger. The source's rasterized scrollbars were excluded from fidelity expectations; the live app has a scrollable content region and a persistent bottom navigation.
+The source wrong-answer artboard shows question 4, while the interaction check uses question 1. `practice-wrong-final.png` verifies behavior and red feedback; it is not presented as a matched question-state comparison.
 
 ## Required fidelity surfaces
 
-- Fonts / typography: Noto Sans KR regular and bold provide a close visual match for the Korean sans-serif headings and UI. The PDF contains raster screenshots and does not establish the original font family; no exact-font claim is made. Heading size, weight, wrapping and negative letter spacing were compared in the combined study/card captures. MathML fractions retain serif numerals, horizontal bars and symbolic operators; compact math and non-stretching parentheses corrected oversized formulas. All choices and labels are legible without truncation.
-- Spacing / layout rhythm: 20px mobile gutters, rounded white cards, a 78px persistent bottom menu and source-like section grouping. The concept CTA ends at 713.45px, above the navigation starting at 766px at the 390 × 844 viewport. The back button measures 44 × 44px. Small screens scroll their content while navigation remains visible; desktop centers the same content without horizontal overflow.
-- Colors / tokens: charcoal `#1a1c15`, warm gray surfaces `#f6f5ef`, gold stars `#ca981b` and green rewards `#206d4d`. Final-test caution is pale rose; submitted progress is green, current progress charcoal, selected answers pale gold with charcoal borders. Small muted copy and focus indicators were darkened for readability. Rewards and states use coherent tokens rather than unrelated component defaults.
-- Image quality / asset fidelity: both explanation diagrams are actual crops of the supplied PDF screenshot, preserving its fraction pieces, number-line arrows, labels and color treatment. They are displayed at their original aspect ratios from 1050px-wide PNG assets. No CSS drawings or custom SVG approximations replace these illustrations. Standard navigation, gift, banknote, lock and star icons use one Lucide family at consistent stroke weights. The banknote differs slightly from the source glyph but preserves the same meaning and treatment.
-- Copy / content: only concept 0 has questions. Six practice and three final-test formulas match the first-concept goal and were checked for mathematical correctness. Korean cues are brief, and full explanations are confined to accessible labels where possible. The original broad fraction rule was narrowed to natural-number multiplication to remain mathematically correct. A generic profile label replaces the source's placeholder student name. Non-exam days use an explicitly labeled preview action. Extra notes distinguish illustrative rewards from actual money or coupon issuance.
+- **Typography:** Existing local Noto Sans KR preserves the source's Korean sans-serif hierarchy. MathML renders proper fraction bars, multiplication, parentheses and negative signs. Correct-choice numerals are green and incorrect choices red. Navigation labels use a readable 13px size. Source font metadata is unavailable, so exact font-family fidelity is not claimed.
+- **Spacing and layout:** Source-style 20px mobile gutters, rounded cards, a 2 × 2 answer grid and persistent three-tab navigation. Feedback stays near the next action. Back and pagination controls are 44 × 44px. In the 390 × 844 correct-answer state, the next button ends at y=726, above navigation at y=766. Short screens scroll content without horizontal overflow or hiding controls behind navigation.
+- **Colors:** Charcoal `#1a1c15`, gold `#ca981b`, green `#206d4d`, warm neutral surfaces and pale green/red feedback. Earned practice progress is gold; submitted final-test progress is green. The charcoal vault card, gold date badge and green earned amounts match the source roles.
+- **Images and icons:** Existing reference-derived fraction and number-line assets are retained. Fraction pieces and board are cropped into separate panels, preserving their colors and geometry. The positive number-line crop omits the later negative step. Images retain aspect ratios. Lucide icons reuse the existing app's icon family; no substitute illustrations or bespoke icon drawings were introduced.
+- **Copy and content:** Necessary Korean navigation and mathematical terms remain. The source's single concept explanation is intentionally split into multiplication, positive addition and negative addition, with one short cue per beat. Practice hints and completion reflection are optional. Repeated lock instructions are consolidated. Rewards say “최대 3,000원” before earnings; concise “체험” labels identify the prototype. The source's nine-stage count now agrees with the displayed current stage plus eight future stages. Questions, choices and canonical answers remain mathematically unchanged.
 
-## Comparison history and resolved findings
+`concept-adaptation-comparison.png` shows the original explanation alongside all three applied beats. This is an intentional adaptation under the project's minimal-visible-Korean instructions, rather than a claim of identical screen composition. Generic profile labeling and the current date are also intentional differences.
 
-1. [P2, spacing] Initial study card was too tall and pushed the stage list down. Evidence: `math-vault-study-comparison-1.png`. Reduced heading gaps, card description spacing and stage padding; revision: `math-vault-study-comparison-2.png`, accepted final: `math-vault-study-comparison-final.png` and focused card comparison.
-2. [P2, viewport] Concept action partially fell under the fixed menu. Evidence: `math-vault-concept-comparison-1.png`. Reduced concept top padding and shortened the rule cue without changing its meaning. Recaptured the same viewport/state: `math-vault-concept-comparison-final.png`; DOM bounds confirm the action is fully above the navigation.
-3. [P2, typography/layout] Initial practice fractions and formula area were too large, moving choices down. Evidence: `math-vault-practice-comparison-1.png`. Enabled compact MathML, reduced formula area and rule spacing. Post-fix: `math-vault-practice-comparison-final.png`.
-4. [P2, state/colors] Initial final-test comparison used an unselected state against a selected source, and missed its green submitted progress / rose caution. Corrected the state comparison, added final-test colors and disabled stretching parentheses. Recaptured the source-matched question 2 with answer 0 selected: `math-vault-test-comparison-final.png`.
-5. [P2, result composition] Initial result put the eyebrow before the icon and displayed an ungrouped ledger. Restored icon-first order and the warm-gray result card with bold earned amounts. Post-fix: `math-vault-result-comparison-final.png`.
-6. [P2, selected state] Hover styling temporarily weakened a selected answer's border. Excluded selected choices from the generic hover rule and recaptured the selected final-test choice in `math-vault-test-comparison-final.png`.
-7. [P2, touch usability] The initial back button was 32 × 36px. Enlarged it to 44 × 44px while compensating header spacing; latest concept and practice screenshots verify stable composition.
+## Resolved findings
 
-## Browser interactions and checks
+1. **[P2, image treatment] Duplicate number-line backdrop.** The wrapper added a warm background behind the raster image's own rounded panel, exposing a second panel and seams. Removed wrapper padding/background and retained the source image's own treatment. Same beat and viewport before/after: `concept-background-fix.png`.
+2. **[P2, state colors] Correct answer and completed progress were neutral.** Matched source green answer text and gold practice progress; red answer text also added for wrong feedback. Final matched evidence: `practice-correct-comparison-final.png`. Readable focused checks: `focus-progress-comparison.png` and `focus-answer-comparison.png`.
+3. **[P2, short viewport navigation] Advancing explanations retained old scroll.** At 320 × 568, the next heading was above the viewport (y=-158, scrollTop=246). Explanation changes now reset the content scroll. Same transition after fix: heading y=88, scrollTop=0. Evidence: `concept-scroll-fix.png`.
 
-- Bottom navigation opens all three screens; study back actions return to the stage map.
-- Before selection, submission is disabled. A wrong practice answer awards no star, shows the hint and can be retried; a correct answer awards one star and prevents additional answers on that question.
-- Six correct practice answers unlock completion, reflection input, one coupon and the final test. The coupon can be claimed once and appears in the profile.
-- Starting the test clears the coupon toast, so it does not cover the test action.
-- A submitted final answer cannot be replaced; backing out and resuming starts at the next unanswered question.
-- The full final-test browser flow earned exactly 3,000 won for 3/3 correct, displayed the ledger and changed passed stages to 1/9. It cannot be credited a second time.
-- Curriculum checks independently evaluated all nine formulas and choices: exactly one mathematically correct option per question; invalid answers and replacement submissions are rejected; incomplete tests earn zero; 0/3, 2/3 and 3/3 earn 0, 2,000 and 3,000 respectively.
-- Actual 320px profile and desktop screens were checked for clipping, text overflow and navigation overlap; none found. Primary controls and answer buttons have practical tap areas. Safe-area insets and reduced-motion preference are supported in CSS.
-- Console errors and warnings checked in Mac Chrome: none.
-- Refresh intentionally resets prototype progress. Questions remain registered in source code. No real financial action, public deployment or backend write was performed.
+## Functional and responsive verification
 
-## Open questions / follow-up polish
+- All three tabs and back actions work. Three concept beats can be advanced or selected directly, then lead to practice.
+- Hint stays hidden until requested. Wrong practice answer awards no star and allows retry. Correct answer awards one star, locks further selection and advances only on the next action.
+- All six practice answers completed successfully. Optional reflection opens and accepts text; six stars unlock one coupon and the final test.
+- Coupon can be claimed once and then displays its received state. Starting the test clears the coupon toast.
+- Submitted final answers are immutable. Leaving after question 1 and resuming opens question 2. Three correct answers show 3,000 won, the result ledger and 1/9 passed in the vault.
+- An independent one-off curriculum check evaluated all nine formulas/choices: exactly one mathematically correct choice per question and matching answer indices. Invalid and replacement submissions are rejected. Incomplete tests earn zero; 0/3, 2/3 and 3/3 calculate 0, 2,000 and 3,000 won.
+- At 320 × 568, profile content and coupon remain reachable by scrolling; coupon bottom y=460.47 is above navigation y=490. Long concept formulas fit horizontally and the lesson action remains reachable above navigation.
+- At 1280 × 900, centered layout remains stable. Screenshots: `profile-small.png`, `profile-small-scrolled.png`, `profile-desktop.png`, `concept-fraction-small-final.png`, `concept-scroll-after.png`.
+- Keyboard Enter activates concept and pagination controls. Focus outline is 3px gold. Math accessibility labels, image descriptions, selected/disabled states, safe-area CSS and reduced motion are present.
+- Full reward workflow was exercised in the development preview. After the final color/scroll fixes, production was rebuilt and the affected concept transition, wrong-answer retry, correct feedback and progress colors were retested in the production preview.
+- Browser warning/error logs: none. `npm run lint`, `npm run build` and `git diff --check`: passed after the final source changes.
 
-- [P3] Exact original font metrics cannot be recovered from raster screenshots. Noto Sans KR preserves the hierarchy; fractional bars and icon glyphs have minor platform-dependent differences.
-- The current acceptance concerns a mobile-friendly web design. Persistence, real coupon issuance, payout rules and additional concepts require a separate implementation scope.
-- Physical iPhone safe-area behavior and OS text scaling were not tested on hardware; responsive sizes were tested through the connected Mac browser.
+## Remaining limits
 
-## Implementation checklist
+- **[P3]** Original font metrics and exact icon glyphs cannot be established from raster artboards. The existing font/icon families preserve the observed hierarchy and meaning.
+- Physical-device safe areas, OS text scaling, virtual keyboard and a full screen-reader session were not tested. Responsive browser sizes and keyboard focus were verified.
+- Existing prototype state remains in memory. Real coupon delivery, payments, persistence and later-stage curricula are outside this design change.
 
-- [x] First concept only, with six practice and three final-test questions.
-- [x] All three bottom-menu destinations and reward/progress states work.
-- [x] Original diagrams used; no substitute artwork.
-- [x] Same-viewport source/prototype comparisons inspected after fixes.
-- [x] 320px and desktop resilience, keyboard focus, math/alt labels and reduced motion considered.
-- [x] Reward illustrations clearly labeled; no actual payout promises implemented.
-- [x] Lint and production build checked before handoff; local server restarted afterward.
+## Acceptance
+
+- [x] Claude source and actual rendered implementation compared together at matched dimensions and states.
+- [x] Original diagrams retained; three focused concept beats applied.
+- [x] Minimal visible copy, optional hint/reflection and nine-stage map applied.
+- [x] Study → practice → rewards → final test → vault flow verified.
+- [x] Mobile, short-screen and desktop layouts verified.
+- [x] Same-state evidence inspected after all P2 fixes.
+- [x] Lint and production build passed; local production preview remains running.
 
 final result: passed
